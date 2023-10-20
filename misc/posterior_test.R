@@ -7,7 +7,7 @@ library(INLA)
 library(inlabru)
 
 #Hyperparameters for PC priors
-lambda <- 1; lambda1 <- 1; lambda_epsirlon <- 1; lambda_u <- 1
+lambda <- 1; lambda1 <- 1; lambda_epsilon <- 1; lambda_u <- 1
 
 #Anisotropy parameters
 kappa <- 3; log_kappa <- log(kappa);
