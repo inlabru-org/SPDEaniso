@@ -12,7 +12,7 @@
 #' log_kappa <- -0.3
 #' lambda <- 0.5
 #' lambda1 <- 1
-#' result <- PC_prior_kappa(log_r, lambda, lambda1)
+#' result <- PC_prior_kappa(log_kappa, lambda, lambda1)
 PC_prior_kappa <- function(log_kappa, lambda, lambda1) {
   kappa <- exp(log_kappa)
   c <- 2 * sqrt(3 * pi)
@@ -226,9 +226,9 @@ logGdensity <- function(x, mu, Q) {
 #'
 #' @description
 #' Calculates  the log-posterior density of parameters (log(kappa),v, log(sigma_u), log(epsilon)))
-#' given a linear noisy observation y= A*u + epsilon 
+#' given a linear noisy observation y= A*u + epsilon
 #' Uses based on the prior density and the likelihood.
-#' Only stationary parameters are accepted. 
+#' Only stationary parameters are accepted.
 #' Value is up to an additive constant depending only on y
 #'
 #' @param mesh The mesh
@@ -310,7 +310,7 @@ log_posterior <- function(mesh, log_kappa, v, log_sigma_u = 0, log_sigma_epsilon
 
 
 MAP <- function(mesh, lambda, lambda1, lambda_epsilon, lambda_u, y, A, m_u, maxiterations = 300, log_sigma_epsilon = NULL) {
-  
+
   if (missing(log_sigma_epsilon)){
     #Optimizes the log-posterior over (log_kappa, v, log_sigma_u, log_sigma_epsilon)
     log_post <- function(theta) {
@@ -318,8 +318,8 @@ MAP <- function(mesh, lambda, lambda1, lambda_epsilon, lambda_u, y, A, m_u, maxi
       v <- theta[2:3]
       log_sigma_u <- theta[4]
       log_sigma_epsilon <- theta[5]
-      return(log_posterior(mesh = mesh, log_kappa = log_kappa, v = v, 
-      log_sigma_epsilon = log_sigma_epsilon, log_sigma_u = log_sigma_u, 
+      return(log_posterior(mesh = mesh, log_kappa = log_kappa, v = v,
+      log_sigma_epsilon = log_sigma_epsilon, log_sigma_u = log_sigma_u,
       lambda = lambda, lambda1 = lambda1, lambda_epsilon = lambda_epsilon, lambda_u = lambda_u,
       y = y, A = A, m_u = m_u))
     }
@@ -328,14 +328,14 @@ MAP <- function(mesh, lambda, lambda1, lambda_epsilon, lambda_u, y, A, m_u, maxi
     # gradient= grad_log_posterior(mesh, kappa, v, lambda, lambda1, y, A, Q_epsilon, m_u)
     return(optim(par = aniso_0, fn = log_post, control = list(fnscale = -1, maxit = maxiterations), hessian = TRUE))
   }
-  
+
   else{
     #Optimizes the log-posterior over (log_kappa, v, log_sigma_u)
     log_post <- function(theta) {
         log_kappa <- theta[1]
         v <- theta[2:3]
         log_sigma_u <- theta[4]
-        return(log_posterior(mesh = mesh, log_kappa = log_kappa, v = v, 
+        return(log_posterior(mesh = mesh, log_kappa = log_kappa, v = v,
         log_sigma_epsilon = log_sigma_epsilon, log_sigma_u = log_sigma_u,
         lambda = lambda, lambda1 = lambda1, lambda_epsilon = lambda_epsilon, lambda_u = lambda_u,
         y = y, A = A, m_u = m_u))
