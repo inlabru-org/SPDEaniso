@@ -17,20 +17,16 @@ Depends:
 Imports:
     lifecycle,
     Matrix,
-    rlang,
-    stats,
-    utils,
-    withr,
-    Rcpp
+    stats
 Suggests:
     ggplot2,
-    ggpolypath,
     inlabru (>= 2.8.0),
     knitr,
     testthat (>= 3.0.0),
     rmarkdown,
     splancs,
     gsl
+Remotes: inlabru-org/fmesher@feature/anisotropy
 URL: https://inlabru-org.github.io/SPDEaniso/, https://github.com/inlabru-org/SPDEaniso
 BugReports: https://github.com/inlabru-org/SPDEaniso/issues
 License: MPL-2.0

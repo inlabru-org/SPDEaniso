@@ -5,7 +5,12 @@
 #' @name fm_aniso
 NULL
 
-
+#' @importFrom lifecycle deprecated
+#' @import methods
+#' @import Matrix
+#' @import fmesher
+#' @importFrom stats optim
+#'
 #' @describeIn fm_aniso
 #' Construct the (sparse) precision matrix for the basis weights of anisotropic
 #' SPDE models.
@@ -13,10 +18,10 @@ NULL
 #' @param x A mesh object, e.g. from `fm_mesh_2d()`.
 #' @param aniso List `[kappa,vec]` where `kappa` controls the (inverse) correlation range
 #' and (the half angle version of) `vec` controls the main directions of the anisotropy
-#' @param log_sima The logarithmm of the marginal variance sigma (is a constant)
+#' @param log_sigma The logarithmm of the marginal variance sigma (is a constant)
 #' @export
 #' @examples
-#' .....
+#'
 fm_aniso_precision <- function(x, aniso, log_sigma = 0) {
   sigma <- exp(log_sigma)
   scaling <- 1 / (4 * pi * sigma^2) #Calculates scaling so that Q_fem * scaling has variance sigma
@@ -50,12 +55,12 @@ fm_aniso_sample <- function(x, aniso, n = 1, loc = NULL) {
 }
 
 #' @describeIn fm_aniso
-#' Simulates the basis weights u_i in u(x) = sum(u_j phi_j(x))
+#' Simulates the basis weights u_i in \eqn{u(x) = \sum(u_j \phi_j(x))}{u(x) = sum(u_j phi_j(x))}
 #'
 #' @param x A 2d mesh object.
+#' @param n Number of samples (default=1).
 #' @param aniso List `[kappa,vec]` where `kappa` controls the (inverse) correlation range
-#' and (the half angle version of) `vec` controls the main directions of the anisotropy
-#' @param sigma The std.dev. parameter of anisotropic u
+#' and (the half angle version of) `vec` controls the main directions of the anisotropy.
 #'
 #' @return `fm_aniso_sample()` returns a vector whose j_th component is a sample of the
 #' weight u_j of the jth basis vector.
