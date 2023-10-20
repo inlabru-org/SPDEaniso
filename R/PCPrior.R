@@ -150,6 +150,7 @@ log_pc_prior_aniso <- function(lambda, lambda1, log_kappa, v) {
 #' @export
 #' @examples
 #' lambda_epsilon <- 1
+#' log_sigma_epsilon <- 0
 #' log_pc_prior_noise_variance(lambda_epsilon = lambda_epsilon, log_sigma_epsilon = log_sigma_epsilon)
 log_pc_prior_noise_variance <- function(lambda_epsilon, log_sigma_epsilon) {
   sigma_epsilon <- exp(log_sigma_epsilon)
@@ -249,7 +250,7 @@ logGdensity <- function(x, mu, Q) {
 #' @export
 
 
-log_posterior <- function(mesh, log_kappa, v, log_sigma_u = 0, log_sigma_epsilon, lambda, lambda1, lambda_epsilon, lambda_u =1, y, A, m_u) {
+log_posterior <- function(mesh, log_kappa, v, log_sigma_u = 0, log_sigma_epsilon, lambda, lambda1, lambda_epsilon, lambda_u = 1, y, A, m_u) {
   kappa <- exp(log_kappa)
   sigma_epsilon <- exp(log_sigma_epsilon)
 
@@ -310,39 +311,40 @@ log_posterior <- function(mesh, log_kappa, v, log_sigma_u = 0, log_sigma_epsilon
 
 
 MAP <- function(mesh, lambda, lambda1, lambda_epsilon, lambda_u, y, A, m_u, maxiterations = 300, log_sigma_epsilon = NULL) {
-
-  if (missing(log_sigma_epsilon)){
-    #Optimizes the log-posterior over (log_kappa, v, log_sigma_u, log_sigma_epsilon)
+  if (missing(log_sigma_epsilon)) {
+    # Optimizes the log-posterior over (log_kappa, v, log_sigma_u, log_sigma_epsilon)
     log_post <- function(theta) {
       log_kappa <- theta[1]
       v <- theta[2:3]
       log_sigma_u <- theta[4]
       log_sigma_epsilon <- theta[5]
-      return(log_posterior(mesh = mesh, log_kappa = log_kappa, v = v,
-      log_sigma_epsilon = log_sigma_epsilon, log_sigma_u = log_sigma_u,
-      lambda = lambda, lambda1 = lambda1, lambda_epsilon = lambda_epsilon, lambda_u = lambda_u,
-      y = y, A = A, m_u = m_u))
+      return(log_posterior(
+        mesh = mesh, log_kappa = log_kappa, v = v,
+        log_sigma_epsilon = log_sigma_epsilon, log_sigma_u = log_sigma_u,
+        lambda = lambda, lambda1 = lambda1, lambda_epsilon = lambda_epsilon, lambda_u = lambda_u,
+        y = y, A = A, m_u = m_u
+      ))
     }
     aniso_0 <- c(log(0.5), c(1, 2), 1, 1)
     # To do: calculate the gradient of log posterior
     # gradient= grad_log_posterior(mesh, kappa, v, lambda, lambda1, y, A, Q_epsilon, m_u)
     return(optim(par = aniso_0, fn = log_post, control = list(fnscale = -1, maxit = maxiterations), hessian = TRUE))
-  }
-
-  else{
-    #Optimizes the log-posterior over (log_kappa, v, log_sigma_u)
+  } else {
+    # Optimizes the log-posterior over (log_kappa, v, log_sigma_u)
     log_post <- function(theta) {
-        log_kappa <- theta[1]
-        v <- theta[2:3]
-        log_sigma_u <- theta[4]
-        return(log_posterior(mesh = mesh, log_kappa = log_kappa, v = v,
+      log_kappa <- theta[1]
+      v <- theta[2:3]
+      log_sigma_u <- theta[4]
+      return(log_posterior(
+        mesh = mesh, log_kappa = log_kappa, v = v,
         log_sigma_epsilon = log_sigma_epsilon, log_sigma_u = log_sigma_u,
         lambda = lambda, lambda1 = lambda1, lambda_epsilon = lambda_epsilon, lambda_u = lambda_u,
-        y = y, A = A, m_u = m_u))
-      }
+        y = y, A = A, m_u = m_u
+      ))
+    }
     aniso_0 <- c(1, c(0.1, 0.1), 1)
     return(optim(par = aniso_0, fn = log_post, control = list(fnscale = -1, maxit = maxiterations), hessian = TRUE))
-    }
+  }
 }
 
 #' @title Calculates  the gradient of the log posterior of a linear observation y = A u + noise
