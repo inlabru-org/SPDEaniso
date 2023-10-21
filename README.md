@@ -1,7 +1,7 @@
 # SPDEaniso: Tool for working with anisotropic fields using SPDEs
 This package can be used to simulate from and perform Bayesian inference on anisotropic Gaussian fields using stochastic partial differential equations (SPDEs). The package is based on the [`fmesher``](https://github.com/inlabru-org/fmesher) package. Anisotropy is implemented through a paretrization of the anisotropic SPDE
-$$ 	(\kappa^{2}-\nabla\cdot \mathbf{H}_{\mathbf{v}}\nabla)u=\kappa\sigma\mathcal{W}$$
-The parameters are $\kappa \in  \mathbb{R}_+$, a two dimensional vector $ v \in  \R^{2\times 2}$ and $\sigma\in\mathbb{R}_+$. These parameters control the length scale and anisotropy, respectively.
+$ 	(\kappa^{2}-\nabla\cdot \mathbf{H}_{\mathbf{v}}\nabla)u=\kappa\sigma\mathcal{W}$
+The parameters are $\kappa \in  \mathbb{R}_+$, a two dimensional vector $ v \in  \mathbb{R}^{2}$ and $\sigma\in\mathbb{R}_+$. These parameters control the length scale and anisotropy, respectively.
 
 Spatially varying parameters $\kappa(x),v(x)$ are supported for simulation. For Bayesian simulation we consider a linear, noisy observation process
 $$ \mathbf{y} = \mathbf{A}\mathbf{u} + \mathbf{epsilon}$$
