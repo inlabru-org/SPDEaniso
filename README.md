@@ -17,4 +17,4 @@ where $\mathbf{A}$ is the observation matrix and $\mathbf{\epsilon}\sim\mathcal{
 ```math
 \theta:=(\kappa, \mathbf{v}, \sigma,\sigma_{\mathbf{\epsilon}} ,
 ```
-for spatially _constant_ parameters. Here penalized copexity priors are used both for the anisotrop parameters (see...) and the [noise parameters](https://arxiv.org/abs/1403.4630#:~:text=Proper%20priors%20are%20defined%20to%20penalise%20the%20complexity,both%20in%20the%20univariate%20and%20the%20multivariate%20case.).
+for spatially _constant_ parameters. Here penalized copexity priors are used both for the anisotropy parameters (see...) and the [noise parameters](https://arxiv.org/abs/1403.4630#:~:text=Proper%20priors%20are%20defined%20to%20penalise%20the%20complexity,both%20in%20the%20univariate%20and%20the%20multivariate%20case.).
