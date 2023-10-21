@@ -13,7 +13,7 @@ Spatially varying parameters $\kappa(x),v(x)$ are supported for simulation. For 
 \mathbf{y} = \mathbf{A}\mathbf{u} + \mathbf{\epsilon},
 ```
 
-where $\mathbf{A}$ is the observation matrix and $\mathbf{\epsilon}\sim\mathcal{N}(0,\sigma_{\mathbf{\epsilon}}^2\mathbf{I})$ is a vector of independent Gaussian noise. The package supports Bayesian inference on 
+where $\mathbf{A}$ is an observation matrix and $\mathbf{\epsilon}\sim\mathcal{N}(0,\sigma_{\mathbf{\epsilon}}^2\mathbf{I})$ is a vector of independent Gaussian noise. The package supports Bayesian inference on 
 ```math
 \theta:=(\kappa, \mathbf{v}, \sigma,\sigma_{\mathbf{\epsilon}}) ,
 ```
