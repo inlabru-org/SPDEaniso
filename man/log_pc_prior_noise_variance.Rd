@@ -19,5 +19,6 @@ Calculates  the log of the PC prior for sigma_epsilon based on given hyperparame
 }
 \examples{
 lambda_epsilon <- 1
+log_sigma_epsilon <- 0
 log_pc_prior_noise_variance(lambda_epsilon = lambda_epsilon, log_sigma_epsilon = log_sigma_epsilon)
 }
