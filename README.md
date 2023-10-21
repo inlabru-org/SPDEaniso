@@ -2,7 +2,7 @@
 This package can be used to simulate from and perform Bayesian inference on anisotropic Gaussian fields using stochastic partial differential equations (SPDEs). The package is based on the [`fmesher`](https://github.com/inlabru-org/fmesher) package. Anisotropy is implemented through a paretrization of the anisotropic SPDE
 
 ```math
-(\kappa^2-\nabla\cdot \mathbf{H}({\mathbf{v}})\nabla)u=\kappa\sigma\mathcal{W}
+(\kappa^2-\nabla\cdot \mathbf{H}({\mathbf{v}})\nabla)u=\kappa\sigma\mathcal{W}.
 ```
 
 The parameters are $\kappa >0$, a two dimensional vector $v$ and $\sigma>0$. These parameters control the length scale and anisotropy, respectively.
