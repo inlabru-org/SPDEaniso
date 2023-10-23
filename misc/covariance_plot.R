@@ -35,9 +35,9 @@ covarianceH <- function(kappa, v, x) {
 
 # Create a density plot
 kappa <- 1
-v <- c(0,-1)
+v <- c(0,0.001)
 l <- 4
-pxl <- expand.grid(x = seq(-l, l, length.out = 300), y = seq(-l, l, length.out = 300))
+pxl <- expand.grid(x = seq(-l, l, length.out = 250), y = seq(-l, l, length.out = 250))
 pxl$Covariance <- mapply(function(x, y) covarianceH(kappa, v, c(x, y)), pxl$x, pxl$y)
 
 # Plot
@@ -45,5 +45,5 @@ library(ggplot2)
 ggplot(pxl, aes(x = x, y = y, fill = Covariance)) +
   geom_tile() +
   scale_fill_gradientn(colors = c("blue", "white", "red")) +
-  labs(x = "X Coordinate", y = "Y Coordinate", title = "Covariance function of stationary anisotropic field")
+  labs(x = "X Coordinate", y = "Y Coordinate")
 

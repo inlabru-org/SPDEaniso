@@ -1,12 +1,10 @@
-library(devtools)
-setwd("C:/Users/liaml/OneDrive/Documentos")
-load_all("fmesher")
+  library(devtools)
 library(ggplot2)
 
 # Parameter values stationary, anisotropic field
 kp <- 1
 v1 <- 0
-v2 <- 5
+v2 <- 1
 lambda <- exp(sqrt(v1^2 + v2^2))
 stretch <- sqrt(lambda)
 
@@ -21,7 +19,7 @@ kappa <- function(x) {
 }
 
 vec <- function(x) {
-  return(c(0, -1 ))
+  return(c(0, 1 ))
 }
 
 # Square mesh for field
@@ -81,7 +79,7 @@ ggplot(pxl) +
   coord_equal() +
   xlab("X Coordinate") +
   ylab("Y Coordinate") +
-  labs(fill = "Field u isotropic")
+  labs(fill = "Field u")
 
 # Plotting anisotropic field
 ggplot(pxl) +

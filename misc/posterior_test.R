@@ -105,3 +105,5 @@ ggplot()+ gg(data=mesh,color = x)
 ggplot()+ gg(data=mesh,color = sqrt(as.vector(diag(INLA::inla.qinv(Q)))))
 ggplot()+ gg(data=mesh,color = as.vector(diag(INLA::inla.qinv(Q))))
 
+image(Q)
+
