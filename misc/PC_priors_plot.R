@@ -15,7 +15,6 @@ df <- data.frame(kappa = kappa_values, y = y_values)
 # Plot the prior density of kappa
 ggplot(df, aes(x = kappa, y = y)) +
   geom_line() +
-  ggtitle(expression(paste("Density of ", kappa)))+
   xlab(expression(kappa)) +
   ylab(expression(paste(pi[kappa], "(", kappa, ")")))+
   theme_minimal()
@@ -30,14 +29,15 @@ pxl$prior_on_r <- mapply(function(r) PC_prior_r(log_r = log(r), lambda1= lambda1
 library(ggplot2)
 ggplot(pxl, aes(x = v1, y = v2, fill = prior_on_v)) +
   geom_tile() +
-  ggtitle(expression(paste("Prior on ", v))) +
-  scale_fill_gradientn(colors = c("blue", "white", "red")) +
-  labs(x = "v1 Coordinate", y = "v2 Coordinate")
+  scale_fill_gradientn(colors = c("white", "red"),
+                       name = expression(pi[bold(v)])) +
+  labs(x = expression(paste(v[1], " coordinate")), y = expression(paste(v[2], " coordinate")))
+
 
 # Assuming pxl is a data frame with columns 'prior_on_r' and 'v1'
 ggplot(pxl, aes(x = r, y = prior_on_r)) +
   geom_line() +
-  ggtitle(expression(paste("Prior on ", r,"=|v|"))) +
+  # ggtitle(expression(paste("Prior on ", r,"=|v|"))) +
   xlab("r") +
   ylab(expression(paste(pi[r], "(", r, ")")))+
   theme_minimal()

@@ -10,7 +10,7 @@ library(inlabru)
 lambda <- 1; lambda1 <- 1; lambda_epsilon <- 1; lambda_u <- 1
 
 #Anisotropy parameters
-kappa <- 3; log_kappa <- log(kappa);
+kappa <- exp(1); log_kappa <- log(kappa);
 v <- c(1,2)
 
 #Correlation range calculation
@@ -18,7 +18,7 @@ rho <- sqrt(8)/kappa/sqrt(exp(sqrt(v[1]^2 + v[2]^2)))
 
 #Noise parameters
 sigma_u <- 1; log_sigma_u <- log(sigma_u)
-sigma_epsilon <- 0.1 ; log_sigma_epsilon <- log(sigma_epsilon)
+sigma_epsilon <- exp(-3) ; log_sigma_epsilon <- log(sigma_epsilon)
 
 
 #Testing PC priors

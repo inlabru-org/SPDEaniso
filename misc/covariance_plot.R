@@ -27,7 +27,7 @@ deformednorm <- function(kappa, v, x) {
   kappa * norm(Fmatinv%*% x, type = "2")
 }
 
-# Define covariance function of sulution to SPDE with stationary diffusion H_v and inverse correlation kappa
+# Define covariance function of solution to SPDE with stationary diffusion H_v and inverse correlation kappa
 covarianceH <- function(kappa, v, x) {
   nu = 1
   sigma(kappa, 2, 2)^2 / (2^(nu - 1) * gamma(nu)) * (kappa * deformednorm(kappa, v, x))^nu * besselK(kappa * deformednorm(kappa, v, x), nu)
@@ -35,15 +35,51 @@ covarianceH <- function(kappa, v, x) {
 
 # Create a density plot
 kappa <- 1
-v <- c(0,0.001)
+v <- c(0,1)
 l <- 4
-pxl <- expand.grid(x = seq(-l, l, length.out = 250), y = seq(-l, l, length.out = 250))
+pxl <- expand.grid(x = seq(-l, l, length.out = 300), y = seq(-l, l, length.out = 300))
 pxl$Covariance <- mapply(function(x, y) covarianceH(kappa, v, c(x, y)), pxl$x, pxl$y)
 
 # Plot
 library(ggplot2)
 ggplot(pxl, aes(x = x, y = y, fill = Covariance)) +
   geom_tile() +
-  scale_fill_gradientn(colors = c("blue", "white", "red")) +
+  scale_fill_gradientn(colors = c( "white", "red")) +
   labs(x = "X Coordinate", y = "Y Coordinate")
 
+#More plots
+v <- c(1,0)
+pxl$Covariance <- mapply(function(x, y) covarianceH(kappa, v, c(x, y)), pxl$x, pxl$y)
+# Plot
+library(ggplot2)
+ggplot(pxl, aes(x = x, y = y, fill = Covariance)) +
+  geom_tile() +
+  scale_fill_gradientn(colors = c( "white", "red")) +
+  labs(x = "X Coordinate", y = "Y Coordinate")
+#
+v <- c(0,1)
+pxl$Covariance <- mapply(function(x, y) covarianceH(kappa, v, c(x, y)), pxl$x, pxl$y)
+# Plot
+library(ggplot2)
+ggplot(pxl, aes(x = x, y = y, fill = Covariance)) +
+  geom_tile() +
+  scale_fill_gradientn(colors = c( "white", "red")) +
+  labs(x = "X Coordinate", y = "Y Coordinate")
+#
+v <- c(-1,0)
+pxl$Covariance <- mapply(function(x, y) covarianceH(kappa, v, c(x, y)), pxl$x, pxl$y)
+# Plot
+library(ggplot2)
+ggplot(pxl, aes(x = x, y = y, fill = Covariance)) +
+  geom_tile() +
+  scale_fill_gradientn(colors = c( "white", "red")) +
+  labs(x = "X Coordinate", y = "Y Coordinate")
+#
+v <- c(0,-1)
+pxl$Covariance <- mapply(function(x, y) covarianceH(kappa, v, c(x, y)), pxl$x, pxl$y)
+# Plot
+library(ggplot2)
+ggplot(pxl, aes(x = x, y = y, fill = Covariance)) +
+  geom_tile() +
+  scale_fill_gradientn(colors = c( "white", "red")) +
+  labs(x = "X Coordinate", y = "Y Coordinate")

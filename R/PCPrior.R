@@ -1,12 +1,12 @@
 #' @importFrom Matrix t solve
-#' @title Marginal PC prior density of kappa
-#' @description Calculates  the marginal PC prior pi_kappa
+#' @title Marginal PC prior density of log(kappa)
+#' @description Calculates  the marginal PC prior pi_{log(kappa)} of the inverse correlation range kappa
 #'
 #' @param lambda A hyperparameter controlling the penalization of the distance from the base moedel as a function of kappa
 #' @param lambda1 A hyperparameter controlling the penalization of the distance from the base moedel as a function of v
 #' @param log_kappa Logarithm of the inverse correlation range kappa.
 #'
-#' @return The calculated marginal prior density of kappa .
+#' @return The calculated marginal prior density of log(kappa) .
 #' @export
 #' @examples
 #' log_kappa <- -0.3
@@ -17,7 +17,8 @@ PC_prior_kappa <- function(log_kappa, lambda, lambda1) {
   kappa <- exp(log_kappa)
   c <- 2 * sqrt(3 * pi)
   fact <- exp(-((kappa * lambda) / c)) * lambda * lambda1 / (kappa * lambda + lambda1)^2
-  return(fact * (1 + (kappa * lambda + lambda1) / c))
+  change_variable <- kappa
+  return(change_variable * fact * (1 + (kappa * lambda + lambda1) / c))
 }
 
 #' @title Marginal PC prior density of r = |v|
@@ -26,7 +27,7 @@ PC_prior_kappa <- function(log_kappa, lambda, lambda1) {
 #' @param lambda1 A hyperparameter controlling the penalization of the distance from the base moedel as a function of r.
 #' @param log_r The logarithm of |v|, which controls the magnitude of the anisotropy
 #'
-#' @return The calculated marginal prior density of r.
+#' @return The calculated marginal prior density of log(r).
 #' @export
 #' @examples
 #' log_r <- -0.5
@@ -36,7 +37,8 @@ PC_prior_r <- function(log_r, lambda1) {
   r <- exp(log_r)
   numerator <- sqrt(3) * exp(-((lambda1 * (-2 + sqrt(1 + 3 * cosh(2 * r)))) / (4 * sqrt(3 * pi)))) * lambda1 * sinh(2 * r)
   denominator <- 4 * sqrt(pi + 3 * pi * cosh(2 * r))
-  result <- numerator / denominator
+  change_variable <- r
+  result <- change_variable * numerator / denominator
   return(result)
 }
 
@@ -62,14 +64,14 @@ PC_prior_v <- function(v, lambda1) {
 
 
 #' @title PC Prior on kappa, v
-#' @description Calculates  the PC prior for kappa, v based on given hyperparameters and vectors.
+#' @description Calculates  the PC prior for (log(kappa), v) based on given hyperparameters.
 #'
 #' @param lambda A hyperparameter controlling the size of kappa.
 #' @param lambda1 A hyperparameter controlling the size of |v|.
 #' @param log_kappa Logarithm of inverse correlation range.
 #' @param v Vector that controls anisotropy.
 #'
-#' @return The calculated PC prior density .
+#' @return The calculated PC prior density for (log(kappa),v).
 #' @export
 #' @examples
 #' lambda <- 1
@@ -79,6 +81,7 @@ PC_prior_v <- function(v, lambda1) {
 #' pc_prior(lambda = lambda, lambda1 = lambda1, log_kappa = log_kappa, v = v)
 pc_prior <- function(lambda, lambda1, log_kappa, v) {
   kappa <- exp(log_kappa)
+  change_variable <- kappa
   f <- function(r) {
     sqrt((1 / (48 * pi)) * (3 * cosh(2 * r) + 1))
   }
@@ -94,7 +97,7 @@ pc_prior <- function(lambda, lambda1, log_kappa, v) {
   term1 <- (lambda * lambda1 * abs(f_prime_val) * f_val) / (2 * pi * v_norm)
   term2 <- exp(-lambda1 * (f_val - f(0)) - lambda * f_val * kappa)
 
-  return(term1 * term2)
+  return(term1 * term2 * change_variable)
 }
 
 #' @title Log PC Prior Calculation for anisotropy parameters.
@@ -105,7 +108,7 @@ pc_prior <- function(lambda, lambda1, log_kappa, v) {
 #' @param log_kappa Logarithm of inverse correlation range.
 #' @param v Vector that controls anisotropy.
 #'
-#' @return The calculated log PC prior value.
+#' @return The calculated log PC prior value of (log(kappa),v).
 #' @export
 #' @examples
 #' lambda <- 1
@@ -115,6 +118,7 @@ pc_prior <- function(lambda, lambda1, log_kappa, v) {
 #' log_pc_prior_aniso(lambda = lambda, lambda1 = lambda1, log_kappa = log_kappa, v = v)
 log_pc_prior_aniso <- function(lambda, lambda1, log_kappa, v) {
   kappa <- exp(log_kappa)
+  change_variable <- kappa
   # log_f <- function(r) {
   #   0.5 * (-log(48*pi) + log(3 * cosh(2 * r) + 1))
   # }
@@ -137,16 +141,16 @@ log_pc_prior_aniso <- function(lambda, lambda1, log_kappa, v) {
   term1 <- log(lambda) + log(lambda1) + log(f_prime_val) + log(f_val) - log(2 * pi * v_norm)
   term2 <- -lambda1 * (f_val - f(0)) - lambda * f_val * kappa
 
-  return(term1 + term2)
+  return(term1 + term2 + change_variable)
 }
 
-#' @title Log PC Prior calcualtion for variance of noise (and u)
+#' @title Log PC Prior calcualtion for log variance of noise (and u)
 #' @description Calculates  the log of the PC prior for sigma_epsilon based on given hyperparameters and vectors.
 #'
 #' @param lambda_epsilon A hyperparameter controlling the size of epsilon.
 #' @param log_sigma_epsilon The logarithm of the variance of the additive noise.
 #'
-#' @return The calculated log PC prior value.
+#' @return The calculated log PC prior value of log(sigma_epsilon).
 #' @export
 #' @examples
 #' lambda_epsilon <- 1
@@ -154,8 +158,9 @@ log_pc_prior_aniso <- function(lambda, lambda1, log_kappa, v) {
 #' log_pc_prior_noise_variance(lambda_epsilon = lambda_epsilon, log_sigma_epsilon = log_sigma_epsilon)
 log_pc_prior_noise_variance <- function(lambda_epsilon, log_sigma_epsilon) {
   sigma_epsilon <- exp(log_sigma_epsilon)
+  change_variable <- sigma_epsilon
   # Calculates  the logarithm of exponential density.
-  return(log(lambda_epsilon) - lambda_epsilon * sigma_epsilon)
+  return(log(lambda_epsilon) - lambda_epsilon * sigma_epsilon + sigma_epsilon)
 }
 
 #' @title Sparse Matrix Determinant using Cholesky Factorization
