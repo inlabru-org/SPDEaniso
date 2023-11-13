@@ -2,7 +2,7 @@
 % Please edit documentation in R/PCPrior.R
 \name{PC_prior_kappa}
 \alias{PC_prior_kappa}
-\title{Marginal PC prior density of kappa}
+\title{Marginal PC prior density of log(kappa)}
 \usage{
 PC_prior_kappa(log_kappa, lambda, lambda1)
 }
@@ -14,10 +14,10 @@ PC_prior_kappa(log_kappa, lambda, lambda1)
 \item{lambda1}{A hyperparameter controlling the penalization of the distance from the base moedel as a function of v}
 }
 \value{
-The calculated marginal prior density of kappa .
+The calculated marginal prior density of log(kappa) .
 }
 \description{
-Calculates  the marginal PC prior pi_kappa
+Calculates  the marginal PC prior pi_{log(kappa)} of the inverse correlation range kappa
 }
 \examples{
 log_kappa <- -0.3

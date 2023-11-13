@@ -12,7 +12,7 @@ PC_prior_r(log_r, lambda1)
 \item{lambda1}{A hyperparameter controlling the penalization of the distance from the base moedel as a function of r.}
 }
 \value{
-The calculated marginal prior density of r.
+The calculated marginal prior density of log(r).
 }
 \description{
 Calculates  the marginal PC prior, pi_r, of the norm of the anisotropy vector

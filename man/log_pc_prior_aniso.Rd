@@ -16,7 +16,7 @@ log_pc_prior_aniso(lambda, lambda1, log_kappa, v)
 \item{v}{Vector that controls anisotropy.}
 }
 \value{
-The calculated log PC prior value.
+The calculated log PC prior value of (log(kappa),v).
 }
 \description{
 Calculates  the log of the PC prior for (kappa, v) based on given hyperparameters and vectors.

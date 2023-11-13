@@ -2,7 +2,7 @@
 % Please edit documentation in R/PCPrior.R
 \name{log_pc_prior_noise_variance}
 \alias{log_pc_prior_noise_variance}
-\title{Log PC Prior calcualtion for variance of noise (and u)}
+\title{Log PC Prior calcualtion for log variance of noise (and u)}
 \usage{
 log_pc_prior_noise_variance(lambda_epsilon, log_sigma_epsilon)
 }
@@ -12,7 +12,7 @@ log_pc_prior_noise_variance(lambda_epsilon, log_sigma_epsilon)
 \item{log_sigma_epsilon}{The logarithm of the variance of the additive noise.}
 }
 \value{
-The calculated log PC prior value.
+The calculated log PC prior value of log(sigma_epsilon).
 }
 \description{
 Calculates  the log of the PC prior for sigma_epsilon based on given hyperparameters and vectors.

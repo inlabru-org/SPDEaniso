@@ -21,6 +21,12 @@ NULL
 #' @param log_sigma The logarithmm of the marginal variance sigma (is a constant)
 #' @export
 #' @examples
+#' mesh <- fm_mesh_2d_inla(boundary = fm_extensions(cbind(2, 1), convex = 1, 2))
+#' kappa <- 1
+#' v <- c(1, 2)
+#' aniso <- list(rep(kappa, mesh$n), matrix(v, mesh$n, 2))
+#' Q <-fm_aniso_precision(mesh, aniso)
+
 fm_aniso_precision <- function(x, aniso, log_sigma = 0) {
   sigma <- exp(log_sigma)
   scaling <- 1 / (4 * pi * sigma^2) # Calculates scaling so that Q_fem * scaling has variance sigma

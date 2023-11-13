@@ -16,10 +16,10 @@ pc_prior(lambda, lambda1, log_kappa, v)
 \item{v}{Vector that controls anisotropy.}
 }
 \value{
-The calculated PC prior density .
+The calculated PC prior density for (log(kappa),v).
 }
 \description{
-Calculates  the PC prior for kappa, v based on given hyperparameters and vectors.
+Calculates  the PC prior for (log(kappa), v) based on given hyperparameters.
 }
 \examples{
 lambda <- 1
