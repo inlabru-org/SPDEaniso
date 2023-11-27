@@ -49,3 +49,10 @@ anisotropic parameters, and optionally evaluate at given locations.
 \item \code{fm_aniso_basis_weights_sample()}: Simulates the basis weights u_i in \eqn{u(x) = \sum(u_j \phi_j(x))}{u(x) = sum(u_j phi_j(x))}
 
 }}
+\examples{
+mesh <- fm_mesh_2d_inla(boundary = fm_extensions(cbind(2, 1), convex = 1, 2))
+kappa <- 1
+v <- c(1, 2)
+aniso <- list(rep(kappa, mesh$n), matrix(v, mesh$n, 2))
+Q <-fm_aniso_precision(mesh, aniso)
+}

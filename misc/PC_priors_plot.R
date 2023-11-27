@@ -8,7 +8,7 @@ l <- 4
 # Create a data frame
 kappa_values <- seq(0, l, by = 0.05)
 y_values <- sapply(kappa_values,
-                   function(kappa) PC_prior_kappa(log_kappa = log(kappa),
+                   function(kappa) 1/kappa * PC_prior_kappa(log_kappa = log(kappa),
                                                   lambda = lambda, lambda1 = lambda1))
 df <- data.frame(kappa = kappa_values, y = y_values)
 
@@ -23,7 +23,7 @@ ggplot(df, aes(x = kappa, y = y)) +
 pxl <- expand.grid(v1 = seq(-l, l, length.out = 300), v2 = seq(-l, l, length.out = 300))
 pxl$r <-seq(0, 2*l, length.out = 300)
 pxl$prior_on_v <- mapply(function(v1, v2) PC_prior_v(v = c(v1,v2), lambda1 = lambda1), pxl$v1, pxl$v2)
-pxl$prior_on_r <- mapply(function(r) PC_prior_r(log_r = log(r), lambda1= lambda1), pxl$r)
+pxl$prior_on_r <- mapply(function(r) 1/r * PC_prior_r(log_r = log(r), lambda1= lambda1), pxl$r)
 
 # Plot
 library(ggplot2)

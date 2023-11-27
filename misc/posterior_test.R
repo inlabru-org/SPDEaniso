@@ -10,8 +10,8 @@ library(inlabru)
 lambda <- 1; lambda1 <- 1; lambda_epsilon <- 1; lambda_u <- 1
 
 #Anisotropy parameters
-kappa <- exp(1); log_kappa <- log(kappa);
-v <- c(1,2)
+kappa <- exp(-0.5); log_kappa <- log(kappa);
+v <- c(0,0)
 
 #Correlation range calculation
 rho <- sqrt(8)/kappa/sqrt(exp(sqrt(v[1]^2 + v[2]^2)))
@@ -92,7 +92,7 @@ sqrt(diag(solve(-map$hessian)))
 #Optimizing over log(kappa), v, log(sigma_u) log(sigma_noise)
 map_full <- MAP(mesh = mesh,
            lambda =lambda, lambda1 = lambda1, lambda_epsilon = lambda_epsilon, lambda_u = lambda_u,
-           y= y, A = A, m_u =m_u, maxiterations = 600)
+           y= y, A = A, m_u =m_u, maxiterations = 2400)
 print(map_full)
 cov2cor(solve(-map_full$hessian))
 par_full <- map_full$par
@@ -105,5 +105,16 @@ ggplot()+ gg(data=mesh,color = x)
 ggplot()+ gg(data=mesh,color = sqrt(as.vector(diag(INLA::inla.qinv(Q)))))
 ggplot()+ gg(data=mesh,color = as.vector(diag(INLA::inla.qinv(Q))))
 
-image(Q)
+log_prior_aniso <- function(log_kappa,v){
+  log_gaussian_density(log_kappa,0,1)+log_gaussian_density(v[1],0,1)+log_gaussian_density(v[2],0,1)
+}
+map_full_general <- MAPgeneral(logprior_aniso = log_prior_aniso, mesh = mesh,
+                lambda =lambda, lambda1 = lambda1, lambda_epsilon = lambda_epsilon, lambda_u = lambda_u,
+                y= y, A = A, m_u =m_u, maxiterations = 2400)
 
+print(map_full)
+cov2cor(solve(-map_full_general$hessian))
+par_full <- map_full_general$par
+real_par_full_general <- c(log_kappa,v,log_sigma_u, log_sigma_epsilon)
+print(map_full_general$par-real_par_full_general)
+sqrt(diag(solve(-map_full_general$hessian)))

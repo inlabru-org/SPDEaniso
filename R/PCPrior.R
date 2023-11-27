@@ -1,4 +1,82 @@
 #' @importFrom Matrix t solve
+
+#' @title fdist
+#' @description Calculates the compenent of the distance from the flexible to the base model depending on |v|
+#'
+#' @param r A positive number representing the norm of the anisotropy vector
+#' @return The calculated component of the distance from the flexible to the base model depending on |v|
+#' @export
+#' @examples
+#' r <- 0.5
+#' fdist(r)
+fdist <- function(r) {
+  return(sqrt((1 / (48 * pi)) * (3 * cosh(2 * r) + 1)))
+}
+
+
+#' @title fdist_prime
+#' @description Calculates the derivative of the compenent of the distance from the flexible to the base model depending on |v|
+#'
+#' @param r A positive number representing the norm of the anisotropy vector
+#' @return The calculated derivative of the component of the distance from the flexible to the base model depending on |v|
+#' @export
+#' @examples
+#' r <- 0.5
+#' fdist_prime(r)
+fdist_prime <- function(r) {
+  return(sinh(2 * r) / (4 * sqrt(pi * cosh(2 * r) + pi / 3)))
+}
+
+
+#' @title Hyperparameter lambda1 for given quantile of the PC prior of |v|
+#' @description Calculates  the hyperparameter lambda1 for given quantile beta and large anisotropy a0 of the PC prior of |v|
+#'
+#' @param beta A quantile in [0,1] of the PC prior of |v|
+#' @param a0 A surprisingly high ratio of anisotropy
+#' @export
+#' @examples
+#' beta <- 0.01
+#' a0 <- 10
+#' lambda1 <- lambda1_quantile(a0 = a0, beta= beta)
+lambda1_quantile <- function(a0, beta =0.01) {
+  #This warns the user if alpha is not in (0,1)
+  if (beta <= 0 | beta >= 1) {
+    warning("beta should be in (0,1)")
+  }
+  #This warns the user if a0 is not greater than 1
+  if (a0 <= 1) {
+    warning("a0 should be greater than 1")
+  }
+  r0 <- log(a0)/2
+  lambda1 <- - log(beta)/(fdist(r0) - fdist(0))
+  return(lambda1)
+}
+
+#' @title Hyperparameter lambda for given quantile of the PC prior of kappa
+#' @description Calculates  the hyperparameter lambda for given quantile alpha, tolerance kappa0 and lambda1 of the PC prior of kappa
+#'
+#' @param alpha A quantile in (0,1) of the PC prior of kappa
+#' @param rho0 A surprisingly large correlation range
+#' @export
+#' @examples
+#' alpha <- 0.01
+#' kappa0 <- 0.1
+#' lambda1 <- 1
+#' lambda <- lambda_quantile(alpha=alpha, kappa0=kappa0, lambda1=lambda1)
+lambda_quantile <- function(rho0, lambda1, alpha = 0.01) {
+  #This warns the user if alpha is not in (0,1)
+  if (alpha <= 0 | alpha >= 1) {
+    warning("alpha should be in (0,1)")
+  }
+  kappa0 <- sqrt(16)/ rho0
+  product <- lambda1 * fdist(0)
+  lambert <- lamW::lambertW0(product * exp(product) / (1-alpha))
+  lambda <- (lambert/ fdist(0)- lambda1) / kappa0
+  return(lambda)
+}
+
+
+
 #' @title Marginal PC prior density of log(kappa)
 #' @description Calculates  the marginal PC prior pi_{log(kappa)} of the inverse correlation range kappa
 #'
@@ -82,20 +160,13 @@ PC_prior_v <- function(v, lambda1) {
 pc_prior <- function(lambda, lambda1, log_kappa, v) {
   kappa <- exp(log_kappa)
   change_variable <- kappa
-  f <- function(r) {
-    sqrt((1 / (48 * pi)) * (3 * cosh(2 * r) + 1))
-  }
-
-  f_prime <- function(r) {
-    sinh(2 * r) / (4 * sqrt(pi * cosh(2 * r) + pi / 3))
-  }
 
   v_norm <- sqrt(sum(v^2))
-  f_val <- f(v_norm)
-  f_prime_val <- f_prime(v_norm)
+  f_val <- fdist(v_norm)
+  f_prime_val <- fdist_prime(v_norm)
 
   term1 <- (lambda * lambda1 * abs(f_prime_val) * f_val) / (2 * pi * v_norm)
-  term2 <- exp(-lambda1 * (f_val - f(0)) - lambda * f_val * kappa)
+  term2 <- exp(-lambda1 * (f_val - fdist(0)) - lambda * f_val * kappa)
 
   return(term1 * term2 * change_variable)
 }
@@ -119,27 +190,13 @@ pc_prior <- function(lambda, lambda1, log_kappa, v) {
 log_pc_prior_aniso <- function(lambda, lambda1, log_kappa, v) {
   kappa <- exp(log_kappa)
   change_variable <- kappa
-  # log_f <- function(r) {
-  #   0.5 * (-log(48*pi) + log(3 * cosh(2 * r) + 1))
-  # }
-
-  # log_f_prime <- function(r) {
-  #   log(sinh(2 * r)) - log(4) - 0.5 * log(pi * cosh(2 * r) + pi / 3)
-  # }
-  f <- function(r) {
-    sqrt((1 / (48 * pi)) * (3 * cosh(2 * r) + 1))
-  }
-
-  f_prime <- function(r) {
-    sinh(2 * r) / (4 * sqrt(pi * cosh(2 * r) + pi / 3))
-  }
-
   v_norm <- sqrt(sum(v^2))
-  f_val <- f(v_norm)
-  f_prime_val <- f_prime(v_norm)
+  
+  f_val <- fdist(v_norm)
+  f_prime_val <- fdist_prime(v_norm)
 
   term1 <- log(lambda) + log(lambda1) + log(f_prime_val) + log(f_val) - log(2 * pi * v_norm)
-  term2 <- -lambda1 * (f_val - f(0)) - lambda * f_val * kappa
+  term2 <- -lambda1 * (f_val - fdist(0)) - lambda * f_val * kappa
 
   return(term1 + term2 + change_variable)
 }
@@ -330,10 +387,10 @@ MAP <- function(mesh, lambda, lambda1, lambda_epsilon, lambda_u, y, A, m_u, maxi
         y = y, A = A, m_u = m_u
       ))
     }
-    aniso_0 <- c(log(0.5), c(1, 2), 1, 1)
+    aniso0 <- c(log(0.5), c(1, 2), 1, 1)
     # To do: calculate the gradient of log posterior
     # gradient= grad_log_posterior(mesh, kappa, v, lambda, lambda1, y, A, Q_epsilon, m_u)
-    return(optim(par = aniso_0, fn = log_post, control = list(fnscale = -1, maxit = maxiterations), hessian = TRUE))
+    return(optim(par = aniso0, fn = log_post, control = list(fnscale = -1, maxit = maxiterations), hessian = TRUE))
   } else {
     # Optimizes the log-posterior over (log_kappa, v, log_sigma_u)
     log_post <- function(theta) {
@@ -347,8 +404,8 @@ MAP <- function(mesh, lambda, lambda1, lambda_epsilon, lambda_u, y, A, m_u, maxi
         y = y, A = A, m_u = m_u
       ))
     }
-    aniso_0 <- c(1, c(0.1, 0.1), 1)
-    return(optim(par = aniso_0, fn = log_post, control = list(fnscale = -1, maxit = maxiterations), hessian = TRUE))
+    aniso0 <- c(1, c(0.1, 0.1), 1)
+    return(optim(par = aniso0, fn = log_post, control = list(fnscale = -1, maxit = maxiterations), hessian = TRUE))
   }
 }
 
@@ -410,8 +467,149 @@ MAPold <- function(mesh, lambda, lambda1, lambda_epsilon, y, A, m_u, maxiiterati
     log_sigma_epsilon <- theta[4]
     return(log_posterior(mesh = mesh, log_kappa = log_kappa, v = v, log_sigma_epsilon = log_sigma_epsilon, lambda = lambda, lambda1 = lambda1, lambda_epsilon = lambda_epsilon, y = y, A = A, m_u = m_u))
   }
-  aniso_0 <- c(log(0.5), c(1, 2), 1)
+  aniso0 <- c(log(0.5), c(1, 2), 1)
   # To do: calculate the gradient of log posterior
   # gradient= grad_log_posterior(mesh, kappa, v, lambda, lambda1, y, A, Q_epsilon, m_u)
-  return(optim(par = aniso_0, fn = log_post, control = list(fnscale = -1, maxit = maxiiterations)))
+  return(optim(par = aniso0, fn = log_post, control = list(fnscale = -1, maxit = maxiiterations)))
+}
+
+#' @title Log gaussian 1D density
+#' @description Calculates  the log of the gaussian density with mean mu and variance sigma^2
+#'
+#' @param x A numeric vector representing the point x
+#' @param mu A numeric vector representing the mean mu
+#' @param logsigma A numeric vector representing the variance logsigma
+#'
+#' @return The calculated log gaussian density
+#' @export
+#' @examples
+#' x <- 1
+#' mu <- 0
+#' logsigma <- 1
+#' log_gaussian_density(x, mu, logsigma)
+log_gaussian_density <- function(x, mu, logsigma) {
+  sigma <- exp(logsigma)
+  return(-0.5 * log(2 * pi) - logsigma - 0.5 * (x - mu)^2 / sigma^2)
+}
+#' @title Calculates  the log-posterior density for parameters (log_kappa,v, log_sigma_u, log_sigma_epsilon) with a general prior.
+#'
+#' @description
+#' Calculates  the log-posterior density of parameters (log(kappa),v, log(sigma_u), log(epsilon)))
+#' given a linear noisy observation y= A*u + epsilon
+#' Uses based on the prior density and the likelihood.
+#' Only stationary parameters are accepted.
+#' Value is up to an additive constant depending only on y
+#'
+#' @param logprior_aniso A function that calculates the log prior of (kappa, v)
+#' @param mesh The mesh
+#' @param log_kappa Logarithm of inverse correlation range
+#' @param v 2D vector that controls anisotropy
+#' @param log_sigma_u Variance of field u. If unspecified, it is assumed to be 0.
+#' @param log_sigma_epsilon Variance of noise
+#' @param lambda A hyperparameter controlling the size of kappa.
+#' @param lambda1 A hyperparameter controlling the size of |v|.
+#' @param lambda_epsilon A hyperparameter controlling the size of sigma_epsilon.
+#' @param lambda_u A hyperparameter controlling the size of sigma_u.
+#' @param y A vector with length equal to the number of basis elements n representing the observed data.
+#' @param A Matrix of size nxn representing the transformation A
+#' @param Q_epsilon A sparse matrix of size nxn representing the noise precision matrix
+#' @param m_u A vector with length n representing the prior mean m_u. If a number is given is transformed into (m_u, m_u,..., m_u)
+#'
+#' @return The calculated log-posterior
+#' @export
+log_posterior_general <- function(logprior_aniso, mesh, log_kappa, v, log_sigma_u = 0, log_sigma_epsilon, lambda, lambda1, lambda_epsilon, lambda_u = 1, y, A, m_u) {
+  kappa <- exp(log_kappa)
+  sigma_epsilon <- exp(log_sigma_epsilon)
+
+  # Calculates log-prior
+  log_prior_aniso_value <- log_prior_aniso(log_kappa = log_kappa, v = v)
+  log_pc_noise_value <- log_pc_prior_noise_variance(lambda_epsilon = lambda_epsilon, log_sigma_epsilon = log_sigma_epsilon)
+  log_pc_sigma_u_value <- log_pc_prior_noise_variance(lambda_epsilon = lambda_u, log_sigma_epsilon = log_sigma_u)
+  log_pc_value <- log_prior_aniso_value + log_pc_noise_value + log_pc_sigma_u_value
+
+  # Calculates anisotropy
+  n <- nrow(mesh$loc)
+  kappa_values <- rep(kappa, n)
+  vec_values <- matrix(v, n, 2, byrow = TRUE)
+  aniso <- list(kappa = kappa_values, vec = vec_values)
+
+  # Calculates log-density of the distribution of u at m_u knowing (kappa, v)
+  Q_u <- fm_aniso_precision(mesh, aniso, log_sigma = log_sigma_u)
+  if (length(m_u) == 1) {
+    m_u <- rep(m_u, n)
+  }
+  u <- m_u
+  logGdty_prior <- logGdensity(x = u, mu = m_u, Q = Q_u)
+
+  # Calculates Q_epsilon,  Q_{u|y,theta} and m_{u|y,theta}
+  Q_epsilon <- Matrix::Diagonal(n, 1 / sigma_epsilon^2)
+  Q_uy_theta <- Q_u + t(A) %*% Q_epsilon %*% A
+  m_uy_theta <- solve(Q_uy_theta, Q_u %*% m_u + t(A) %*% Q_epsilon %*% y)
+
+  # Calculates  log-density of the posterior distribution of u given y and theta
+  logGdty_posterior <- logGdensity(x = u, mu = m_uy_theta, Q = Q_uy_theta)
+
+  # Calculates  log-density of the observation of y given u, theta
+  logGdty_observation <- logGdensity(x = y, mu = A %*% u, Q = Q_epsilon)
+
+  # Calculates  log-posterior
+  log_posterior_val <- log_pc_value + logGdty_prior + logGdty_observation - logGdty_posterior
+
+  return(log_posterior_val)
+}
+#' @title Calculates  the MAP estimate for linear noisy observation of field with a general prior on (kappa,v).
+#'
+#' @description
+#' Calculated by maximizing log posterior using optim. Only stationary parameters accepted.
+#'
+#' @param logprior_aniso A function that calculates the log prior of (kappa, v)
+#' @param mesh The mesh
+#' @param lambda A hyperparameter controlling the size of kappa.
+#' @param lambda1 A hyperparameter controlling the size of |v|.
+#' @param lambda_epsilon A hyperparameter controlling the size of sigma_epsilon.
+#' @param y A vector with length equal to the number of basis elements n representing the observed data.
+#' @param A Matrix of size nxn representing the transformation A
+#' @param m_u A vector with length n representing the prior mean m_u
+#' @param maxiterations Maximum number of iterations for optim, by default 300
+#' @param log_sigma_epsilon Variance of noise, if NULL it is estimated by the MAP
+#'
+#' @return The parameters (log_kappa, v, log_sigma_u, log_sigma_epsilon) that maximize the posterior
+#' @export
+
+
+MAPgeneral <- function(logprior_aniso, mesh, lambda, lambda1, lambda_epsilon, lambda_u, y, A, m_u, maxiterations = 300, log_sigma_epsilon = NULL) {
+  if (missing(log_sigma_epsilon)) {
+    # Optimizes the log-posterior over (log_kappa, v, log_sigma_u, log_sigma_epsilon)
+    log_post <- function(theta) {
+      log_kappa <- theta[1]
+      v <- theta[2:3]
+      log_sigma_u <- theta[4]
+      log_sigma_epsilon <- theta[5]
+      return(log_posterior_general(logprior_aniso = logprior_aniso, 
+        mesh = mesh, log_kappa = log_kappa, v = v,
+        log_sigma_epsilon = log_sigma_epsilon, log_sigma_u = log_sigma_u,
+        lambda = lambda, lambda1 = lambda1, lambda_epsilon = lambda_epsilon, lambda_u = lambda_u,
+        y = y, A = A, m_u = m_u
+      ))
+    }
+    aniso0 <- c(log(0.5), c(1, 2), 1, 1)
+    # To do: calculate the gradient of log posterior
+    # gradient= grad_log_posterior(mesh, kappa, v, lambda, lambda1, y, A, Q_epsilon, m_u)
+    return(optim(par = aniso0, fn = log_post, control = list(fnscale = -1, maxit = maxiterations), hessian = TRUE))
+  } else {
+    # Optimizes the log-posterior over (log_kappa, v, log_sigma_u)
+    log_post <- function(theta) {
+      log_kappa <- theta[1]
+      v <- theta[2:3]
+      log_sigma_u <- theta[4]
+      return(log_posterior_general(logprior_aniso = logprior_aniso,
+        mesh = mesh, log_kappa = log_kappa, v = v,
+        log_sigma_epsilon = log_sigma_epsilon, log_sigma_u = log_sigma_u,
+        lambda = lambda, lambda1 = lambda1, lambda_epsilon = lambda_epsilon, lambda_u = lambda_u,
+        y = y, A = A, m_u = m_u
+      ))
+    }
+    aniso0 <- c(1, c(0.1, 0.1), 1)
+    return(optim(par = aniso0, fn = log_post, control = list(fnscale = -1, maxit = maxiterations), hessian = TRUE))
+  }
 }
