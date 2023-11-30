@@ -60,8 +60,8 @@ sigma_quantile <- function(alpha, x0) {
     return(sigma)
 }
 
-#' @title Parameter sigma such that if log(|v|) ~ N(1, sigma^2) the anisotropy ratio exp(2|v|) is larger than a0 with probability alpha
-#' @description Calculates the parameter sigma^2 such that if log(|v|) is Gaussian then the anisotropy ratio exp(2|v|) is larger than a0 with probability alpha
+#' @title Parameter sigma such that if v1,v2 ~ N(0, sigma^2) the anisotropy ratio exp(2|v|) is larger than a0 with probability alpha
+#' @description Calculates the parameter sigma^2 such that if v1,v2 are iid N(0, sigma^2), then the anisotropy ratio exp(2|v|) is larger than a0 with probability alpha
 #'
 #' @param alpha_v A quantile in (0,1)
 #' @param a0 A surprisingly high ratio of anisotropy
@@ -79,8 +79,8 @@ sigma_quantile_v <- function(alpha_v, a0) {
     if (a0 <= 1) {
         warning("a0 should be greater than 1")
     }
-    r0 <- log(a0) / 2
-    l0 <- log(r0) - 1
-    sigma_v <- sigma_quantile(alpha = alpha_v, x0 = l0)
+    r02 <- (log(a0) / 2)^2
+    # r^2 follows a exponential distribution with rate 1/2sigma^2
+    sigma_v <- sqrt(-r02 / (2 * log(alfa_v)))
     return(sigma_v)
 }
