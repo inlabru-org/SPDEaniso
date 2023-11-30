@@ -613,3 +613,118 @@ MAPgeneral <- function(logprior_aniso, mesh, lambda, lambda1, lambda_epsilon, la
     return(optim(par = aniso0, fn = log_post, control = list(fnscale = -1, maxit = maxiterations), hessian = TRUE))
   }
 }
+
+#' @title This calculates sigma such that if x~N(0,sigma^2) then l>= x0 with probability alpha
+#' @description Calculates  the parameter sigma^2 such that if l~N(0,sigma^2) then x>x0 with probability alpha
+#'
+#' @param alpha A quantile in (0,1)
+#' @param x0 A surprisingly high number
+#'
+#' @return The calculated parameter sigma^2
+#' @export
+#' @examples
+#' alpha <- 0.01
+#' x0 <- 10
+#' sigma <- sigma_quantile(alpha = alpha, x0 = x0)
+sigma_quantile <- function(alpha, x0) {
+  #This warns the user if alpha is not in (0,1)
+  if (alpha <= 0 | alpha >= 1) {
+    warning("alpha should be in (0,1)")
+  }
+ sigma <- x0 / qnorm(1 - alpha)
+return(sigma)
+}
+#' @title Parameter sigma such that if log(|v|)~N(1,sigma^2) the anisotropy ratio exp(2|v|) is larger than a0 with probability alpha
+#' @description Calculates  the parameter sigma^2 such that if log(|v|) is gaussian then the anisotropy ratio exp(2|v|) is larger than a0 with probability alpha
+#'
+#' @param alpha A quantile in (0,1)
+#' @param a0 A surprisingly high ratio of anisotropy
+#'
+#' @return The calculated parameter sigma^2
+#' @export
+#' @examples
+#' alpha <- 0.01
+#' a0 <- 10
+#' sigma <- sigma_quantile(alpha = alpha, a0 = a0)
+sigma_quantile <- function(alpha, a0) {
+  #This warns the user if alpha is not in (0,1)
+  if (alpha <= 0 | alpha >= 1) {
+    warning("alpha should be in (0,1)")
+  }
+  #This warns the user if a0 is not greater than 1
+  if (a0 <= 1) {
+    warning("a0 should be greater than 1")
+  }
+  r0 <- log(a0)/2
+  l0 <- log(r0)-1
+  sigma <- sigma_quantile(alpha = alpha, x0 = l0)
+}
+#' @title Parameter sigma such that if log(kappa)~N(1,sigma) the correlation range sqrt{16}/kappa is smaller than rho0 with probability alpha
+#' @description Calculates  the parameter sigma such that if log(kappa) is gaussian then the correlation range sqrt{16}/kappa is smaller than rho0 with probability alpha
+#'
+#' @param alpha A quantile in (0,1)
+#' @param rho0 A surprisingly small correlation range
+#'
+#' @return The calculated parameter sigma
+#' @export
+#' @examples
+#' alpha <- 0.01
+#' rho0 <- 1
+#' sigma <- sigma_quantile(alpha = alpha, rho0 = rho0)
+sigma_quantile <- function(alpha, rho0) {
+  #This warns the user if alpha is not in (0,1)
+  if (alpha <= 0 | alpha >= 1) {
+    warning("alpha should be in (0,1)")
+  }
+  #This warns the user if rho0 is not greater than 1
+  if (rho0 > 0) {
+    warning("rho0 should be greater than 0")
+  }
+  kappa0 <- sqrt(16)/ rho0
+  logk0 <- log(kappa0)-1
+  sigma <- sigma_quantile(alpha = alpha, x0 = logk0)
+}
+#' @title Gaussian prior on anisotropy given quantiles
+#' @description Calculates  the log of the gaussian prior on the (log(kappa),v) supposing log(|v|)~N(1,sigma_v^2) and log(kappa)~N(1,sigma_k^2)
+#' such that the anisotropy ratio exp(2|v|) is larger than a0 with probability alpha and the correlation range sqrt{16}/kappa is smaller than rho0 with probability alpha
+#'
+#' @param alpha A quantile in (0,1)
+#' @param beta A quantile in (0,1)
+#' @param a0 A surprisingly high ratio of anisotropy
+#' @param rho0 A surprisingly small correlation range
+#'
+#' @return The calculated log of the gaussian prior on the (log(kappa),v)
+#' @export
+#' @examples
+#' alpha <- 0.01
+#' beta <- 0.01
+#' a0 <- 10
+#' rho0 <- 1
+#' log_prior_aniso_gaussian <- log_prior_aniso_quantile(alpha = alpha, beta = beta, a0 = a0, rho0 = rho0)
+log_prior_aniso_quantile_gaussian <- function(alpha, beta, a0, rho0) {
+  #This warns the user if alpha is not in (0,1)
+  if (alpha <= 0 | alpha >= 1) {
+    warning("alpha should be in (0,1)")
+  }
+  #This warns the user if beta is not in (0,1)
+  if (beta <= 0 | beta >= 1) {
+    warning("beta should be in (0,1)")
+  }
+  #This warns the user if a0 is not greater than 1
+  if (a0 <= 1) {
+    warning("a0 should be greater than 1")
+  }
+  #This warns the user if rho0 is not greater than 0
+  if (rho0 > 0) {
+    warning("rho0 should be greater than 0")
+  }
+  sigma_v <- sigma_quantile(alpha = alpha, a0 = a0)
+  sigma_k <- sigma_quantile(alpha = beta, rho0 = rho0)
+  log_prior_aniso <- function(log_kappa, v) {
+    log_kappa <- log_kappa
+    v_norm <- sqrt(sum(v^2))
+    log_prior_aniso <- log_gaussian_density(x = log_kappa, mu = 1, logsigma = log(sigma_k)) + log_gaussian_density(x = log(v_norm), mu = 1, logsigma = log(sigma_v)) - 2*log(v_norm)
+    return(log_prior_aniso)
+  }
+  return(log_prior_aniso)
+}
