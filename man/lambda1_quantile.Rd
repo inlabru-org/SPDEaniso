@@ -12,10 +12,10 @@ lambda1_quantile(a0, alpha_a = 0.01)
 \item{alpha_a}{A quantile in \link{0,1} of the PC prior of |v|}
 }
 \description{
-Calculates  the hyperparameter lambda1 for given quantile alpha_a and large anisotropy a0 of the PC prior of |v|
+Calculates the hyperparameter lambda1 for a given quantile alpha_a and large anisotropy a0 of the PC prior of |v|
 }
 \examples{
 alpha_a <- 0.01
 a0 <- 10
-lambda1 <- lambda1_quantile(a0 = a0, alpha_a= alpha_a)
+lambda1 <- lambda1_quantile(a0 = a0, alpha_a = alpha_a)
 }

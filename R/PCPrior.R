@@ -140,7 +140,7 @@ pc_prior <- function(lambda, lambda1, log_kappa, v) {
 #' log_pc_prior_aniso(lambda = lambda, lambda1 = lambda1, log_kappa = log_kappa, v = v)
 log_pc_prior_aniso <- function(lambda, lambda1, log_kappa, v) {
   kappa <- exp(log_kappa)
-  change_variable <- kappa
+  change_variable <- log_kappa
   v_norm <- sqrt(sum(v^2))
   
   f_val <- fdist(v_norm)
@@ -166,9 +166,9 @@ log_pc_prior_aniso <- function(lambda, lambda1, log_kappa, v) {
 #' log_pc_prior_noise_variance(lambda_epsilon = lambda_epsilon, log_sigma_epsilon = log_sigma_epsilon)
 log_pc_prior_noise_variance <- function(lambda_epsilon, log_sigma_epsilon) {
   sigma_epsilon <- exp(log_sigma_epsilon)
-  change_variable <- sigma_epsilon
+  change_variable <- log_sigma_epsilon
   # Calculates  the logarithm of exponential density.
-  return(log(lambda_epsilon) - lambda_epsilon * sigma_epsilon + sigma_epsilon)
+  return(log(lambda_epsilon) - lambda_epsilon * sigma_epsilon + change_variable)
 }
 
 #' @title Sparse Matrix Determinant using Cholesky Factorization
@@ -410,20 +410,6 @@ grad_log_posterior <- function(mesh, kappa, v, lambda, lambda1, y, A, Q_epsilon,
 #' @export
 
 
-MAPold <- function(mesh, lambda, lambda1, lambda_epsilon, y, A, m_u, maxiiterations = 300) {
-  # Writes the log-posterior as a function of (log_kappa, v, sigma)
-  log_post <- function(theta) {
-    log_kappa <- theta[1]
-    v <- theta[2:3]
-    log_sigma_epsilon <- theta[4]
-    return(log_posterior(mesh = mesh, log_kappa = log_kappa, v = v, log_sigma_epsilon = log_sigma_epsilon, lambda = lambda, lambda1 = lambda1, lambda_epsilon = lambda_epsilon, y = y, A = A, m_u = m_u))
-  }
-  aniso0 <- c(log(0.5), c(1, 2), 1)
-  # To do: calculate the gradient of log posterior
-  # gradient= grad_log_posterior(mesh, kappa, v, lambda, lambda1, y, A, Q_epsilon, m_u)
-  return(optim(par = aniso0, fn = log_post, control = list(fnscale = -1, maxit = maxiiterations)))
-}
-
 #' @title Log gaussian 1D density
 #' @description Calculates  the log of the gaussian density with mean mu and variance sigma^2
 #'
@@ -513,7 +499,7 @@ log_posterior_general <- function(logprior_aniso, mesh, log_kappa, v, log_sigma_
 #' @description
 #' Calculated by maximizing log posterior using optim. Only stationary parameters accepted.
 #'
-#' @param logprior_aniso A function that calculates the log prior of (kappa, v)
+#' @param logprior_aniso A function that calculates the log prior of (log(kappa), v)
 #' @param mesh The mesh
 #' @param lambda A hyperparameter controlling the size of kappa.
 #' @param lambda1 A hyperparameter controlling the size of |v|.
@@ -526,7 +512,7 @@ log_posterior_general <- function(logprior_aniso, mesh, log_kappa, v, log_sigma_
 #'
 #' @return The parameters (log_kappa, v, log_sigma_u, log_sigma_epsilon) that maximize the posterior
 #' @export
-MAPgeneral <- function(logprior_aniso, mesh, lambda, lambda1, lambda_epsilon, lambda_u, y, A, m_u, maxiterations = 300, log_sigma_epsilon = NULL) {
+MAPgeneral <- function(logprior_aniso, mesh, lambda, lambda1, lambda_epsilon, lambda_u, y, A, m_u, log_sigma_epsilon = NULL, maxiterations = 300 , aniso0 = c(log(0.5), c(1, 2), 1, 1)) {
   if (missing(log_sigma_epsilon)) {
     # Optimizes the log-posterior over (log_kappa, v, log_sigma_u, log_sigma_epsilon)
     log_post <- function(theta) {
@@ -541,7 +527,6 @@ MAPgeneral <- function(logprior_aniso, mesh, lambda, lambda1, lambda_epsilon, la
         y = y, A = A, m_u = m_u
       ))
     }
-    aniso0 <- c(log(0.5), c(1, 2), 1, 1)
     # To do: calculate the gradient of log posterior
     # gradient= grad_log_posterior(mesh, kappa, v, lambda, lambda1, y, A, Q_epsilon, m_u)
     return(optim(par = aniso0, fn = log_post, control = list(fnscale = -1, maxit = maxiterations), hessian = TRUE))
@@ -563,143 +548,109 @@ MAPgeneral <- function(logprior_aniso, mesh, lambda, lambda1, lambda_epsilon, la
   }
 }
 
-
-#' @title Gaussian prior on anisotropy given quantiles
-#' @description Calculates  the log of the gaussian prior on the (log(kappa),v) supposing log(|v|)~N(1,sigma_v^2) and log(kappa)~N(1,sigma_k^2)
-#' such that the anisotropy ratio exp(2|v|) is larger than a0 with probability alpha and the correlation range sqrt{16}/kappa is smaller than rho0 with probability alpha
-#'
-#' @param alpha_k A quantile in (0,1) for kappa
-#' @param alpha_v A quantile in (0,1) for |v|
-#' @param rho0 A surprisingly small correlation range
-#' @param a0 A surprisingly high ratio of anisotropy
-#'
-#' @return The calculated log of the gaussian prior on the (log(kappa),v)
-#' @export
-#' @examples
-#' alpha_k <- 0.01
-#' alpha_v <- 0.01
-#' a0 <- 10
-#' rho0 <- 1
-#' log_prior_aniso_gaussian <- log_prior_aniso_quantile(alpha_k = alpha_k, beta_v = beta_v, rho0 = rho0, a0 = a0)
-log_prior_aniso_quantile_gaussian <- function(alpha_k, alpha_v, rho0, a0) {
-  #This warns the user if alpha is not in (0,1)
-  if (alpha_k <= 0 | alpha_k >= 1) {
-    warning("alpha should be in (0,1)")
-  }
-  #This warns the user if beta is not in (0,1)
-  if (alpha_v <= 0 | alpha_v >= 1) {
-    warning("beta should be in (0,1)")
-  }
-  #This warns the user if rho0 is not greater than 0
-  if (rho0 > 0) {
-    warning("rho0 should be greater than 0")
-  }
-  #This warns the user if a0 is not greater than 1
-  if (a0 <= 1) {
-    warning("a0 should be greater than 1")
-  }
-  sigma_v <- sigma_quantile_v(alpha_v = alpha_v, a0 = a0)
-  sigma_k <- sigma_quantile_kappa(alpha_k = alpha_k, rho0 = rho0)
-  log_prior_aniso <- function(log_kappa, v) {
-    v_norm <- sqrt(sum(v^2))
-    log_prior_aniso <- log_gaussian_density(x = log_kappa, mu = 1, logsigma = log(sigma_k)) + log_gaussian_density(x = log(v_norm), mu = 1, logsigma = log(sigma_v)) - 2*log(v_norm)
-    return(log_prior_aniso)
-  }
-  return(log_prior_aniso)
-}
-
-#' @title Hyperparameter for variance of gaussian field given quantiles
-#' @description Calculates  the hyperparameter lambda such that if sigma~Exp(lambda) then sigma>sigma0 with probability alpha
-#'
-#' @param alpha_sigma A quantile in (0,1)
-#' @param sigma0 A surprisingly high number
-#'
-#' @return The calculated hyperparameter lambda
-#' @export
-#' @examples
-#' alpha_sigma <- 0.01
-#' sigma0 <- 10
-#' lambda_sigma <- lambda_variance_quantile(alpha_sigma = alpha_sigma, sigma0 = sigma0)
-lambda_variance_quantile <- function(alpha, sigma0) {
-  #This warns the user if alpha is not in (0,1)
-  if (alpha_sigma <= 0 | alpha_sigma >= 1) {
-    warning("alpha_sigma should be in (0,1)")
-  }
-  if (sigma0 <= 0) {
-    warning("sigma0 should be greater than 0")
-  }
-  lambda_sigma <- -log(alpha_sigma) / sigma0
-  return(lambda_sigma)
-}
-
-#' @title Log prior on anisotropy, noise and variance of field supposing log(|v|)~N(1,sigma_v^2) and log(kappa)~N(1,sigma_k^2)
-#' and with PC priors on noise and variance of field, given certain quantiles.
+#' @title Calculates  the log-posterior density for parameters (log_kappa,v, log_sigma_u, log_sigma_epsilon) with a general prior.
 #'
 #' @description
-#' Calculates  the log of the prior on the (log(kappa),v, log(sigma_u), log(sigma_epsilon))
-#' supposing log(|v|)~N(1,sigma_v^2) and log(kappa)~N(1,sigma_k^2)
-#' and with PC priors on noise and variance of field, given certain quantiles.
-#' such that the anisotropy ratio exp(2|v|) is larger than a0 with probability alpha and the correlation range sqrt{16}/kappa is smaller than rho0 with probability alpha
+#' Calculates  the log-posterior density of parameters (log(kappa),v, log(sigma_u), log(epsilon)))
+#' given a linear noisy observation y= A*u + epsilon
+#' Uses based on the prior density and the likelihood.
+#' Only stationary parameters are accepted.
+#' Value is up to an additive constant depending only on y
 #'
-#' @param alpha_u A quantile in (0,1) for the variance of the field
-#' @param alpha_epsilon A quantile in (0,1) for the variance of the noise
-#' @param alpha_k A quantile in (0,1) for kappa
-#' @param alpha_v A quantile in (0,1) for |v|
-#' @param sigmau0 A surprisingly high variance of field, in (0,infinity)
-#' @param sigmaepsilon0 A surprisingly high variance of noise, in (0,infinity)
-#' @param a0 A surprisingly high ratio of anisotropy, in (1,infinity)
-#' @param rho0 A surprisingly small correlation range, in (0,infinity)
+#' @param logprior A function that calculates the log prior of theta = (log(kappa), v, log(sigma_u), log(sigma_epsilon))
+#' @param mesh The mesh
+#' @param log_kappa Logarithm of inverse correlation range
+#' @param v 2D vector that controls anisotropy
+#' @param log_sigma_u Variance of field u. If unspecified, it is assumed to be 0.
+#' @param y A vector with length equal to the number of basis elements n representing the observed data.
+#' @param A Matrix of size nxn representing the transformation A
+#' @param Q_epsilon A sparse matrix of size nxn representing the noise precision matrix
+#' @param m_u A vector with length n representing the prior mean m_u. If a number is given is transformed into (m_u, m_u,..., m_u)
 #'
-#' @return The calculated log of the prior on the (log(kappa),v, log(sigma_u), log(sigma_epsilon))
+#' @return The calculated log-posterior
 #' @export
-#' @examples
-#' alpha_u <- 0.01
-#' alpha_epsilon <- 0.01
-#' alpha_k <- 0.01
-#' alpha_v <- 0.01
-#' sigmau0 <- 10
-#' sigmaepsilon0 <- 1
-#' a0 <- 10
-#' rho0 <- 0.1
-#' log_prior_gaussian <- log_prior_aniso_quantile(alpha_u = alpha_u, alpha_epsilon = alpha_epsilon, alpha_k = alpha_k, alpha_v = alpha_v, sigmau0 = sigmau0, sigmaepsilon0 = sigmaepsilon0, a0 = a0, rho0 = rho0)
-log_prior_quantile_gaussian <- function(alpha_u, alpha_epsilon, alpha_k, alpha_v, sigmau0, sigmaepsilon0, a0, rho0) {
-  #This warns the user if alpha is not in (0,1)
-  if (alpha_u <= 0 | alpha_u >= 1) {
-    warning("alpha_u should be in (0,1)")
+log_posterior_prior <- function(logprior, mesh, log_kappa, v, log_sigma_u = 0, log_sigma_epsilon, y, A, m_u) {
+  kappa <- exp(log_kappa)
+  sigma_epsilon <- exp(log_sigma_epsilon)
+
+  # Calculates log-prior
+  log_prior_value <- logprior(log_kappa, v, log_sigma_u, log_sigma_epsilon)
+
+  # Calculates anisotropy
+  n <- nrow(mesh$loc)
+  kappa_values <- rep(kappa, n)
+  vec_values <- matrix(v, n, 2, byrow = TRUE)
+  aniso <- list(kappa = kappa_values, vec = vec_values)
+
+  # Calculates log-density of the distribution of u at m_u knowing (kappa, v)
+  Q_u <- fm_aniso_precision(mesh, aniso, log_sigma = log_sigma_u)
+  if (length(m_u) == 1) {
+    m_u <- rep(m_u, n)
   }
-  if (alpha_epsilon <= 0 | alpha_epsilon >= 1) {
-    warning("alpha_epsilon should be in (0,1)")
+  u <- m_u
+  logGdty_prior <- logGdensity(x = u, mu = m_u, Q = Q_u)
+
+  # Calculates Q_epsilon,  Q_{u|y,theta} and m_{u|y,theta}
+  Q_epsilon <- Matrix::Diagonal(n, 1 / sigma_epsilon^2)
+  Q_uy_theta <- Q_u + t(A) %*% Q_epsilon %*% A
+  m_uy_theta <- solve(Q_uy_theta, Q_u %*% m_u + t(A) %*% Q_epsilon %*% y)
+
+  # Calculates  log-density of the posterior distribution of u given y and theta
+  logGdty_posterior <- logGdensity(x = u, mu = m_uy_theta, Q = Q_uy_theta)
+
+  # Calculates  log-density of the observation of y given u, theta
+  logGdty_observation <- logGdensity(x = y, mu = A %*% u, Q = Q_epsilon)
+
+  # Calculates  log-posterior
+  log_posterior_val <- log_prior_value + logGdty_prior + logGdty_observation - logGdty_posterior
+
+  return(log_posterior_val)
+}
+#' @title Calculates  the MAP estimate for linear noisy observation of field with a general prior on theta = (log(kappa),v, log(sigma_u), log(sigma_epsilon)).
+#'
+#' @description
+#' Calculated by maximizing log posterior using optim. Only stationary parameters accepted.
+#'
+#' @param logprior A function that calculates the log prior of (log(kappa), v, log(sigma_u), log(sigma_epsilon))
+#' @param mesh The mesh
+#' @param y A vector with length equal to the number of basis elements n representing the observed data.
+#' @param A Matrix of size nxn representing the transformation A
+#' @param m_u A vector with length n representing the prior mean m_u
+#' @param maxiterations Maximum number of iterations for optim, by default 300
+#' @param log_sigma_epsilon Variance of noise, if NULL it is estimated by the MAP
+#' @param theta0 Initial value for the parameters (log(kappa), v, log(sigma_u), log(sigma_epsilon)). By default set to (log(0.5), 1, 2, 1, 1)
+#'
+#' @return The parameters (log_kappa, v, log_sigma_u, log_sigma_epsilon) that maximize the posterior
+#' @export
+MAP_prior <- function(logprior, mesh, y, A, m_u, log_sigma_epsilon = NULL, maxiterations = 300 , theta0 = c(log(0.5), c(1, 2), 1, 1)) {
+  if (missing(log_sigma_epsilon)) {
+    # Optimizes the log-posterior over (log_kappa, v, log_sigma_u, log_sigma_epsilon)
+    log_post <- function(theta) {
+      log_kappa <- theta[1]
+      v <- theta[2:3]
+      log_sigma_u <- theta[4]
+      log_sigma_epsilon <- theta[5]
+      return(log_posterior_prior(logprior = logprior, 
+        mesh = mesh, log_kappa = log_kappa, v = v,
+        log_sigma_epsilon = log_sigma_epsilon, log_sigma_u = log_sigma_u,
+        y = y, A = A, m_u = m_u
+      ))
+    }
+    
+    return(optim(par = theta0, fn = log_post, control = list(fnscale = -1, maxit = maxiterations), hessian = TRUE))
+  } else {
+    # Optimizes the log-posterior over (log_kappa, v, log_sigma_u)
+    log_post <- function(theta) {
+      log_kappa <- theta[1]
+      v <- theta[2:3]
+      log_sigma_u <- theta[4]
+      return(log_posterior_prior(logprior = logprior,
+        mesh = mesh, log_kappa = log_kappa, v = v,
+        log_sigma_epsilon = log_sigma_epsilon, log_sigma_u = log_sigma_u,
+        y = y, A = A, m_u = m_u
+      ))
+    }
+    theta0 <- theta0[-length(theta0)]
+    return(optim(par = theta0, fn = log_post, control = list(fnscale = -1, maxit = maxiterations), hessian = TRUE))
   }
-  if (alpha_k <= 0 | alpha_k >= 1) {
-    warning("alpha_k should be in (0,1)")
-  }
-  if (alpha_v <= 0 | alpha_v >= 1) {
-    warning("alpha_v should be in (0,1)")
-  }
-  #This warns the user if a0 is not greater than 1
-  if (a0 <= 1) {
-    warning("a0 should be greater than 1")
-  }
-  #This warns the user if rho0 is not greater than 0
-  if (rho0 > 0) {
-    warning("rho0 should be greater than 0")
-  }
-  #This warns the user if sigmau0 is not greater than 0
-  if (sigmau0 <= 0) {
-    warning("sigmau0 should be greater than 0")
-  }
-  #This warns the user if sigmaepsilon0 is not greater than 0
-  if (sigmaepsilon0 <= 0) {
-    warning("sigmaepsilon0 should be greater than 0")
-  }
-  sigma_v <- sigma_quantile_v(alpha_v = alpha_v, a0 = a0)
-  sigma_k <- sigma_quantile_kappa(alpha_k = alpha_k, rho0 = rho0)
-  lambda_u <- lambda_variance_quantile(alpha_sigma = alpha_u, sigma0 = sigmau0)
-  lambda_epsilon <- lambda_variance_quantile(alpha_sigma = alpha_epsilon, sigma0 = sigmaepsilon0)
-  log_prior <- function(log_kappa, v, log_sigma_u, log_sigma_epsilon) {
-    variance_term <- log_pc_prior_noise_variance(lambda_epsilon = lambda_epsilon, log_sigma_epsilon = log_sigma_epsilon) + log_pc_prior_noise_variance(lambda_epsilon = lambda_u, log_sigma_epsilon = log_sigma_u)
-    aniso_term <- log_prior_aniso_quantile_gaussian(alpha_k = alpha_k, alpha_v = alpha_v, rho0 = rho0, a0 = a0)(log_kappa = log_kappa, v = v)
-    return(variance_term + aniso_term)
-  }
-  return(log_prior)
 }

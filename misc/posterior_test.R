@@ -92,7 +92,7 @@ sqrt(diag(solve(-map$hessian)))
 #Optimizing over log(kappa), v, log(sigma_u) log(sigma_noise)
 map_full <- MAP(mesh = mesh,
            lambda =lambda, lambda1 = lambda1, lambda_epsilon = lambda_epsilon, lambda_u = lambda_u,
-           y= y, A = A, m_u =m_u, maxiterations = 2400)
+           y= y, A = A, m_u =m_u, maxiterations = 600)
 print(map_full)
 cov2cor(solve(-map_full$hessian))
 par_full <- map_full$par

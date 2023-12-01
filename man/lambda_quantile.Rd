@@ -12,11 +12,11 @@ lambda_quantile(rho0, lambda1, alpha = 0.01)
 \item{alpha}{A quantile in (0,1) of the PC prior of kappa}
 }
 \description{
-Calculates  the hyperparameter lambda for given quantile alpha, tolerance kappa0 and lambda1 of the PC prior of kappa
+Calculates the hyperparameter lambda for a given quantile alpha, tolerance kappa0, and lambda1 of the PC prior of kappa
 }
 \examples{
 alpha <- 0.01
-kappa0 <- 0.1
+rho0 <- 0.1
 lambda1 <- 1
-lambda <- lambda_quantile(alpha=alpha, kappa0=kappa0, lambda1=lambda1)
+lambda <- lambda_quantile(alpha = alpha, rho0 = rho0, lambda1 = lambda1)
 }
