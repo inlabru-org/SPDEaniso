@@ -654,3 +654,95 @@ MAP_prior <- function(logprior, mesh, y, A, m_u, log_sigma_epsilon = NULL, maxit
     return(optim(par = theta0, fn = log_post, control = list(fnscale = -1, maxit = maxiterations), hessian = TRUE))
   }
 }
+
+#' @title Simulation of anisotropy parameters (log(kappa), v) from the PC prior
+#'
+#' @description Simulates anisotropy parameters (log(kappa), v) from the PC prior
+#'
+#' @param lambda A hyperparameter controlling the size of kappa.
+#' @param lambda1 A hyperparameter controlling the size of |v|.
+#' @param m Number of samples, by default 1.
+#'
+#' @return A list with two elements: log(kappa) and v
+#' @export
+#' @examples
+#' lambda <- 1
+#' lambda1 <- 1
+#' m <- 1
+#' result <- sim_aniso_pc(lambda = lambda, lambda1 = lambda1, m = m)
+sim_aniso_pc <- function(lambda, lambda1, m=1) {
+  # Initialize a list to store results
+  results <- vector("list", m)
+
+  # Calculate the CDF of Rayleigh distribution for a given value
+  R <- function(x) 1 - exp(-x^2 / 2)
+
+  # Inverse function f^{-1}
+  f_inv <- function(x) 0.5 * acosh(16 * pi * x^2 - 1/3)
+
+  for (i in 1:m) {
+    # Generate Y vector from standard normal distribution
+    Y <- rnorm(3)
+
+    # Calculations for v1, v2, and kappa
+    radius <- sqrt(Y[1]^2 + Y[2]^2)
+    common_term <- fdist(0) - (log(1 - R(radius)) / lambda1) 
+
+    v1 <- f_inv(common_term) * Y[1] / radius
+    v2 <- f_inv(common_term) * Y[2] / radius
+    kappa <- -(common_term)^-1 * log(1 - pnorm(Y[3])) / lambda
+    log_kappa <- log(kappa)
+    v <- c(v1, v2)
+
+    # Store the results as a vector in the list
+    results[[i]] <- list(log_kappa = log_kappa, v = v)
+  }
+  if (m == 1) {
+    return(results[[1]])
+  }
+  return(results)
+}
+
+#' @title Simulation of theta under PC priors
+#' @description Simulates theta = (log(kappa), v, log(sigma_u), log(sigma_epsilon)) from the PC prior
+#'
+#' @param lambda A hyperparameter controlling the size of kappa.
+#' @param lambda1 A hyperparameter controlling the size of |v|.
+#' @param lambda_epsilon A hyperparameter controlling the size of sigma_epsilon.
+#' @param lambda_u A hyperparameter controlling the size of sigma_u.
+#' @param m Number of samples, by default 1.
+#'
+#' @return A list with four elements: log_kappa, v, log_sigma_u, log_sigma_epsilon
+#' @export
+#' @examples
+#' lambda <- 1
+#' lambda1 <- 1
+#' lambda_epsilon <- 1
+#' lambda_u <- 1
+#' m <- 10
+#' result <- sim_theta_pc(lambda = lambda, lambda1 = lambda1, lambda_epsilon = lambda_epsilon, lambda_u = lambda_u, m = m)
+sim_theta_pc <- function(lambda, lambda1, lambda_u, lambda_epsilon, m=1) {
+  
+  # Initialize a list to store results
+  results <- vector("list", m)
+
+  for (i in 1:m) {
+    # Simulate kappa and v
+    kappa_v <- sim_aniso_pc(lambda = lambda, lambda1 = lambda1, m = 1)
+
+    # Simulate sigma_u and sigma_epsilon from exponential distributions
+    sigma_u <- rexp(1, rate = lambda_u)
+    sigma_epsilon <- rexp(1, rate = lambda_epsilon)
+
+    # Store all parameters
+    results[[i]] <- list(log_kappa = kappa_v$log_kappa, v = kappa_v$v, log_sigma_u = log(sigma_u), log_sigma_epsilon = log(sigma_epsilon))
+  }
+  if (m == 1) {
+    return(results[[1]])
+  }
+
+  return(results)
+}
+
+
+

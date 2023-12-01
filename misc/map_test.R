@@ -93,12 +93,13 @@ m=3 #number of iterations
 results <- vector("list", m)  # Pre-allocates a list for s iterations
 
 for (i in 1:m) {
-  # Assuming functions to calculate these values are defined:
-  # sim_params, pc_map_est, pc_cov_est, pc_std_dev, pc_prob_map
-  # not_pc_map_est, not_pc_cov_est, not_pc_std_dev, not_pc_prob_map
+    # Simulate parameters from PC prior
+  true_params <- sim_theta_pc(lambda = lambda, lambda1 = lambda1, lambda_epsilon = lambda_epsilon, lambda_u = lambda_u, m = 1)
+  #
 
-  # Calculate the common simulated parameters
-  sim_params <- calculateSimulatedParams()  # Replace with actual function call
+
+
+  
 
   # PC results
   pc_results <- list(
@@ -118,15 +119,9 @@ for (i in 1:m) {
 
   # Store results
   results[[i]] <- list(
-    simulated_params = sim_params,
+    true_params = true_params,
     pc = pc_results,
     not_pc = not_pc_results
   )
 }
-
-
-
-
-
-
 
