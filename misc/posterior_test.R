@@ -116,5 +116,5 @@ log_prior_aniso <- function(log_kappa,v){
 # cov2cor(solve(-map_full_general$hessian))
 # par_full <- map_full_general$par
 # real_par_full_general <- c(log_kappa,v,log_sigma_u, log_sigma_epsilon)
-print(map_full_general$par-real_par_full_general)
-sqrt(diag(solve(-map_full_general$hessian)))
+# print(map_full_general$par-real_par_full_general)
+# sqrt(diag(solve(-map_full_general$hessian)))

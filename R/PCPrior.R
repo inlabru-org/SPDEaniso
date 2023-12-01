@@ -140,7 +140,7 @@ pc_prior <- function(lambda, lambda1, log_kappa, v) {
 #' log_pc_prior_aniso(lambda = lambda, lambda1 = lambda1, log_kappa = log_kappa, v = v)
 log_pc_prior_aniso <- function(lambda, lambda1, log_kappa, v) {
   kappa <- exp(log_kappa)
-  change_variable <- log_kappa
+  change_variable <- kappa
   v_norm <- sqrt(sum(v^2))
 
   f_val <- fdist(v_norm)
@@ -166,7 +166,7 @@ log_pc_prior_aniso <- function(lambda, lambda1, log_kappa, v) {
 #' log_pc_prior_noise_variance(lambda_epsilon = lambda_epsilon, log_sigma_epsilon = log_sigma_epsilon)
 log_pc_prior_noise_variance <- function(lambda_epsilon, log_sigma_epsilon) {
   sigma_epsilon <- exp(log_sigma_epsilon)
-  change_variable <- log_sigma_epsilon
+  change_variable <- sigma_epsilon
   # Calculates  the logarithm of exponential density.
   return(log(lambda_epsilon) - lambda_epsilon * sigma_epsilon + change_variable)
 }
