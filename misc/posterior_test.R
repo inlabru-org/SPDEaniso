@@ -26,6 +26,16 @@ log_pc_aniso <- log_pc_prior_aniso(lambda, lambda1, kappa, v)
 log_pc_noise <- log_pc_prior_noise_variance(lambda_epsilon = lambda_epsilon, log_sigma_epsilon = log_sigma_epsilon)
 log_pc_sigma_u <- log_pc_prior_noise_variance(lambda_epsilon = lambda_u, log_sigma_epsilon = log_sigma_u)
 log_pc_value <- log_pc_aniso + log_pc_noise + log_pc_sigma_u
+
+#Testing PC priors as function
+log_pc_prior <- function(log_kappa, v, log_sigma_u, log_sigma_epsilon) {
+  log_pc_aniso_value <- log_pc_prior_aniso(lambda = lambda, lambda1 = lambda1, log_kappa = log_kappa, v = v)
+  log_pc_noise_value <- log_pc_prior_noise_variance(lambda_epsilon = lambda_epsilon, log_sigma_epsilon = log_sigma_epsilon)
+  log_pc_sigma_u_value <- log_pc_prior_noise_variance(lambda_epsilon = lambda_u, log_sigma_epsilon = log_sigma_u)
+  log_pc_value <- log_pc_aniso_value + log_pc_noise_value + log_pc_sigma_u_value
+  return(log_pc_value)
+}
+
 #Mesh definition
 library(sf)
 boundary_sf = st_sfc(st_polygon(list(rbind(c(0, 0), c(10, 0), c(10, 10), c(0, 10),c(0,0)))))

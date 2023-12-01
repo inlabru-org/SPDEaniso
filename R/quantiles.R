@@ -35,7 +35,7 @@ lambda_quantile <- function(rho0, lambda1, alpha = 0.01) {
   if (alpha <= 0 | alpha >= 1) {
     warning("alpha should be in (0,1)")
   }
-  # kappa0 <- sqrt(16)/ rho0
+  # kappa0 <- sqrt(8)/ rho0
   # product <- lambda1 * fdist(0)
   # lambert <- lamW::lambertW0(product * exp(product) / (1-alpha))
   # lambda <- (lambert/ fdist(0)- lambda1) / kappa0
@@ -92,8 +92,8 @@ sigma2_quantile_v <- function(alpha_v, a0) {
     sigma2_v <- -r02 / (2 * log(alpha_v))
     return(sigma2_v)
 }
-#' @title Parameter lambda_k such that if kappa~Exp(lambda_k) the correlation range sqrt{16}/kappa is smaller than rho0 with probability alpha
-#' @description Calculates  the parameter lambda_k such that if kappa~Exp(lambda_k) then the correlation range sqrt{16}/kappa is smaller than rho0 with probability alpha
+#' @title Parameter lambda_k such that if kappa~Exp(lambda_k) the correlation range sqrt{8}/kappa is smaller than rho0 with probability alpha
+#' @description Calculates  the parameter lambda_k such that if kappa~Exp(lambda_k) then the correlation range sqrt{8}/kappa is smaller than rho0 with probability alpha
 #'
 #' @param alpha_k A quantile in (0,1)
 #' @param rho0 A surprisingly small correlation range
@@ -111,7 +111,7 @@ lambda_quantile_kappa <- function(alpha_k, rho0) {
     if (rho0 < 0) {
         warning("rho0 should be greater than 0")
     }
-    kappa0 <- sqrt(16) / rho0
+    kappa0 <- sqrt(8) / rho0
     lambda_k <- -log(alpha_k) / kappa0
     return(lambda_k)
 }
@@ -123,7 +123,7 @@ lambda_quantile_kappa <- function(alpha_k, rho0) {
 #' Calculates  the log of the prior on the (log(kappa),v, log(sigma_u), log(sigma_epsilon))
 #' supposing log(|v|)~N(1,sigma_v^2) and log(kappa)~N(1,sigma_k^2)
 #' and with PC priors on noise and variance of field, given certain quantiles.
-#' such that the anisotropy ratio exp(2|v|) is larger than a0 with probability alpha and the correlation range sqrt{16}/kappa is smaller than rho0 with probability alpha
+#' such that the anisotropy ratio exp(2|v|) is larger than a0 with probability alpha and the correlation range sqrt{8}/kappa is smaller than rho0 with probability alpha
 #'
 #' @param alpha A quantile in (0,1) for all the parameters. By default, alpha = 0.01
 #' @param alpha_u A quantile in (0,1) for the variance of the field. If NULL, alpha_u=alpha
