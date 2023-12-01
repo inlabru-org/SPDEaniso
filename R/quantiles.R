@@ -35,11 +35,13 @@ lambda_quantile <- function(rho0, lambda1, alpha = 0.01) {
   if (alpha <= 0 | alpha >= 1) {
     warning("alpha should be in (0,1)")
   }
-  kappa0 <- sqrt(16)/ rho0
-  product <- lambda1 * fdist(0)
-  lambert <- lamW::lambertW0(product * exp(product) / (1-alpha))
-  lambda <- (lambert/ fdist(0)- lambda1) / kappa0
-  return(lambda)
+  # kappa0 <- sqrt(16)/ rho0
+  # product <- lambda1 * fdist(0)
+  # lambert <- lamW::lambertW0(product * exp(product) / (1-alpha))
+  # lambda <- (lambert/ fdist(0)- lambda1) / kappa0
+  # return(lambda)
+  #Error in code get very small lambda need to fix later
+  return(10)
 }
 
 #' @title Hyperparameter for variance of gaussian field given quantiles
@@ -197,13 +199,13 @@ log_gaussian_prior_quantile <- function(sigmau0, sigmaepsilon0, a0, rho0, alpha 
   lambda_k <- lambda_quantile_kappa(alpha_k = alpha_k, rho0 = rho0)
   lambda_u <- lambda_variance_quantile(alpha_sigma = alpha_u, sigma0 = sigmau0)
   lambda_epsilon <- lambda_variance_quantile(alpha_sigma = alpha_epsilon, sigma0 = sigmaepsilon0)
-    
+
     #Defines the log prior
   log_prior <- function(log_kappa, v, log_sigma_u, log_sigma_epsilon) {
     #Logarithm of log exponential prior on kappa
-    log_kappa_term <- log(lambda_k)- lambda_k * exp(log_kappa) +log_kappa 
+    log_kappa_term <- log(lambda_k)- lambda_k * exp(log_kappa) +log_kappa
     v_term  <- log_gaussian_density(x =v[1], mu =0, logsigma = log(sigma2_v)/2)+ log_gaussian_density(x =v[2], mu =0, logsigma = log(sigma2_v)/2)
-    variance_term <- log_pc_prior_noise_variance(lambda_epsilon = lambda_epsilon, log_sigma_epsilon = log_sigma_epsilon) 
+    variance_term <- log_pc_prior_noise_variance(lambda_epsilon = lambda_epsilon, log_sigma_epsilon = log_sigma_epsilon)
     + log_pc_prior_noise_variance(lambda_epsilon = lambda_u, log_sigma_epsilon = log_sigma_u)
     return(log_kappa_term + v_term + variance_term)
   }
@@ -285,7 +287,7 @@ log_pc_prior_quantile <- function(sigmau0, sigmaepsilon0, a0, rho0, alpha = 0.01
   #Calulate the hyperparameters of the PC priors for variances
   lambda_u <- lambda_variance_quantile(alpha_sigma = alpha_u, sigma0 = sigmau0)
   lambda_epsilon <- lambda_variance_quantile(alpha_sigma = alpha_epsilon, sigma0 = sigmaepsilon0)
-    
+
     #Defines the log prior
   log_pc_prior <- function(log_kappa, v, log_sigma_u, log_sigma_epsilon) {
       log_pc_aniso_value <- log_pc_prior_aniso(lambda = lambda, lambda1 = lambda1, log_kappa = log_kappa, v = v)

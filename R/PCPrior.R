@@ -142,7 +142,7 @@ log_pc_prior_aniso <- function(lambda, lambda1, log_kappa, v) {
   kappa <- exp(log_kappa)
   change_variable <- log_kappa
   v_norm <- sqrt(sum(v^2))
-  
+
   f_val <- fdist(v_norm)
   f_prime_val <- fdist_prime(v_norm)
 
@@ -520,7 +520,7 @@ MAPgeneral <- function(logprior_aniso, mesh, lambda, lambda1, lambda_epsilon, la
       v <- theta[2:3]
       log_sigma_u <- theta[4]
       log_sigma_epsilon <- theta[5]
-      return(log_posterior_general(logprior_aniso = logprior_aniso, 
+      return(log_posterior_general(logprior_aniso = logprior_aniso,
         mesh = mesh, log_kappa = log_kappa, v = v,
         log_sigma_epsilon = log_sigma_epsilon, log_sigma_u = log_sigma_u,
         lambda = lambda, lambda1 = lambda1, lambda_epsilon = lambda_epsilon, lambda_u = lambda_u,
@@ -630,13 +630,13 @@ MAP_prior <- function(logprior, mesh, y, A, m_u, log_sigma_epsilon = NULL, maxit
       v <- theta[2:3]
       log_sigma_u <- theta[4]
       log_sigma_epsilon <- theta[5]
-      return(log_posterior_prior(logprior = logprior, 
+      return(log_posterior_prior(logprior = logprior,
         mesh = mesh, log_kappa = log_kappa, v = v,
         log_sigma_epsilon = log_sigma_epsilon, log_sigma_u = log_sigma_u,
         y = y, A = A, m_u = m_u
       ))
     }
-    
+
     return(optim(par = theta0, fn = log_post, control = list(fnscale = -1, maxit = maxiterations), hessian = TRUE))
   } else {
     # Optimizes the log-posterior over (log_kappa, v, log_sigma_u)
@@ -686,7 +686,7 @@ sim_aniso_pc <- function(lambda, lambda1, m=1) {
 
     # Calculations for v1, v2, and kappa
     radius <- sqrt(Y[1]^2 + Y[2]^2)
-    common_term <- fdist(0) - (log(1 - R(radius)) / lambda1) 
+    common_term <- fdist(0) - (log(1 - R(radius)) / lambda1)
 
     v1 <- f_inv(common_term) * Y[1] / radius
     v2 <- f_inv(common_term) * Y[2] / radius
@@ -722,7 +722,7 @@ sim_aniso_pc <- function(lambda, lambda1, m=1) {
 #' m <- 10
 #' result <- sim_theta_pc(lambda = lambda, lambda1 = lambda1, lambda_epsilon = lambda_epsilon, lambda_u = lambda_u, m = m)
 sim_theta_pc <- function(lambda, lambda1, lambda_u, lambda_epsilon, m=1) {
-  
+
   # Initialize a list to store results
   results <- vector("list", m)
 
@@ -743,6 +743,7 @@ sim_theta_pc <- function(lambda, lambda1, lambda_u, lambda_epsilon, m=1) {
 
   return(results)
 }
+
 
 
 
