@@ -25,8 +25,7 @@ NULL
 #' kappa <- 1
 #' v <- c(1, 2)
 #' aniso <- list(rep(kappa, mesh$n), matrix(v, mesh$n, 2))
-#' Q <-fm_aniso_precision(mesh, aniso)
-
+#' Q <- fm_aniso_precision(mesh, aniso)
 fm_aniso_precision <- function(x, aniso, log_sigma = 0) {
   sigma <- exp(log_sigma)
   scaling <- 1 / (4 * pi * sigma^2) # Calculates scaling so that Q_fem * scaling has variance sigma

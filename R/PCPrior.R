@@ -512,7 +512,7 @@ log_posterior_general <- function(logprior_aniso, mesh, log_kappa, v, log_sigma_
 #'
 #' @return The parameters (log_kappa, v, log_sigma_u, log_sigma_epsilon) that maximize the posterior
 #' @export
-MAPgeneral <- function(logprior_aniso, mesh, lambda, lambda1, lambda_epsilon, lambda_u, y, A, m_u, log_sigma_epsilon = NULL, maxiterations = 300 , aniso0 = c(log(0.5), c(1, 2), 1, 1)) {
+MAPgeneral <- function(logprior_aniso, mesh, lambda, lambda1, lambda_epsilon, lambda_u, y, A, m_u, log_sigma_epsilon = NULL, maxiterations = 300, aniso0 = c(log(0.5), c(1, 2), 1, 1)) {
   if (missing(log_sigma_epsilon)) {
     # Optimizes the log-posterior over (log_kappa, v, log_sigma_u, log_sigma_epsilon)
     log_post <- function(theta) {
@@ -520,7 +520,8 @@ MAPgeneral <- function(logprior_aniso, mesh, lambda, lambda1, lambda_epsilon, la
       v <- theta[2:3]
       log_sigma_u <- theta[4]
       log_sigma_epsilon <- theta[5]
-      return(log_posterior_general(logprior_aniso = logprior_aniso,
+      return(log_posterior_general(
+        logprior_aniso = logprior_aniso,
         mesh = mesh, log_kappa = log_kappa, v = v,
         log_sigma_epsilon = log_sigma_epsilon, log_sigma_u = log_sigma_u,
         lambda = lambda, lambda1 = lambda1, lambda_epsilon = lambda_epsilon, lambda_u = lambda_u,
@@ -536,7 +537,8 @@ MAPgeneral <- function(logprior_aniso, mesh, lambda, lambda1, lambda_epsilon, la
       log_kappa <- theta[1]
       v <- theta[2:3]
       log_sigma_u <- theta[4]
-      return(log_posterior_general(logprior_aniso = logprior_aniso,
+      return(log_posterior_general(
+        logprior_aniso = logprior_aniso,
         mesh = mesh, log_kappa = log_kappa, v = v,
         log_sigma_epsilon = log_sigma_epsilon, log_sigma_u = log_sigma_u,
         lambda = lambda, lambda1 = lambda1, lambda_epsilon = lambda_epsilon, lambda_u = lambda_u,
@@ -622,7 +624,7 @@ log_posterior_prior <- function(logprior, mesh, log_kappa, v, log_sigma_u = 0, l
 #'
 #' @return The parameters (log_kappa, v, log_sigma_u, log_sigma_epsilon) that maximize the posterior
 #' @export
-MAP_prior <- function(logprior, mesh, y, A, m_u, log_sigma_epsilon = NULL, maxiterations = 300 , theta0 = c(log(0.5), c(1, 2), 1, 1)) {
+MAP_prior <- function(logprior, mesh, y, A, m_u, log_sigma_epsilon = NULL, maxiterations = 300, theta0 = c(log(0.5), c(1, 2), 1, 1)) {
   if (missing(log_sigma_epsilon)) {
     # Optimizes the log-posterior over (log_kappa, v, log_sigma_u, log_sigma_epsilon)
     log_post <- function(theta) {
@@ -630,7 +632,8 @@ MAP_prior <- function(logprior, mesh, y, A, m_u, log_sigma_epsilon = NULL, maxit
       v <- theta[2:3]
       log_sigma_u <- theta[4]
       log_sigma_epsilon <- theta[5]
-      return(log_posterior_prior(logprior = logprior,
+      return(log_posterior_prior(
+        logprior = logprior,
         mesh = mesh, log_kappa = log_kappa, v = v,
         log_sigma_epsilon = log_sigma_epsilon, log_sigma_u = log_sigma_u,
         y = y, A = A, m_u = m_u
@@ -644,7 +647,8 @@ MAP_prior <- function(logprior, mesh, y, A, m_u, log_sigma_epsilon = NULL, maxit
       log_kappa <- theta[1]
       v <- theta[2:3]
       log_sigma_u <- theta[4]
-      return(log_posterior_prior(logprior = logprior,
+      return(log_posterior_prior(
+        logprior = logprior,
         mesh = mesh, log_kappa = log_kappa, v = v,
         log_sigma_epsilon = log_sigma_epsilon, log_sigma_u = log_sigma_u,
         y = y, A = A, m_u = m_u
@@ -670,7 +674,7 @@ MAP_prior <- function(logprior, mesh, y, A, m_u, log_sigma_epsilon = NULL, maxit
 #' lambda1 <- 1
 #' m <- 1
 #' result <- sim_aniso_pc(lambda = lambda, lambda1 = lambda1, m = m)
-sim_aniso_pc <- function(lambda, lambda1, m=1) {
+sim_aniso_pc <- function(lambda, lambda1, m = 1) {
   # Initialize a list to store results
   results <- vector("list", m)
 
@@ -678,7 +682,7 @@ sim_aniso_pc <- function(lambda, lambda1, m=1) {
   R <- function(x) 1 - exp(-x^2 / 2)
 
   # Inverse function f^{-1}
-  f_inv <- function(x) 0.5 * acosh(16 * pi * x^2 - 1/3)
+  f_inv <- function(x) 0.5 * acosh(16 * pi * x^2 - 1 / 3)
 
   for (i in 1:m) {
     # Generate Y vector from standard normal distribution
@@ -721,8 +725,7 @@ sim_aniso_pc <- function(lambda, lambda1, m=1) {
 #' lambda_u <- 1
 #' m <- 10
 #' result <- sim_theta_pc(lambda = lambda, lambda1 = lambda1, lambda_epsilon = lambda_epsilon, lambda_u = lambda_u, m = m)
-sim_theta_pc <- function(lambda, lambda1, lambda_u, lambda_epsilon, m=1) {
-
+sim_theta_pc <- function(lambda, lambda1, lambda_u, lambda_epsilon, m = 1) {
   # Initialize a list to store results
   results <- vector("list", m)
 
@@ -743,7 +746,3 @@ sim_theta_pc <- function(lambda, lambda1, lambda_u, lambda_epsilon, m=1) {
 
   return(results)
 }
-
-
-
-
