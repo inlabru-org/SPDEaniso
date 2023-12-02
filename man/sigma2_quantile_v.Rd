@@ -2,7 +2,7 @@
 % Please edit documentation in R/quantiles.R
 \name{sigma2_quantile_v}
 \alias{sigma2_quantile_v}
-\title{Parameter sigma^2 such that if v1,v2 ~ N(0, sigma^2) the anisotropy ratio exp(2|v|) is larger than a0 with probability alpha}
+\title{Parameter sigma^2 such that if v1,v2 ~ N(0, sigma^2) the anisotropy ratio exp(|v|) is larger than a0 with probability alpha}
 \usage{
 sigma2_quantile_v(a0, alpha_v = 0.01)
 }

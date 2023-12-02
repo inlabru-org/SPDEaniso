@@ -5,7 +5,11 @@ library(Matrix)
 library(sp)
 library(INLA)
 library(inlabru)
+library(future)
+library(future.apply)
 
+# Set the parallel plan to use all local cores
+plan(multisession)
 # Defining the random seed
 set.seed(123)
 
@@ -60,62 +64,132 @@ plot(mesh)
 # lambda_quantile(rho0 = rho0,lambda1 = lambda1,alpha=alpha)
 
 m <- 1 # number of iterations
-maxit <- 1000
+maxit <- 10
+m <- 10 # number of iterations
+maxit <- 600
 results <- vector("list", m) # Pre-allocates a list for m iterations
 
 for (i in 1:m) {
-tryCatch({
-      # Simulate parameters from PC prior
-      true_params <- sim_theta_pc_quantile(alpha = alpha, sigmau0 = sigmau0, sigmaepsilon0 = sigmaepsilon0, a0 = a0, rho0 = rho0, m = 1)
-      # Extract true parameters
-      log_kappa <- true_params$log_kappa
-      kappa <- exp(log_kappa)
-      v <- true_params$v
-      log_sigma_u <- true_params$log_sigma_u
-      log_sigma_epsilon <- true_params$log_sigma_epsilon
-      aniso <- list(rep(kappa, n), matrix(v, n, 2))
+  #tryCatch({
+    # Simulate parameters from PC prior
+    true_params <- sim_theta_pc_quantile(alpha = alpha, sigmau0 = sigmau0, sigmaepsilon0 = sigmaepsilon0, a0 = a0, rho0 = rho0, m = 1)
+    # true_params <- list(
+    #   log_kappa = -0.5,
+    #   v = c(0, 0),
+    #   log_sigma_u = 0,
+    #   log_sigma_epsilon = -3)
+    # Extract true parameters
+    log_kappa <- true_params$log_kappa
+    kappa <- exp(log_kappa)
+    v <- true_params$v
+    log_sigma_u <- true_params$log_sigma_u
+    log_sigma_epsilon <- true_params$log_sigma_epsilon
+    aniso <- list(rep(kappa, n), matrix(v, n, 2))
 
-      # Sample from noisyy data
-      x <- fm_aniso_basis_weights_sample(x = mesh, aniso = aniso)
-      A <- Matrix::Diagonal(n, 1)
-      y <- A %*% x + exp(log_sigma_epsilon) * stats::rnorm(n)
+    # Sample from noisyy data
+    x <- fm_aniso_basis_weights_sample(x = mesh, aniso = aniso)
+    A <- Matrix::Diagonal(n, 1)
+    y <- A %*% x + exp(log_sigma_epsilon) * stats::rnorm(n)
 
-      # Calculating the MAP under each prior knowing simulated data
-      map_pc <- MAP_prior(
-        logprior = log_pc_prior, mesh = mesh,
-        y = y, A = A, m_u = m_u, maxiterations = maxit
-      )
+    # Calculating the MAP under each prior knowing simulated data
+    map_pc <- MAP_prior(
+      logprior = log_pc_prior, mesh = mesh,
+      y = y, A = A, m_u = m_u, maxiterations = maxit
+      ,theta0 = unlist(true_params)
+    )
 
-      map_not_pc <- MAP_prior(
-        logprior = log_not_pc_prior, mesh = mesh,
-        y = y, A = A, m_u = m_u, maxiterations = maxit
-      )
+    map_not_pc <- MAP_prior(
+      logprior = log_not_pc_prior, mesh = mesh,
+      y = y, A = A, m_u = m_u, maxiterations = maxit
+      ,theta0 = unlist(true_params)
+    )
 
-      # PC results
-      pc_results <- list(
-        MAP_estimate = map_pc$par, # a 5d vector
-        convergence = map_pc$convergence, #convergence = 0 no convergence =1
-        distance_vector = abs(map_pc$par - unlist(true_params)), # a 5d vector
-        covariance_estimate = solve(-map_pc$hessian), # a 5x5 matrix
-        std_dev_estimates = sqrt(diag(solve(-map_pc$hessian))) # a 5d vector
-        # prob_MAP_greater = pc_prob_map                                      # a 5d vector
-      )
-      # Not-PC results
-      not_pc_results <- list(
-        MAP_estimate = map_not_pc$par, # a 5d vector
-        convergence = map_not_pc$convergence, #convergence = 0 no convergence =1
-        distance_vector = abs(map_not_pc$par - unlist(true_params)), # a 5d vector
-        covariance_estimate = solve(-map_not_pc$hessian), # a 5x5 matrix
-        std_dev_estimates = sqrt(diag(solve(-map_pc$hessian))) # a 5d vector
-        # prob_MAP_greater = not_pc_prob_map                                      # a 5d vector
-      )
+    # PC results
+    pc_results <- list(
+      MAP_estimate = map_pc$par, # a 5d vector
+      convergence = map_pc$convergence, #convergence = 0 no convergence =1
+      distance_vector = abs(map_pc$par - unlist(true_params)), # a 5d vector
+      covariance_estimate = solve(-map_pc$hessian), # a 5x5 matrix
+      std_dev_estimates = sqrt(diag(solve(-map_pc$hessian))), # a 5d vector
+      within_cinterval = c(1,1,1,1,1) * (abs(map_pc$par - unlist(true_params)) < 1.96 * sqrt(diag(solve(-map_pc$hessian)))) # a 5d vector
+      # prob_MAP_greater = pc_prob_map                                      # a 5d vector
+    )
+    # Not-PC results
+    not_pc_results <- list(
+      MAP_estimate = map_not_pc$par, # a 5d vector
+      convergence = map_not_pc$convergence, #convergence = 0 no convergence =1
+      distance_vector = abs(map_not_pc$par - unlist(true_params)), # a 5d vector
+      covariance_estimate = solve(-map_not_pc$hessian), # a 5x5 matrix
+      std_dev_estimates = sqrt(diag(solve(-map_pc$hessian))), # a 5d vector
+      within_cinterval = c(1,1,1,1,1) * (abs(map_not_pc$par - unlist(true_params)) < 1.96 * sqrt(diag(solve(-map_not_pc$hessian)))) # a 5d vector
+      # prob_MAP_greater = not_pc_prob_map                                      # a 5d vector
+    )
 
-      # Store results
-      results[[i]] <- list(
-        true_params = true_params,
-        pc = pc_results,
-        not_pc = not_pc_results
-      )
-},
-error = function(e){})
-}
+    # Store results
+    results[[i]] <- list(
+      true_params = true_params,
+      pc = pc_results,
+      not_pc = not_pc_results
+    )
+  }
+#,  error = function(e){})
+#}
+
+# results <- future_lapply(1:m, function(i) {
+#   true_params <- sim_theta_pc_quantile(alpha = alpha, sigmau0 = sigmau0, sigmaepsilon0 = sigmaepsilon0, a0 = a0, rho0 = rho0, m = 1)
+#   # Extract true parameters
+#   log_kappa <- true_params$log_kappa
+#   kappa <- exp(log_kappa)
+#   v <- true_params$v
+#   log_sigma_u <- true_params$log_sigma_u
+#   log_sigma_epsilon <- true_params$log_sigma_epsilon
+#   aniso <- list(rep(kappa, n), matrix(v, n, 2))
+#
+#   # Sample from noisy data
+#   x <- fm_aniso_basis_weights_sample(x = mesh, aniso = aniso)
+#   A <- Matrix::Diagonal(n, 1)
+#   y <- A %*% x + exp(log_sigma_epsilon) * stats::rnorm(n)
+#
+#   # Calculating the MAP under each prior knowing simulated data
+#   map_pc <- MAP_prior(
+#     logprior = log_pc_prior, mesh = mesh,
+#     y = y, A = A, m_u = m_u, maxiterations = maxit
+#   )
+#
+#   map_not_pc <- MAP_prior(
+#     logprior = log_not_pc_prior, mesh = mesh,
+#     y = y, A = A, m_u = m_u, maxiterations = maxit
+#   )
+#
+#   # PC results
+#   pc_results <- list(
+#     MAP_estimate = map_pc$par,
+#     convergence = map_pc$convergence,
+#     distance_vector = abs(map_pc$par - unlist(true_params)),
+#     covariance_estimate = solve(-map_pc$hessian),
+#     std_dev_estimates = sqrt(diag(solve(-map_pc$hessian)))
+#   )
+#
+#   # Not-PC results
+#   not_pc_results <- list(
+#     MAP_estimate = map_not_pc$par,
+#     convergence = map_not_pc$convergence,
+#     distance_vector = abs(map_not_pc$par - unlist(true_params)),
+#     covariance_estimate = solve(-map_not_pc$hessian),
+#     std_dev_estimates = sqrt(diag(solve(-map_not_pc$hessian)))
+#   )
+#
+#   # Return the results for this iteration
+#   list(
+#     true_params = true_params,
+#     pc = pc_results,
+#     not_pc = not_pc_results
+#   )
+# })
+
+
+
+
+
+
+

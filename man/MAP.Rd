@@ -14,7 +14,8 @@ MAP(
   A,
   m_u,
   maxiterations = 300,
-  log_sigma_epsilon = NULL
+  log_sigma_epsilon = NULL,
+  theta0 = c(-0.5, c(0.1, 0.1), 0, -3)
 )
 }
 \arguments{

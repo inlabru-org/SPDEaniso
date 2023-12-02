@@ -16,7 +16,7 @@ MAPgeneral(
   m_u,
   log_sigma_epsilon = NULL,
   maxiterations = 300,
-  aniso0 = c(log(0.5), c(1, 2), 1, 1)
+  theta0 = c(-0.5, c(0.1, 0.1), 0, -3)
 )
 }
 \arguments{

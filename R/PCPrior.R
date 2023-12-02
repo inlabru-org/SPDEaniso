@@ -323,7 +323,7 @@ log_posterior <- function(mesh, log_kappa, v, log_sigma_u = 0, log_sigma_epsilon
 #' @export
 
 
-MAP <- function(mesh, lambda, lambda1, lambda_epsilon, lambda_u, y, A, m_u, maxiterations = 300, log_sigma_epsilon = NULL) {
+MAP <- function(mesh, lambda, lambda1, lambda_epsilon, lambda_u, y, A, m_u, maxiterations = 300, log_sigma_epsilon = NULL, theta0 = c(-0.5, c(0.1,0.1 ), 0, -3)) {
   if (missing(log_sigma_epsilon)) {
     # Optimizes the log-posterior over (log_kappa, v, log_sigma_u, log_sigma_epsilon)
     log_post <- function(theta) {
@@ -338,10 +338,9 @@ MAP <- function(mesh, lambda, lambda1, lambda_epsilon, lambda_u, y, A, m_u, maxi
         y = y, A = A, m_u = m_u
       ))
     }
-    aniso0 <- c(log(0.5), c(1, 2), 1, 1)
     # To do: calculate the gradient of log posterior
     # gradient= grad_log_posterior(mesh, kappa, v, lambda, lambda1, y, A, Q_epsilon, m_u)
-    return(optim(par = aniso0, fn = log_post, control = list(fnscale = -1, maxit = maxiterations), hessian = TRUE))
+    return(optim(par = theta0, fn = log_post, control = list(fnscale = -1, maxit = maxiterations), hessian = TRUE))
   } else {
     # Optimizes the log-posterior over (log_kappa, v, log_sigma_u)
     log_post <- function(theta) {
@@ -355,8 +354,8 @@ MAP <- function(mesh, lambda, lambda1, lambda_epsilon, lambda_u, y, A, m_u, maxi
         y = y, A = A, m_u = m_u
       ))
     }
-    aniso0 <- c(1, c(0.1, 0.1), 1)
-    return(optim(par = aniso0, fn = log_post, control = list(fnscale = -1, maxit = maxiterations), hessian = TRUE))
+    theta0 <- theta0[1:4]
+    return(optim(par = theta0, fn = log_post, control = list(fnscale = -1, maxit = maxiterations), hessian = TRUE))
   }
 }
 
@@ -512,7 +511,7 @@ log_posterior_general <- function(logprior_aniso, mesh, log_kappa, v, log_sigma_
 #'
 #' @return The parameters (log_kappa, v, log_sigma_u, log_sigma_epsilon) that maximize the posterior
 #' @export
-MAPgeneral <- function(logprior_aniso, mesh, lambda, lambda1, lambda_epsilon, lambda_u, y, A, m_u, log_sigma_epsilon = NULL, maxiterations = 300, aniso0 = c(log(0.5), c(1, 2), 1, 1)) {
+MAPgeneral <- function(logprior_aniso, mesh, lambda, lambda1, lambda_epsilon, lambda_u, y, A, m_u, log_sigma_epsilon = NULL, maxiterations = 300, theta0 = c(-0.5, c(0.1,0.1 ), 0, -3)) {
   if (missing(log_sigma_epsilon)) {
     # Optimizes the log-posterior over (log_kappa, v, log_sigma_u, log_sigma_epsilon)
     log_post <- function(theta) {
@@ -530,7 +529,7 @@ MAPgeneral <- function(logprior_aniso, mesh, lambda, lambda1, lambda_epsilon, la
     }
     # To do: calculate the gradient of log posterior
     # gradient= grad_log_posterior(mesh, kappa, v, lambda, lambda1, y, A, Q_epsilon, m_u)
-    return(optim(par = aniso0, fn = log_post, control = list(fnscale = -1, maxit = maxiterations), hessian = TRUE))
+    return(optim(par = theta0, fn = log_post, control = list(fnscale = -1, maxit = maxiterations), hessian = TRUE))
   } else {
     # Optimizes the log-posterior over (log_kappa, v, log_sigma_u)
     log_post <- function(theta) {
@@ -545,8 +544,8 @@ MAPgeneral <- function(logprior_aniso, mesh, lambda, lambda1, lambda_epsilon, la
         y = y, A = A, m_u = m_u
       ))
     }
-    aniso0 <- c(1, c(0.1, 0.1), 1)
-    return(optim(par = aniso0, fn = log_post, control = list(fnscale = -1, maxit = maxiterations), hessian = TRUE))
+    theta0 <- theta0[1:4]
+    return(optim(par = theta0, fn = log_post, control = list(fnscale = -1, maxit = maxiterations), hessian = TRUE))
   }
 }
 
@@ -655,7 +654,7 @@ MAP_prior <- function(logprior= function(log_kappa, v, log_sigma_u, log_sigma_ep
         y = y, A = A, m_u = m_u
       ))
     }
-    theta0 <- theta0[-length(theta0)]
+    theta0 <- theta0[1:4]
     return(optim(par = theta0, fn = log_post, control = list(fnscale = -1, maxit = maxiterations), hessian = TRUE))
   }
 }

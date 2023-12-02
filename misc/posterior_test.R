@@ -5,6 +5,7 @@ library(Matrix)
 library(sp)
 library(INLA)
 library(inlabru)
+library(future)
 set.seed(123)
 #Hyperparameters for PC priors
 lambda <- 1; lambda1 <- 1; lambda_epsilon <- 1; lambda_u <- 1
@@ -100,7 +101,7 @@ log_posterior_true <- log_posterior(mesh = mesh,
 # sqrt(diag(solve(-map$hessian)))
 
 #Optimizing over log(kappa), v, log(sigma_u) log(sigma_noise)
-map_full <- MAP(mesh = mesh,
+map_full %<-% MAP(mesh = mesh,
            lambda =lambda, lambda1 = lambda1, lambda_epsilon = lambda_epsilon, lambda_u = lambda_u,
            y= y, A = A, m_u =m_u, maxiterations = 600)
 print(map_full)
@@ -113,7 +114,12 @@ sqrt(diag(solve(-map_full$hessian)))
 map_pc <- MAP_prior(logprior = log_pc_prior ,mesh = mesh,
                     y= y, A = A, m_u =m_u, maxiterations = 600)
 print(map_pc$par-map_full$par)
-
+print(map_pc)
+cov2cor(solve(-map_pc$hessian))
+par_full <- map_pc$par
+real_par_full <- c(log_kappa,v,log_sigma_u, log_sigma_epsilon)
+print(map_pc$par-real_par_full)
+sqrt(diag(solve(-map_pc$hessian)))
 #Plots
 # ggplot()+ gg(data=mesh,color = x)
 # ggplot()+ gg(data=mesh,color = sqrt(as.vector(diag(INLA::inla.qinv(Q)))))
