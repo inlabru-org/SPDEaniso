@@ -15,7 +15,7 @@ lambda1_quantile <- function(a0, alpha_a = 0.01) {
   if (a0 <= 1) {
     warning("a0 should be greater than 1")
   }
-  r0 <- log(a0) / 2
+  r0 <- log(a0)
   lambda1 <- -log(alpha_a) / (fdist(r0) - fdist(0))
   return(lambda1)
 }
@@ -35,19 +35,19 @@ lambda_quantile <- function(rho0, lambda1, alpha = 0.01) {
   if (alpha <= 0 | alpha >= 1) {
     warning("alpha should be in (0,1)")
   }
-  # kappa0 <- sqrt(8)/ rho0
-  # product <- lambda1 * fdist(0)
-  # lambert <- lamW::lambertW0(product * exp(product) / (1-alpha))
-  # lambda <- (lambert/ fdist(0)- lambda1) / kappa0
-  # return(lambda)
+  kappa0 <- sqrt(8)/ rho0
+  product <- lambda1 * fdist(0)
+  lambert <- lamW::lambertW0(product * exp(product) / alpha)
+  lambda <- (lambert/ fdist(0)- lambda1) / kappa0
+  return(lambda)
   # Error in code get very small lambda need to fix later
-  return(10)
+  # return(5)
 }
 
 #' @title Hyperparameter for variance of gaussian field given quantiles
 #' @description Calculates  the hyperparameter lambda such that if sigma~Exp(lambda) then sigma>sigma0 with probability alpha
 #'
-#' @param alpha_sigma A quantile in (0,1)
+#' @param alpha_sigma A quantile in (0,1). By default 0.01
 #' @param sigma0 A surprisingly high number
 #'
 #' @return The calculated hyperparameter lambda
@@ -56,7 +56,7 @@ lambda_quantile <- function(rho0, lambda1, alpha = 0.01) {
 #' alpha_sigma <- 0.01
 #' sigma0 <- 10
 #' lambda_sigma <- lambda_variance_quantile(alpha_sigma = alpha_sigma, sigma0 = sigma0)
-lambda_variance_quantile <- function(alpha_sigma, sigma0) {
+lambda_variance_quantile <- function(sigma0, alpha_sigma=0.01) {
   # This warns the user if alpha is not in (0,1)
   if (alpha_sigma <= 0 | alpha_sigma >= 1) {
     warning("alpha_sigma should be in (0,1)")
@@ -67,10 +67,10 @@ lambda_variance_quantile <- function(alpha_sigma, sigma0) {
   lambda_sigma <- -log(alpha_sigma) / sigma0
   return(lambda_sigma)
 }
-#' @title Parameter sigma^2 such that if v1,v2 ~ N(0, sigma^2) the anisotropy ratio exp(2|v|) is larger than a0 with probability alpha
+#' @title Parameter sigma^2 such that if v1,v2 ~ N(0, sigma^2) the anisotropy ratio exp(|v|) is larger than a0 with probability alpha
 #' @description Calculates the parameter sigma^2 such that if v1,v2 are iid N(0, sigma^2), then the anisotropy ratio exp(2|v|) is larger than a0 with probability alpha
 #'
-#' @param alpha_v A quantile in (0,1)
+#' @param alpha_v A quantile in (0,1). By default 0.01
 #' @param a0 A surprisingly high ratio of anisotropy
 #'
 #' @return The calculated parameter sigma^2
@@ -79,14 +79,14 @@ lambda_variance_quantile <- function(alpha_sigma, sigma0) {
 #' alpha_v <- 0.01
 #' a0 <- 10
 #' sigma2_v <- sigm2_quantile_v(alpha_v = alpha_v, a0 = a0)
-sigma2_quantile_v <- function(alpha_v, a0) {
+sigma2_quantile_v <- function(a0,alpha_v=0.01) {
   if (alpha_v <= 0 | alpha_v >= 1) {
     warning("alpha_v should be in (0,1)")
   }
   if (a0 <= 1) {
     warning("a0 should be greater than 1")
   }
-  r02 <- (log(a0) / 2)^2
+  r02 <- log(a0)^2
   # r^2 follows a exponential distribution with rate 1/2sigma^2
   sigma2_v <- -r02 / (2 * log(alpha_v))
   return(sigma2_v)
@@ -94,7 +94,7 @@ sigma2_quantile_v <- function(alpha_v, a0) {
 #' @title Parameter lambda_k such that if kappa~Exp(lambda_k) the correlation range sqrt{8}/kappa is smaller than rho0 with probability alpha
 #' @description Calculates  the parameter lambda_k such that if kappa~Exp(lambda_k) then the correlation range sqrt{8}/kappa is smaller than rho0 with probability alpha
 #'
-#' @param alpha_k A quantile in (0,1)
+#' @param alpha_k A quantile in (0,1), by default 0.01
 #' @param rho0 A surprisingly small correlation range
 #'
 #' @return The calculated parameter lambda_k
@@ -103,7 +103,7 @@ sigma2_quantile_v <- function(alpha_v, a0) {
 #' alpha_k <- 0.01
 #' rho0 <- 0.1
 #' lambda_k <- lambda_quantile_kappa(alpha_k = alpha_k, rho0 = rho0)
-lambda_quantile_kappa <- function(alpha_k, rho0) {
+lambda_quantile_kappa <- function(rho0,alpha_k=0.01) {
   if (alpha_k <= 0 | alpha_k >= 1) {
     warning("alpha_k should be in (0,1)")
   }

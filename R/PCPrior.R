@@ -613,7 +613,8 @@ log_posterior_prior <- function(logprior, mesh, log_kappa, v, log_sigma_u = 0, l
 #' @description
 #' Calculated by maximizing log posterior using optim. Only stationary parameters accepted.
 #'
-#' @param logprior A function that calculates the log prior of (log(kappa), v, log(sigma_u), log(sigma_epsilon))
+#' @param logprior A function that calculates the log prior of (log(kappa), v, log(sigma_u), log(sigma_epsilon)). 
+#' If not specified, it is assumed to be the function that returns 0.
 #' @param mesh The mesh
 #' @param y A vector with length equal to the number of basis elements n representing the observed data.
 #' @param A Matrix of size nxn representing the transformation A
@@ -624,7 +625,7 @@ log_posterior_prior <- function(logprior, mesh, log_kappa, v, log_sigma_u = 0, l
 #'
 #' @return The parameters (log_kappa, v, log_sigma_u, log_sigma_epsilon) that maximize the posterior
 #' @export
-MAP_prior <- function(logprior, mesh, y, A, m_u, log_sigma_epsilon = NULL, maxiterations = 300, theta0 = c(log(0.5), c(1, 2), 1, 1)) {
+MAP_prior <- function(logprior= function(log_kappa, v, log_sigma_u, log_sigma_epsilon) {return(0)} , mesh, y, A, m_u, log_sigma_epsilon = NULL, maxiterations = 300, theta0 = c(-0.5, c(0.1,0.1 ), 0, -3)) {
   if (missing(log_sigma_epsilon)) {
     # Optimizes the log-posterior over (log_kappa, v, log_sigma_u, log_sigma_epsilon)
     log_post <- function(theta) {

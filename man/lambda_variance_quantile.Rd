@@ -4,12 +4,12 @@
 \alias{lambda_variance_quantile}
 \title{Hyperparameter for variance of gaussian field given quantiles}
 \usage{
-lambda_variance_quantile(alpha_sigma, sigma0)
+lambda_variance_quantile(sigma0, alpha_sigma = 0.01)
 }
 \arguments{
-\item{alpha_sigma}{A quantile in (0,1)}
-
 \item{sigma0}{A surprisingly high number}
+
+\item{alpha_sigma}{A quantile in (0,1). By default 0.01}
 }
 \value{
 The calculated hyperparameter lambda

@@ -2,20 +2,20 @@
 % Please edit documentation in R/quantiles.R
 \name{lambda_quantile_kappa}
 \alias{lambda_quantile_kappa}
-\title{Parameter lambda_k such that if kappa~Exp(lambda_k) the correlation range sqrt{16}/kappa is smaller than rho0 with probability alpha}
+\title{Parameter lambda_k such that if kappa~Exp(lambda_k) the correlation range sqrt{8}/kappa is smaller than rho0 with probability alpha}
 \usage{
-lambda_quantile_kappa(alpha_k, rho0)
+lambda_quantile_kappa(rho0, alpha_k = 0.01)
 }
 \arguments{
-\item{alpha_k}{A quantile in (0,1)}
-
 \item{rho0}{A surprisingly small correlation range}
+
+\item{alpha_k}{A quantile in (0,1), by default 0.01}
 }
 \value{
 The calculated parameter lambda_k
 }
 \description{
-Calculates  the parameter lambda_k such that if kappa~Exp(lambda_k) then the correlation range sqrt{16}/kappa is smaller than rho0 with probability alpha
+Calculates  the parameter lambda_k such that if kappa~Exp(lambda_k) then the correlation range sqrt{8}/kappa is smaller than rho0 with probability alpha
 }
 \examples{
 alpha_k <- 0.01

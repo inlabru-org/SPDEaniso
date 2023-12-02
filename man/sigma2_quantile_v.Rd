@@ -4,12 +4,12 @@
 \alias{sigma2_quantile_v}
 \title{Parameter sigma^2 such that if v1,v2 ~ N(0, sigma^2) the anisotropy ratio exp(2|v|) is larger than a0 with probability alpha}
 \usage{
-sigma2_quantile_v(alpha_v, a0)
+sigma2_quantile_v(a0, alpha_v = 0.01)
 }
 \arguments{
-\item{alpha_v}{A quantile in (0,1)}
-
 \item{a0}{A surprisingly high ratio of anisotropy}
+
+\item{alpha_v}{A quantile in (0,1). By default 0.01}
 }
 \value{
 The calculated parameter sigma^2

@@ -54,5 +54,5 @@ mesh <- fm_mesh_2d_inla(boundary = fm_extensions(cbind(2, 1), convex = 1, 2))
 kappa <- 1
 v <- c(1, 2)
 aniso <- list(rep(kappa, mesh$n), matrix(v, mesh$n, 2))
-Q <-fm_aniso_precision(mesh, aniso)
+Q <- fm_aniso_precision(mesh, aniso)
 }

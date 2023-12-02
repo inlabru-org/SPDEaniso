@@ -5,7 +5,7 @@ library(Matrix)
 library(sp)
 library(INLA)
 library(inlabru)
-
+set.seed(123)
 #Hyperparameters for PC priors
 lambda <- 1; lambda1 <- 1; lambda_epsilon <- 1; lambda_u <- 1
 
@@ -38,7 +38,7 @@ log_pc_prior <- function(log_kappa, v, log_sigma_u, log_sigma_epsilon) {
 
 #Mesh definition
 library(sf)
-boundary_sf = st_sfc(st_polygon(list(rbind(c(0, 0), c(10, 0), c(10, 10), c(0, 10),c(0,0)))))
+boundary_sf = st_sfc(st_polygon(list(rbind(c(0, 0.1), c(10, 0.1), c(10, 10), c(0.1, 10),c(0,0.1)))))
 boundary = fm_as_segm(boundary_sf)
 mesh <- fm_mesh_2d_inla(  boundary = boundary,  max.edge = c(0.5, 0.5))
 nodes <- mesh$loc
@@ -109,6 +109,10 @@ par_full <- map_full$par
 real_par_full <- c(log_kappa,v,log_sigma_u, log_sigma_epsilon)
 print(map_full$par-real_par_full)
 sqrt(diag(solve(-map_full$hessian)))
+
+map_pc <- MAP_prior(logprior = log_pc_prior ,mesh = mesh,
+                    y= y, A = A, m_u =m_u, maxiterations = 600)
+print(map_pc$par-map_full$par)
 
 #Plots
 # ggplot()+ gg(data=mesh,color = x)

@@ -5,18 +5,21 @@
 \title{Calculates  the MAP estimate for linear noisy observation of field with a general prior on theta = (log(kappa),v, log(sigma_u), log(sigma_epsilon)).}
 \usage{
 MAP_prior(
-  logprior,
+  logprior = function(log_kappa, v, log_sigma_u, log_sigma_epsilon) {
+     return(0)
+ },
   mesh,
   y,
   A,
   m_u,
   log_sigma_epsilon = NULL,
   maxiterations = 300,
-  theta0 = c(log(0.5), c(1, 2), 1, 1)
+  theta0 = c(-0.5, c(0.1, 0.1), 0, -3)
 )
 }
 \arguments{
-\item{logprior}{A function that calculates the log prior of (log(kappa), v, log(sigma_u), log(sigma_epsilon))}
+\item{logprior}{A function that calculates the log prior of (log(kappa), v, log(sigma_u), log(sigma_epsilon)).
+If not specified, it is assumed to be the function that returns 0.}
 
 \item{mesh}{The mesh}
 
