@@ -14,8 +14,8 @@ plan(multisession)
 set.seed(123)
 
 # Defines the upper bounds for the quantiles
-a0 <- 3 #Controls the size of v
-rho0 <- 1 #Controls the size of kappa
+a0 <- 2 #Controls the size of v
+rho0 <- 0.1 #Controls the size of kappa
 sigma0 <- 1.5 #Controls the size of v in non PC priors
 sigmau0 <- 2 #controls standard deviation of field
 sigmaepsilon0 <- 0.1 #control standard deviation of noise
@@ -23,10 +23,10 @@ sigmaepsilon0 <- 0.1 #control standard deviation of noise
 # Defines the quantile
 alpha <- 0.01
 #Calculates the hyperparameters of PC by hand
-lambda <- lambda_quantile(rho0= rho0, lambda1 = lambda1)
-lambda1 <- lambda1_quantile(a0)
-lambda_u <- lambda_variance_quantile(sigma0 = sigmau0)
-lambda_epsilon <- lambda_variance_quantile(sigma0 = sigmaepsilon0)
+lambda1 <- lambda1_quantile(a0) #Controls the size of v
+lambda <- lambda_quantile(rho0= rho0, lambda1 = lambda1) #Controls the size of kappa
+lambda_u <- lambda_variance_quantile(sigma0 = sigmau0) #Controls the variance of the field
+lambda_epsilon <- lambda_variance_quantile(sigma0 = sigmaepsilon0) #Controls the variance of the noise
 hyper_pc <- list(lambda = lambda, lambda1 = lambda1, lambda_u = lambda_u, lambda_epsilon = lambda_epsilon)
 true_params <- sim_theta_pc_quantile(alpha = alpha, sigmau0 = sigmau0, sigmaepsilon0 = sigmaepsilon0, a0 = a0, rho0 = rho0, m = 1)
 print(hyper_pc)
@@ -48,12 +48,20 @@ log_not_pc_prior <- log_gaussian_prior_quantile(
   sigmau0 = sigmau0, sigmaepsilon0 = sigmaepsilon0,
   a0 = a0, rho0 = rho0, alpha = alpha
 )
+#Testing value of priors
+true_params <- sim_theta_pc_quantile(alpha = alpha, sigmau0 = sigmau0, sigmaepsilon0 = sigmaepsilon0, a0 = a0, rho0 = rho0, m = 1)
+log_kappa <- true_params$log_kappa
+v <- true_params$v
+log_sigma_u <- true_params$log_sigma_u
+log_sigma_epsilon <- true_params$log_sigma_epsilon
+
+log_pc_prior(log_kappa = log_kappa, v = v, log_sigma_u = log_sigma_u, log_sigma_epsilon = log_sigma_epsilon)
 
 # Mesh definition
 library(sf)
 boundary_sf <- st_sfc(st_polygon(list(rbind(c(0, 0.01), c(10, 0.01), c(10, 10), c(0, 10), c(0, 0.01)))))
 boundary <- fm_as_segm(boundary_sf)
-mesh <- fm_mesh_2d_inla(boundary = boundary, max.edge = c(0.5, 0.5))
+mesh <- fm_mesh_2d_inla(boundary = boundary, max.edge = c(0.25, 0.25))
 nodes <- mesh$loc
 n <- mesh$n
 plot(mesh)
@@ -66,11 +74,11 @@ plot(mesh)
 m <- 1 # number of iterations
 maxit <- 10
 m <- 10 # number of iterations
-maxit <- 600
+maxit <- 1200
 results <- vector("list", m) # Pre-allocates a list for m iterations
-
+start_time <- Sys.time()
 for (i in 1:m) {
-  #tryCatch({
+  tryCatch({
     # Simulate parameters from PC prior
     true_params <- sim_theta_pc_quantile(alpha = alpha, sigmau0 = sigmau0, sigmaepsilon0 = sigmaepsilon0, a0 = a0, rho0 = rho0, m = 1)
     # true_params <- list(
@@ -132,8 +140,21 @@ for (i in 1:m) {
       not_pc = not_pc_results
     )
   }
-#,  error = function(e){})
-#}
+,  error = function(e){})
+}
+end_time <- Sys.time()
+
+# Calculate the duration
+duration <- end_time - start_time
+print(paste("Total time taken: ", duration))
+sapply(results, function(x) x$pc$std_dev_estimates)
+# This gives the 5d mean vector of the error in each parameter
+# distance_vectors <- sapply(results, function(x) x$pc$distance_vector)
+# distance_vectors
+#
+#
+# intervals <- sapply(results, function(x) x$pc$within_cinterval)
+# intervals
 
 # results <- future_lapply(1:m, function(i) {
 #   true_params <- sim_theta_pc_quantile(alpha = alpha, sigmau0 = sigmau0, sigmaepsilon0 = sigmaepsilon0, a0 = a0, rho0 = rho0, m = 1)
@@ -191,5 +212,6 @@ for (i in 1:m) {
 
 
 
-
-
+results[[10]][[1]]
+true_params
+log_posterior()

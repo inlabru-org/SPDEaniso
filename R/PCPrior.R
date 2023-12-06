@@ -171,6 +171,46 @@ log_pc_prior_noise_variance <- function(lambda_epsilon, log_sigma_epsilon) {
   return(log(lambda_epsilon) - lambda_epsilon * sigma_epsilon + change_variable)
 }
 
+#' @title Log PC Prior calculation for theta=(log(kappa), v, log(sigma_u), log(sigma_epsilon))
+#' @description Calculates  the log of the PC prior for theta=(log(kappa), v, log(sigma_u), log(sigma_epsilon)) based on given hyperparameters and vectors.
+#'
+#' @param lambda A hyperparameter controlling the size of kappa.
+#' @param lambda1 A hyperparameter controlling the size of |v|.
+#' @param lambda_epsilon A hyperparameter controlling the size of epsilon.
+#' @param lambda_u A hyperparameter controlling the size of sigma_u.
+#' @param log_kappa Logarithm of inverse correlation range.
+#' @param v Vector that controls anisotropy.
+#' @param log_sigma_u Logarithm of the variance of the field.
+#' @param log_sigma_epsilon The logarithm of the variance of the additive noise.
+#'
+#' @return The calculated log PC prior value of theta=(log(kappa), v, log(sigma_u), log(sigma_epsilon)).
+#' @export
+#' @examples
+#' lambda <- 1
+#' lambda1 <- 1
+#' lambda_epsilon <- 1
+#' lambda_u <- 1
+#' log_kappa <- 0.5
+#' v <- c(1, 2)
+#' log_sigma_u <- 0
+#' log_sigma_epsilon <- 0
+#' log_pc_prior_theta(lambda = lambda, lambda1 = lambda1, lambda_epsilon = lambda_epsilon, lambda_u = lambda_u, log_kappa = log_kappa, v = v, log_sigma_u = log_sigma_u, log_sigma_epsilon = log_sigma_epsilon)
+log_pc_prior_theta <- function(lambda, lambda1, lambda_epsilon, lambda_u, log_kappa, v, log_sigma_u, log_sigma_epsilon) {
+
+  # Calculates  the log PC prior for (log(kappa), v)
+  log_pc_prior_aniso_value <- log_pc_prior_aniso(lambda = lambda, lambda1 = lambda1, log_kappa = log_kappa, v = v)
+
+  # Calculates  the log PC prior for log(sigma_u)
+  log_pc_prior_sigma_u_value <- log_pc_prior_noise_variance(lambda_epsilon = lambda_u, log_sigma_epsilon = log_sigma_u)
+
+  # Calculates  the log PC prior for log(sigma_epsilon)
+  log_pc_prior_sigma_epsilon_value <- log_pc_prior_noise_variance(lambda_epsilon = lambda_epsilon, log_sigma_epsilon = log_sigma_epsilon)
+  
+  # Calculates  the log PC prior for theta
+  log_pc_value <- log_pc_prior_aniso_value + log_pc_prior_sigma_u_value + log_pc_prior_sigma_epsilon_value
+  return(log_pc_value)
+}
+
 #' @title Sparse Matrix Determinant using Cholesky Factorization
 #' @description Calculates  the determinant of a sparse matrix using Cholesky factorization.
 #'
@@ -259,7 +299,7 @@ logGdensity <- function(x, mu, Q) {
 #' @param Q_epsilon A sparse matrix of size nxn representing the noise precision matrix
 #' @param m_u A vector with length n representing the prior mean m_u. If a number is given is transformed into (m_u, m_u,..., m_u)
 #'
-#' @return The calculated log-posterior
+#' @return The calculated log-posterior density
 #' @export
 
 
@@ -267,11 +307,8 @@ log_posterior <- function(mesh, log_kappa, v, log_sigma_u = 0, log_sigma_epsilon
   kappa <- exp(log_kappa)
   sigma_epsilon <- exp(log_sigma_epsilon)
 
-  # Calculates log-prior
-  log_pc_aniso_value <- log_pc_prior_aniso(lambda = lambda, lambda1 = lambda1, log_kappa = log_kappa, v = v)
-  log_pc_noise_value <- log_pc_prior_noise_variance(lambda_epsilon = lambda_epsilon, log_sigma_epsilon = log_sigma_epsilon)
-  log_pc_sigma_u_value <- log_pc_prior_noise_variance(lambda_epsilon = lambda_u, log_sigma_epsilon = log_sigma_u)
-  log_pc_value <- log_pc_aniso_value + log_pc_noise_value + log_pc_sigma_u_value
+  # Calculates log-prior density
+  log_pc_value <- log_pc_prior_theta(lambda = lambda, lambda1 = lambda1, lambda_epsilon = lambda_epsilon, lambda_u = lambda_u, log_kappa = log_kappa, v = v, log_sigma_u = log_sigma_u, log_sigma_epsilon = log_sigma_epsilon)
 
   # Calculates anisotropy
   n <- nrow(mesh$loc)
@@ -298,7 +335,7 @@ log_posterior <- function(mesh, log_kappa, v, log_sigma_u = 0, log_sigma_epsilon
   # Calculates  log-density of the observation of y given u, theta
   logGdty_observation <- logGdensity(x = y, mu = A %*% u, Q = Q_epsilon)
 
-  # Calculates  log-posterior
+  # Calculates  log-posterior density
   log_posterior_val <- log_pc_value + logGdty_prior + logGdty_observation - logGdty_posterior
 
   return(log_posterior_val)
@@ -325,7 +362,7 @@ log_posterior <- function(mesh, log_kappa, v, log_sigma_u = 0, log_sigma_epsilon
 
 MAP <- function(mesh, lambda, lambda1, lambda_epsilon, lambda_u, y, A, m_u, maxiterations = 300, log_sigma_epsilon = NULL, theta0 = c(-0.5, c(0.1,0.1 ), 0, -3)) {
   if (missing(log_sigma_epsilon)) {
-    # Optimizes the log-posterior over (log_kappa, v, log_sigma_u, log_sigma_epsilon)
+    # Maximizes the log-posterior density over (log_kappa, v, log_sigma_u, log_sigma_epsilon)
     log_post <- function(theta) {
       log_kappa <- theta[1]
       v <- theta[2:3]
@@ -342,7 +379,7 @@ MAP <- function(mesh, lambda, lambda1, lambda_epsilon, lambda_u, y, A, m_u, maxi
     # gradient= grad_log_posterior(mesh, kappa, v, lambda, lambda1, y, A, Q_epsilon, m_u)
     return(optim(par = theta0, fn = log_post, control = list(fnscale = -1, maxit = maxiterations), hessian = TRUE))
   } else {
-    # Optimizes the log-posterior over (log_kappa, v, log_sigma_u)
+    # Maximizes the log-posterior density over (log_kappa, v, log_sigma_u)
     log_post <- function(theta) {
       log_kappa <- theta[1]
       v <- theta[2:3]
@@ -374,7 +411,7 @@ MAP <- function(mesh, lambda, lambda1, lambda_epsilon, lambda_u, y, A, m_u, maxi
 #' @param Q_epsilon A sparse matrix of size nxn representing the noise precision matrix
 #' @param m_u A vector with length n representing the prior mean m_u
 #'
-#' @return The calculated log-posterior
+#' @return The calculated log-posterior density
 #' @export
 
 
@@ -405,7 +442,7 @@ grad_log_posterior <- function(mesh, kappa, v, lambda, lambda1, y, A, Q_epsilon,
 #' @param A Matrix of size nxn representing the transformation A
 #' @param m_u A vector with length n representing the prior mean m_u
 #'
-#' @return The calculated log-posterior
+#' @return The calculated log-posterior density
 #' @export
 
 
@@ -451,7 +488,7 @@ log_gaussian_density <- function(x, mu, logsigma) {
 #' @param Q_epsilon A sparse matrix of size nxn representing the noise precision matrix
 #' @param m_u A vector with length n representing the prior mean m_u. If a number is given is transformed into (m_u, m_u,..., m_u)
 #'
-#' @return The calculated log-posterior
+#' @return The calculated log-posterior density
 #' @export
 log_posterior_general <- function(logprior_aniso, mesh, log_kappa, v, log_sigma_u = 0, log_sigma_epsilon, lambda, lambda1, lambda_epsilon, lambda_u = 1, y, A, m_u) {
   kappa <- exp(log_kappa)
@@ -488,7 +525,7 @@ log_posterior_general <- function(logprior_aniso, mesh, log_kappa, v, log_sigma_
   # Calculates  log-density of the observation of y given u, theta
   logGdty_observation <- logGdensity(x = y, mu = A %*% u, Q = Q_epsilon)
 
-  # Calculates  log-posterior
+  # Calculates  log-posterior density
   log_posterior_val <- log_pc_value + logGdty_prior + logGdty_observation - logGdty_posterior
 
   return(log_posterior_val)
@@ -513,7 +550,7 @@ log_posterior_general <- function(logprior_aniso, mesh, log_kappa, v, log_sigma_
 #' @export
 MAPgeneral <- function(logprior_aniso, mesh, lambda, lambda1, lambda_epsilon, lambda_u, y, A, m_u, log_sigma_epsilon = NULL, maxiterations = 300, theta0 = c(-0.5, c(0.1,0.1 ), 0, -3)) {
   if (missing(log_sigma_epsilon)) {
-    # Optimizes the log-posterior over (log_kappa, v, log_sigma_u, log_sigma_epsilon)
+    # Maximizes the log-posterior density over (log_kappa, v, log_sigma_u, log_sigma_epsilon)
     log_post <- function(theta) {
       log_kappa <- theta[1]
       v <- theta[2:3]
@@ -531,7 +568,7 @@ MAPgeneral <- function(logprior_aniso, mesh, lambda, lambda1, lambda_epsilon, la
     # gradient= grad_log_posterior(mesh, kappa, v, lambda, lambda1, y, A, Q_epsilon, m_u)
     return(optim(par = theta0, fn = log_post, control = list(fnscale = -1, maxit = maxiterations), hessian = TRUE))
   } else {
-    # Optimizes the log-posterior over (log_kappa, v, log_sigma_u)
+    # Maximizes the log-posterior density over (log_kappa, v, log_sigma_u)
     log_post <- function(theta) {
       log_kappa <- theta[1]
       v <- theta[2:3]
@@ -574,7 +611,7 @@ log_posterior_prior <- function(logprior, mesh, log_kappa, v, log_sigma_u = 0, l
   kappa <- exp(log_kappa)
   sigma_epsilon <- exp(log_sigma_epsilon)
 
-  # Calculates log-prior
+  # Calculates log-prior density
   log_prior_value <- logprior(log_kappa, v, log_sigma_u, log_sigma_epsilon)
 
   # Calculates anisotropy
@@ -602,7 +639,7 @@ log_posterior_prior <- function(logprior, mesh, log_kappa, v, log_sigma_u = 0, l
   # Calculates  log-density of the observation of y given u, theta
   logGdty_observation <- logGdensity(x = y, mu = A %*% u, Q = Q_epsilon)
 
-  # Calculates  log-posterior
+  # Calculates  log-posterior density
   log_posterior_val <- log_prior_value + logGdty_prior + logGdty_observation - logGdty_posterior
 
   return(log_posterior_val)
@@ -626,7 +663,7 @@ log_posterior_prior <- function(logprior, mesh, log_kappa, v, log_sigma_u = 0, l
 #' @export
 MAP_prior <- function(logprior= function(log_kappa, v, log_sigma_u, log_sigma_epsilon) {return(0)} , mesh, y, A, m_u, log_sigma_epsilon = NULL, maxiterations = 300, theta0 = c(-0.5, c(0.1,0.1 ), 0, -3)) {
   if (missing(log_sigma_epsilon)) {
-    # Optimizes the log-posterior over (log_kappa, v, log_sigma_u, log_sigma_epsilon)
+    # Maximizes the log-posterior density over (log_kappa, v, log_sigma_u, log_sigma_epsilon)
     log_post <- function(theta) {
       log_kappa <- theta[1]
       v <- theta[2:3]
@@ -642,7 +679,7 @@ MAP_prior <- function(logprior= function(log_kappa, v, log_sigma_u, log_sigma_ep
 
     return(optim(par = theta0, fn = log_post, control = list(fnscale = -1, maxit = maxiterations), hessian = TRUE))
   } else {
-    # Optimizes the log-posterior over (log_kappa, v, log_sigma_u)
+    # Maximizes the log-posterior density over (log_kappa, v, log_sigma_u)
     log_post <- function(theta) {
       log_kappa <- theta[1]
       v <- theta[2:3]
