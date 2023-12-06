@@ -26,7 +26,7 @@ grad_log_posterior(mesh, kappa, v, lambda, lambda1, y, A, Q_epsilon, m_u)
 \item{m_u}{A vector with length n representing the prior mean m_u}
 }
 \value{
-The calculated log-posterior
+The calculated log-posterior density
 }
 \description{
 Calculates  the gradient of the log posterior of a linear observation y = A u + noise

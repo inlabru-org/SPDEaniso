@@ -50,7 +50,7 @@ log_posterior_general(
 \item{Q_epsilon}{A sparse matrix of size nxn representing the noise precision matrix}
 }
 \value{
-The calculated log-posterior
+The calculated log-posterior density
 }
 \description{
 Calculates  the log-posterior density of parameters (log(kappa),v, log(sigma_u), log(epsilon)))

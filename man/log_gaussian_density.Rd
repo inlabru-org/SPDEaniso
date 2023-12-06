@@ -28,7 +28,7 @@ log_gaussian_density(x, mu, logsigma)
 \item{m_u}{A vector with length n representing the prior mean m_u}
 }
 \value{
-The calculated log-posterior
+The calculated log-posterior density
 
 The calculated log gaussian density
 }
