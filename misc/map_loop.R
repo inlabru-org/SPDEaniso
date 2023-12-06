@@ -55,8 +55,10 @@ log_not_pc_prior <- log_gaussian_prior_quantile(
   a0 = a0, rho0 = rho0, alpha = alpha
 )
 # Testing value of priors
-true_params <- sim_theta_pc_quantile(alpha = alpha, sigmau0 = sigmau0,
-                                     sigmaepsilon0 = sigmaepsilon0, a0 = a0, rho0 = rho0, m = 1)
+true_params <- sim_theta_pc_quantile(
+  alpha = alpha, sigmau0 = sigmau0,
+  sigmaepsilon0 = sigmaepsilon0, a0 = a0, rho0 = rho0, m = 1
+)
 log_kappa <- true_params$log_kappa
 v <- true_params$v
 log_sigma_u <- true_params$log_sigma_u
@@ -81,16 +83,13 @@ log_pc_prior_theta(
 library(sf)
 boundary_sf <- st_sfc(st_polygon(list(rbind(c(0, 0.01), c(10, 0.01), c(10, 10), c(0, 10), c(0, 0.01)))))
 boundary <- fm_as_segm(boundary_sf)
-mesh <- fm_mesh_2d_inla(boundary = boundary, max.edge = c(0.25, 0.25))
+mesh <- fm_mesh_2d_inla(boundary = boundary, max.edge = c(0.5, 0.5))
 nodes <- mesh$loc
 n <- mesh$n
 plot(mesh)
 
-
 m <- 1 # number of iterations
-maxit <- 10
-m <- 10 # number of iterations
-maxit <- 1200
+maxit <- 600
 results <- vector("list", m) # Pre-allocates a list for m iterations
 start_time <- Sys.time()
 for (i in 1:m) {
@@ -136,6 +135,7 @@ for (i in 1:m) {
       # PC results
       pc_results <- list(
         MAP_estimate = map_pc$par, # a 5d vector
+        MAP_value <- map_pc$value,
         convergence = map_pc$convergence, # convergence = 0 no convergence =1
         distance_vector = abs(map_pc$par - unlist(true_params)), # a 5d vector
         covariance_estimate = solve(-map_pc$hessian), # a 5x5 matrix
@@ -147,6 +147,7 @@ for (i in 1:m) {
       # Not-PC results
       not_pc_results <- list(
         MAP_estimate = map_not_pc$par, # a 5d vector
+        MAP_value <- map_not_pc$value,
         convergence = map_not_pc$convergence, # convergence = 0 no convergence =1
         distance_vector = abs(map_not_pc$par - unlist(true_params)), # a 5d vector
         covariance_estimate = solve(-map_not_pc$hessian), # a 5x5 matrix
@@ -167,11 +168,42 @@ for (i in 1:m) {
   )
 }
 end_time <- Sys.time()
-
 # Calculate the duration
 duration <- end_time - start_time
 print(paste("Total time taken: ", duration))
-sapply(results, function(x) x$pc$std_dev_estimates)
+#sapply(results, function(x) x$pc$std_dev_estimates)
+results
+
+#Checking if map for pc_prior is larger than posterior value at true parameters. Doesn't give the same as value for oprtim?
+posterior_value_true <- log_posterior_prior(
+  logprior = log_pc_prior,
+  mesh = mesh, log_kappa = log_kappa, v = v,
+  log_sigma_epsilon = log_sigma_epsilon, log_sigma_u = log_sigma_u,
+  y = y, A = A, m_u = m_u
+)
+posterior_value_true
+posterior_map_pc_value <- log_posterior_prior(
+  logprior = log_pc_prior,
+  mesh = mesh, log_kappa = map_pc$par[1], v = map_pc$par[2:3],
+  log_sigma_epsilon = map_pc$par[4], log_sigma_u = map_pc$par[5],
+  y = y, A = A, m_u = m_u
+)
+posterior_map_pc_value
+
+results[[1]][[2]][[2]]
+
+
+
+
+
+
+
+
+
+
+
+
+
 # This gives the 5d mean vector of the error in each parameter
 # distance_vectors <- sapply(results, function(x) x$pc$distance_vector)
 # distance_vectors
@@ -231,11 +263,3 @@ sapply(results, function(x) x$pc$std_dev_estimates)
 #     not_pc = not_pc_results
 #   )
 # })
-
-
-
-
-
-results[[10]][[1]]
-true_params
-log_posterior()
