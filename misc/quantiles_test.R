@@ -1,3 +1,4 @@
+##Tests that functions that calculate the hyper-parameters and prior densities given quantiles work
 library(devtools)
 # Defines the upper bounds for the quantiles
 a0 <- 10

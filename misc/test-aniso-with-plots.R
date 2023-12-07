@@ -1,4 +1,6 @@
-  library(devtools)
+#Tests that functions fm_aniso_sample and fm_aniso precision for solving nonstationary SPDE and sampling work
+#Plots field and covariance and variancee
+library(devtools)
 library(ggplot2)
 
 # Parameter values stationary, anisotropic field

@@ -368,8 +368,8 @@ MAP <- function(mesh, lambda, lambda1, lambda_epsilon, lambda_u, y, A, m_u, maxi
       log_sigma_u <- theta[4]
       log_sigma_epsilon <- theta[5]
       return(log_posterior(
-        mesh = mesh, log_kappa = log_kappa, v = v,
-        log_sigma_epsilon = log_sigma_epsilon, log_sigma_u = log_sigma_u,
+        mesh = mesh, log_kappa = log_kappa, v = v, 
+        log_sigma_u = log_sigma_u, log_sigma_epsilon = log_sigma_epsilon, 
         lambda = lambda, lambda1 = lambda1, lambda_epsilon = lambda_epsilon, lambda_u = lambda_u,
         y = y, A = A, m_u = m_u
       ))
@@ -385,7 +385,7 @@ MAP <- function(mesh, lambda, lambda1, lambda_epsilon, lambda_u, y, A, m_u, maxi
       log_sigma_u <- theta[4]
       return(log_posterior(
         mesh = mesh, log_kappa = log_kappa, v = v,
-        log_sigma_epsilon = log_sigma_epsilon, log_sigma_u = log_sigma_u,
+        log_sigma_u = log_sigma_u, log_sigma_epsilon = log_sigma_epsilon, 
         lambda = lambda, lambda1 = lambda1, lambda_epsilon = lambda_epsilon, lambda_u = lambda_u,
         y = y, A = A, m_u = m_u
       ))
@@ -558,7 +558,7 @@ MAPgeneral <- function(logprior_aniso, mesh, lambda, lambda1, lambda_epsilon, la
       return(log_posterior_general(
         logprior_aniso = logprior_aniso,
         mesh = mesh, log_kappa = log_kappa, v = v,
-        log_sigma_epsilon = log_sigma_epsilon, log_sigma_u = log_sigma_u,
+        log_sigma_u = log_sigma_u, log_sigma_epsilon = log_sigma_epsilon, 
         lambda = lambda, lambda1 = lambda1, lambda_epsilon = lambda_epsilon, lambda_u = lambda_u,
         y = y, A = A, m_u = m_u
       ))
@@ -673,7 +673,7 @@ MAP_prior <- function(logprior = function(log_kappa, v, log_sigma_u, log_sigma_e
       return(log_posterior_prior(
         logprior = logprior,
         mesh = mesh, log_kappa = log_kappa, v = v,
-        log_sigma_epsilon = log_sigma_epsilon, log_sigma_u = log_sigma_u,
+        log_sigma_u = log_sigma_u, log_sigma_epsilon = log_sigma_epsilon, 
         y = y, A = A, m_u = m_u
       ))
     }
@@ -688,7 +688,7 @@ MAP_prior <- function(logprior = function(log_kappa, v, log_sigma_u, log_sigma_e
       return(log_posterior_prior(
         logprior = logprior,
         mesh = mesh, log_kappa = log_kappa, v = v,
-        log_sigma_epsilon = log_sigma_epsilon, log_sigma_u = log_sigma_u,
+        log_sigma_u = log_sigma_u, log_sigma_epsilon = log_sigma_epsilon, 
         y = y, A = A, m_u = m_u
       ))
     }

@@ -22,27 +22,9 @@ sigmaepsilon0 <- 0.1 # control standard deviation of noise
 
 # Defines the quantile
 alpha <- 0.01
-# Calculates the hyperparameters of PC by hand
-lambda1 <- lambda1_quantile(a0) # Controls the size of v
-lambda <- lambda_quantile(rho0 = rho0, lambda1 = lambda1) # Controls the size of kappa
-lambda_u <- lambda_variance_quantile(sigma0 = sigmau0) # Controls the variance of the field
-lambda_epsilon <- lambda_variance_quantile(sigma0 = sigmaepsilon0) # Controls the variance of the noise
-hyper_pc <- list(
-  lambda = lambda, lambda1 = lambda1, lambda_u = lambda_u,
-  lambda_epsilon = lambda_epsilon
-)
-true_params <- sim_theta_pc_quantile(
-  alpha = alpha, sigmau0 = sigmau0,
-  sigmaepsilon0 = sigmaepsilon0, a0 = a0, rho0 = rho0, m = 1
-)
-print(hyper_pc)
-print(true_params)
-# Calculates the hyperparameters of not PC by hand
-sigma2_quantile_v(a0)
-lambda_quantile_kappa(rho0)
-
 
 # Setting mean of the field
+
 m_u <- 0
 # Calculates the log prior density function of theta for PC and non-PC priors
 log_pc_prior <- log_pc_prior_quantile(
@@ -54,31 +36,7 @@ log_not_pc_prior <- log_gaussian_prior_quantile(
   sigmau0 = sigmau0, sigmaepsilon0 = sigmaepsilon0,
   a0 = a0, rho0 = rho0, alpha = alpha
 )
-# Testing value of priors
-true_params <- sim_theta_pc_quantile(
-  alpha = alpha, sigmau0 = sigmau0,
-  sigmaepsilon0 = sigmaepsilon0, a0 = a0, rho0 = rho0, m = 1
-)
-log_kappa <- true_params$log_kappa
-v <- true_params$v
-log_sigma_u <- true_params$log_sigma_u
-log_sigma_epsilon <- true_params$log_sigma_epsilon
-# Testing that log_pc_prior is the same when using parameters and quantiles
-log_pc_prior(
-  log_kappa = log_kappa, v = v,
-  log_sigma_u = log_sigma_u, log_sigma_epsilon = log_sigma_epsilon
-)
-log_pc_prior_theta(
-  lambda = lambda, lambda1 = lambda1, lambda_epsilon = lambda_epsilon,
-  lambda_u = lambda_u, log_kappa = log_kappa, v = v,
-  log_sigma_u = log_sigma_u, log_sigma_epsilon = log_sigma_epsilon
-)
-# Comparing against value with arbitraty hyperparameters. With arbitrary parameters should be smaller in general.
-log_pc_prior_theta(
-  lambda = 1, lambda1 = 1, lambda_epsilon = 1, lambda_u = 1,
-  log_kappa = log_kappa, v = v, log_sigma_u = log_sigma_u,
-  log_sigma_epsilon = log_sigma_epsilon
-)
+
 # Mesh definition
 library(sf)
 boundary_sf <- st_sfc(st_polygon(list(rbind(c(0, 0.01), c(10, 0.01), c(10, 10), c(0, 10), c(0, 0.01)))))
@@ -185,23 +143,32 @@ posterior_value_true
 posterior_map_pc_value <- log_posterior_prior(
   logprior = log_pc_prior,
   mesh = mesh, log_kappa = map_pc$par[1], v = map_pc$par[2:3],
-  log_sigma_epsilon = map_pc$par[4], log_sigma_u = map_pc$par[5],
+  log_sigma_u = map_pc$par[4],log_sigma_epsilon = map_pc$par[5],
   y = y, A = A, m_u = m_u
 )
 posterior_map_pc_value
 
 results[[1]][[2]][[2]]
+log_posterior_prior(
+  logprior = log_pc_prior,
+  mesh = mesh, log_kappa = log_kappa, v = v,
+  log_sigma_epsilon = log_sigma_epsilon, log_sigma_u = log_sigma_u,
+  y = y, A = A, m_u = m_u
+)
 
 
-
-
-
-
-
-
-
-
-
+log_post <- function(theta) {
+  log_kappa <- theta[1]
+  v <- theta[2:3]
+  log_sigma_u <- theta[4]
+  log_sigma_epsilon <- theta[5]
+  return(log_posterior_prior(
+    logprior = log_pc_prior,
+    mesh = mesh, log_kappa = log_kappa, v = v,
+    log_sigma_epsilon = log_sigma_epsilon, log_sigma_u = log_sigma_u,
+    y = y, A = A, m_u = m_u
+  ))
+}
 
 
 # This gives the 5d mean vector of the error in each parameter
@@ -263,3 +230,9 @@ results[[1]][[2]][[2]]
 #     not_pc = not_pc_results
 #   )
 # })
+
+
+maphyper<-MAP(mesh, lambda, lambda1, lambda_epsilon, lambda_u,
+                y, A, m_u, maxiterations = 600, theta0 = unlist(true_params))
+maphyper
+map_pc

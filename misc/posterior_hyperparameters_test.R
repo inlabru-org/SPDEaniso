@@ -1,3 +1,5 @@
+#Tests that PC priors on parameters, log determinant, log posterior work
+#Tests that MAP works and is equal using hyperparameters and passing log_pc_prior as function with the same hyperparameters
 library(SPDEaniso)
 library(devtools)
 library(ggplot2)
@@ -89,6 +91,29 @@ log_posterior_true <- log_posterior(mesh = mesh,
                                     A = A,
                                     m_u = m_u
                                     )
+
+#Optimizing over log(kappa), v, log(sigma_u) log(sigma_noise)
+map_full <- MAP(mesh = mesh,
+           lambda =lambda, lambda1 = lambda1, lambda_epsilon = lambda_epsilon, lambda_u = lambda_u,
+           y= y, A = A, m_u =m_u, maxiterations = 600)
+print(map_full)
+cov2cor(solve(-map_full$hessian))
+par_full <- map_full$par
+real_par_full <- c(log_kappa,v,log_sigma_u, log_sigma_epsilon)
+print(map_full$par-real_par_full)
+sqrt(diag(solve(-map_full$hessian)))
+
+print("Tests that MAP using PC priors returns the same thing as MAP using PC priors defined through hyperparameters")
+map_pc <- MAP_prior(logprior = log_pc_prior ,mesh = mesh,
+                    y= y, A = A, m_u =m_u, maxiterations = 600)
+print(map_pc$par-map_full$par)
+print(map_pc)
+cov2cor(solve(-map_pc$hessian))
+par_full <- map_pc$par
+real_par_full <- c(log_kappa,v,log_sigma_u, log_sigma_epsilon)
+print(map_pc$par-real_par_full)
+sqrt(diag(solve(-map_pc$hessian)))
+
 # #Optimizing over log(kappa), v, log(sigma_noise)
 # map <- MAP(mesh = mesh,
 #     lambda =lambda, lambda1 = lambda1, lambda_epsilon = lambda_epsilon, lambda_u = lambda_u,
@@ -100,41 +125,8 @@ log_posterior_true <- log_posterior(mesh = mesh,
 # print(par-real_par)
 # sqrt(diag(solve(-map$hessian)))
 
-#Optimizing over log(kappa), v, log(sigma_u) log(sigma_noise)
-map_full %<-% MAP(mesh = mesh,
-           lambda =lambda, lambda1 = lambda1, lambda_epsilon = lambda_epsilon, lambda_u = lambda_u,
-           y= y, A = A, m_u =m_u, maxiterations = 600)
-print(map_full)
-cov2cor(solve(-map_full$hessian))
-par_full <- map_full$par
-real_par_full <- c(log_kappa,v,log_sigma_u, log_sigma_epsilon)
-print(map_full$par-real_par_full)
-sqrt(diag(solve(-map_full$hessian)))
 
-map_pc <- MAP_prior(logprior = log_pc_prior ,mesh = mesh,
-                    y= y, A = A, m_u =m_u, maxiterations = 600)
-print(map_pc$par-map_full$par)
-print(map_pc)
-cov2cor(solve(-map_pc$hessian))
-par_full <- map_pc$par
-real_par_full <- c(log_kappa,v,log_sigma_u, log_sigma_epsilon)
-print(map_pc$par-real_par_full)
-sqrt(diag(solve(-map_pc$hessian)))
 #Plots
 # ggplot()+ gg(data=mesh,color = x)
 # ggplot()+ gg(data=mesh,color = sqrt(as.vector(diag(INLA::inla.qinv(Q)))))
 # ggplot()+ gg(data=mesh,color = as.vector(diag(INLA::inla.qinv(Q))))
-
-log_prior_aniso <- function(log_kappa,v){
-  log_gaussian_density(log_kappa,0,1)+log_gaussian_density(v[1],0,1)+log_gaussian_density(v[2],0,1)
-}
-# map_full_general <- MAPgeneral(logprior_aniso = log_prior_aniso, mesh = mesh,
-#                 lambda =lambda, lambda1 = lambda1, lambda_epsilon = lambda_epsilon, lambda_u = lambda_u,
-#                 y= y, A = A, m_u =m_u, maxiterations = 2400)
-#
-# print(map_full)
-# cov2cor(solve(-map_full_general$hessian))
-# par_full <- map_full_general$par
-# real_par_full_general <- c(log_kappa,v,log_sigma_u, log_sigma_epsilon)
-# print(map_full_general$par-real_par_full_general)
-# sqrt(diag(solve(-map_full_general$hessian)))
