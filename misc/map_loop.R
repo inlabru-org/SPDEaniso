@@ -59,11 +59,6 @@ for (i in 1:m) {
         sigmaepsilon0 = sigmaepsilon0,
         a0 = a0, rho0 = rho0, m = 1
       )
-      # true_params <- list(
-      #   log_kappa = -0.5,
-      #   v = c(0, 0),
-      #   log_sigma_u = 0,
-      #   log_sigma_epsilon = -3)
       # Extract true parameters
       log_kappa <- true_params$log_kappa
       kappa <- exp(log_kappa)
@@ -72,7 +67,7 @@ for (i in 1:m) {
       log_sigma_epsilon <- true_params$log_sigma_epsilon
       aniso <- list(rep(kappa, n), matrix(v, n, 2))
 
-      # Sample from noisyy data
+      # Sample from noisy data
       x <- fm_aniso_basis_weights_sample(x = mesh, aniso = aniso)
       A <- Matrix::Diagonal(n, 1)
       y <- A %*% x + exp(log_sigma_epsilon) * stats::rnorm(n)
@@ -125,50 +120,11 @@ for (i in 1:m) {
     error = function(e) {}
   )
 }
-end_time <- Sys.time()
-# Calculate the duration
-duration <- end_time - start_time
-print(paste("Total time taken: ", duration))
+
 #sapply(results, function(x) x$pc$std_dev_estimates)
 results
 
-#Checking if map for pc_prior is larger than posterior value at true parameters. Doesn't give the same as value for oprtim?
-posterior_value_true <- log_posterior_prior(
-  logprior = log_pc_prior,
-  mesh = mesh, log_kappa = log_kappa, v = v,
-  log_sigma_epsilon = log_sigma_epsilon, log_sigma_u = log_sigma_u,
-  y = y, A = A, m_u = m_u
-)
-posterior_value_true
-posterior_map_pc_value <- log_posterior_prior(
-  logprior = log_pc_prior,
-  mesh = mesh, log_kappa = map_pc$par[1], v = map_pc$par[2:3],
-  log_sigma_u = map_pc$par[4],log_sigma_epsilon = map_pc$par[5],
-  y = y, A = A, m_u = m_u
-)
-posterior_map_pc_value
 
-results[[1]][[2]][[2]]
-log_posterior_prior(
-  logprior = log_pc_prior,
-  mesh = mesh, log_kappa = log_kappa, v = v,
-  log_sigma_epsilon = log_sigma_epsilon, log_sigma_u = log_sigma_u,
-  y = y, A = A, m_u = m_u
-)
-
-
-log_post <- function(theta) {
-  log_kappa <- theta[1]
-  v <- theta[2:3]
-  log_sigma_u <- theta[4]
-  log_sigma_epsilon <- theta[5]
-  return(log_posterior_prior(
-    logprior = log_pc_prior,
-    mesh = mesh, log_kappa = log_kappa, v = v,
-    log_sigma_epsilon = log_sigma_epsilon, log_sigma_u = log_sigma_u,
-    y = y, A = A, m_u = m_u
-  ))
-}
 
 
 # This gives the 5d mean vector of the error in each parameter
@@ -232,7 +188,4 @@ log_post <- function(theta) {
 # })
 
 
-maphyper<-MAP(mesh, lambda, lambda1, lambda_epsilon, lambda_u,
-                y, A, m_u, maxiterations = 600, theta0 = unlist(true_params))
-maphyper
-map_pc
+
