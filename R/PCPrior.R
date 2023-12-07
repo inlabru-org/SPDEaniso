@@ -603,7 +603,7 @@ MAPgeneral <- function(logprior_aniso, mesh, lambda, lambda1, lambda_epsilon, la
 #' @param A Matrix of size nxn representing the transformation A
 #' @param Q_epsilon A sparse matrix of size nxn representing the noise precision matrix
 #' @param m_u A vector with length n representing the prior mean m_u. If a number is given is transformed into (m_u, m_u,..., m_u)
-#'
+
 #' @return The calculated log-posterior
 #' @export
 log_posterior_prior <- function(logprior, mesh, log_kappa, v, log_sigma_u = 0, log_sigma_epsilon, y, A, m_u) {
