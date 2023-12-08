@@ -8,7 +8,7 @@ l <- 4
 # Create a data frame
 kappa_values <- seq(0, l, by = 0.05)
 y_values <- sapply(kappa_values,
-                   function(kappa) 1/kappa * PC_prior_kappa(log_kappa = log(kappa),
+                   function(kappa) 1/kappa * PC_prior_log_kappa(log_kappa = log(kappa),
                                                   lambda = lambda, lambda1 = lambda1))
 df <- data.frame(kappa = kappa_values, y = y_values)
 

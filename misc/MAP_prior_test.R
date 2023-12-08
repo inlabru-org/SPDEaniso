@@ -107,7 +107,7 @@ log_pc_prior_theta(
 library(sf)
 boundary_sf <- st_sfc(st_polygon(list(rbind(c(0, 0.01), c(10, 0.01), c(10, 10), c(0, 10), c(0, 0.01)))))
 boundary <- fm_as_segm(boundary_sf)
-mesh <- fm_mesh_2d_inla(boundary = boundary, max.edge = c(0.5, 0.5))
+mesh <- fm_mesh_2d_inla(boundary = boundary, max.edge = c(1, 1))
 nodes <- mesh$loc
 n <- mesh$n
 plot(mesh)
@@ -165,9 +165,9 @@ map_pc$value == log_posterior_pc(
 
 print("Checking if MAP_prior with PC priors returns the same thing as MAP using PC priors defined through hyperparameters")
 
-# maphyper<-MAP(mesh, lambda, lambda1, lambda_epsilon, lambda_u,
-#               y, A, m_u, maxiterations = maxit, theta0 = unlist(true_params))
-# maphyper$value == map_pc$value & maphyper$par == map_pc$par
+maphyper<-MAP_pc(mesh, lambda, lambda1, lambda_epsilon, lambda_u,
+              y, A, m_u, maxiterations = maxit, theta0 = unlist(true_params))
+maphyper$value == map_pc$value & maphyper$par == map_pc$par
 
 print("Checking if Hessian of MAP_prior is invertible and calculating marginal standard deviation")
 hessian <- map_pc$hessian
@@ -176,93 +176,80 @@ sqrt(-diag(hessian_inv))
 
 print("Plotting the posterior distribution of the parameters")
 
-# Defines the log_posterior density as a function of log_kappa keeping the other parameters fixed at the MAP
-log_posterior_pc_log_kappa <- function(log_kappa) {
-  log_posterior_pc(
-    log_kappa = log_kappa, v = map_pc$par[2:3],
-    log_sigma_u = map_pc$par[4], log_sigma_epsilon = map_pc$par[5]
-  )
+plotter <- function(map){
+  # Defines the log_pc_posterior density as a function of log_kappa keeping the other parameters fixed at the MAP
+  log_posterior_pc_log_kappa <- function(log_kappa) {
+    log_posterior_pc(
+      log_kappa = log_kappa, v = map$par[2:3],
+      log_sigma_u = map$par[4], log_sigma_epsilon = map$par[5]
+    )
+  }
+  # Defines the log_pc_posterior density as a function of v1 keeping the other parameters fixed at the MAP
+  log_posterior_pc_v1 <- function(v1) {
+    log_posterior_pc(
+      log_kappa = map$par[1], v = c(v1, map$par[3]),
+      log_sigma_u = map$par[4], log_sigma_epsilon = map$par[5]
+    )
+  }
+  # Defines the log_pc_posterior density as a function of v2 keeping the other parameters fixed at the MAP
+  log_posterior_pc_v2 <- function(v2) {
+    log_posterior_pc(
+      log_kappa = map$par[1], v = c(map$par[2], v2),
+      log_sigma_u = map$par[4], log_sigma_epsilon = map$par[5]
+    )
+  }
+  # Defines the log_pc_posterior density as a function of log_sigma_u keeping the other parameters fixed at the MAP
+  log_posterior_pc_log_sigma_u <- function(log_sigma_u) {
+    log_posterior_pc(
+      log_kappa = map$par[1], v = map$par[2:3],
+      log_sigma_u = log_sigma_u, log_sigma_epsilon = map$par[5]
+    )
+  }
+  # Defines the log_pc_posterior density as a function of log_sigma_epsilon keeping the other parameters fixed at the MAP
+  log_posterior_pc_log_sigma_epsilon <- function(log_sigma_epsilon) {
+    log_posterior_pc(
+      log_kappa = map$par[1], v = map$par[2:3],
+      log_sigma_u = map$par[4], log_sigma_epsilon = log_sigma_epsilon
+    )
+  }
+  #Defines the partitions for plotting
+  n_points <- 51  # Number of points in the partition centered at MAP_prior value of kappa
+  partition_log_kappa <- seq(map$par[1] - 0.5, map$par[1] + 0.5, length.out = n_points)
+  partition_v1 <- seq(map$par[2] - 0.5, map$par[2] + 0.5, length.out = n_points)
+  partition_v2 <- seq(map$par[3] - 0.5, map$par[3] + 0.5, length.out = n_points)
+  partition_log_sigma_u <- seq(map$par[4] - 0.5, map$par[4] + 0.5, length.out = n_points)
+  partition_log_sigma_epsilon <- seq(map$par[5] - 4, map$par[5] +4, length.out = n_points)
+
+  # Apply the function to each point in the partition
+  posterior_values_log_kappa <- sapply(partition_log_kappa, log_posterior_pc_log_kappa)
+  posterior_values_v1 <- sapply(partition_v1, log_posterior_pc_v1)
+  posterior_values_v2 <- sapply(partition_v2, log_posterior_pc_v2)
+  posterior_values_log_sigma_u <- sapply(partition_log_sigma_u, log_posterior_pc_log_sigma_u)
+  posterior_values_log_sigma_epsilon <- sapply(partition_log_sigma_epsilon, log_posterior_pc_log_sigma_epsilon)
+
+  # Plot the results with a vertical line at the MAP_prior value of kappa
+  plot(partition_log_kappa, posterior_values_log_kappa, type = "l", xlab = "log_kappa", ylab = "log_pc_posterior")
+  abline(v = map$par[1], col = "red")
+
+  # Plot the results with a vertical line at the MAP_prior value of v1
+  plot(partition_v1, posterior_values_v1, type = "l", xlab = "v1", ylab = "log_pc_posterior")
+  abline(v = map$par[2], col = "red")
+
+  # Plot the results with a vertical line at the MAP_prior value of v2
+  plot(partition_v2, posterior_values_v2, type = "l", xlab = "v2", ylab = "log_pc_posterior")
+  abline(v = map$par[3], col = "red")
+
+  # Plot the results with a vertical line at the MAP_prior value of log_sigma_u
+  plot(partition_log_sigma_u, posterior_values_log_sigma_u, type = "l", xlab = "log_sigma_u", ylab = "log_pc_posterior")
+  abline(v = map$par[4], col = "red")
+
+  # Plot the results with a vertical line at the MAP_prior value of log_sigma_epsilon
+  plot(partition_log_sigma_epsilon, posterior_values_log_sigma_epsilon, type = "l", xlab = "log_sigma_epsilon", ylab = "log_pc_posterior")
+  abline(v = map$par[5], col = "red")
 }
-# Defines the log_posterior density as a function of v1 keeping the other parameters fixed at the MAP
-log_posterior_pc_v1 <- function(v1) {
-  log_posterior_pc(
-    log_kappa = map_pc$par[1], v = c(v1, map_pc$par[3]),
-    log_sigma_u = map_pc$par[4], log_sigma_epsilon = map_pc$par[5]
-  )
-}
-# Defines the log_posterior density as a function of v2 keeping the other parameters fixed at the MAP
-log_posterior_pc_v2 <- function(v2) {
-  log_posterior_pc(
-    log_kappa = map_pc$par[1], v = c(map_pc$par[2], v2),
-    log_sigma_u = map_pc$par[4], log_sigma_epsilon = map_pc$par[5]
-  )
-}
-# Defines the log_posterior density as a function of log_sigma_u keeping the other parameters fixed at the MAP
-log_posterior_pc_log_sigma_u <- function(log_sigma_u) {
-  log_posterior_pc(
-    log_kappa = map_pc$par[1], v = map_pc$par[2:3],
-    log_sigma_u = log_sigma_u, log_sigma_epsilon = map_pc$par[5]
-  )
-}
-# Defines the log_posterior density as a function of log_sigma_epsilon keeping the other parameters fixed at the MAP
-log_posterior_pc_log_sigma_epsilon <- function(log_sigma_epsilon) {
-  log_posterior_pc(
-    log_kappa = map_pc$par[1], v = map_pc$par[2:3],
-    log_sigma_u = map_pc$par[4], log_sigma_epsilon = log_sigma_epsilon
-  )
-}
-#Defines the partitions for plotting
-n_points <- 51  # Number of points in the partition centered at MAP_prior value of kappa
-partition_log_kappa <- seq(map_pc$par[1] - 0.5, map_pc$par[1] + 0.5, length.out = n_points)
-partition_v1 <- seq(map_pc$par[2] - 0.5, map_pc$par[2] + 0.5, length.out = n_points)
-partition_v2 <- seq(map_pc$par[3] - 0.5, map_pc$par[3] + 0.5, length.out = n_points)
-partition_log_sigma_u <- seq(map_pc$par[4] - 0.5, map_pc$par[4] + 0.5, length.out = n_points)
-partition_log_sigma_epsilon <- seq(map_pc$par[5] - 4, map_pc$par[5] +4, length.out = n_points)
+plotter(map = map_pc)
 
-# Apply the function to each point in the partition
-posterior_values_log_kappa <- sapply(partition_log_kappa, log_posterior_pc_log_kappa)
-posterior_values_v1 <- sapply(partition_v1, log_posterior_pc_v1)
-posterior_values_v2 <- sapply(partition_v2, log_posterior_pc_v2)
-posterior_values_log_sigma_u <- sapply(partition_log_sigma_u, log_posterior_pc_log_sigma_u)
-posterior_values_log_sigma_epsilon <- sapply(partition_log_sigma_epsilon, log_posterior_pc_log_sigma_epsilon)
-
-# Plot the results with a vertical line at the MAP_prior value of kappa
-plot(partition_log_kappa, posterior_values_log_kappa, type = "l", xlab = "log_kappa", ylab = "log_posterior")
-abline(v = map_pc$par[1], col = "red")
-
-# Plot the results with a vertical line at the MAP_prior value of v1
-plot(partition_v1, posterior_values_v1, type = "l", xlab = "v1", ylab = "log_posterior")
-abline(v = map_pc$par[2], col = "red")
-
-# Plot the results with a vertical line at the MAP_prior value of v2
-plot(partition_v2, posterior_values_v2, type = "l", xlab = "v2", ylab = "log_posterior")
-abline(v = map_pc$par[3], col = "red")
-
-# Plot the results with a vertical line at the MAP_prior value of log_sigma_u
-plot(partition_log_sigma_u, posterior_values_log_sigma_u, type = "l", xlab = "log_sigma_u", ylab = "log_posterior")
-abline(v = map_pc$par[4], col = "red")
-
-# Plot the results with a vertical line at the MAP_prior value of log_sigma_epsilon
-plot(partition_log_sigma_epsilon, posterior_values_log_sigma_epsilon, type = "l", xlab = "log_sigma_epsilon", ylab = "log_posterior")
-abline(v = map_pc$par[5], col = "red")
-
-
-
-
-
-# Testing convergence of MAP with arbitrary and good hyperparameters
-# maphyper<-MAP(mesh, lambda=1, lambda1=1, lambda_epsilon=1, lambda_u=1,
-#               y, A, m_u, maxiterations = 600, theta0 = unlist(true_params))
-# maphypergood<-MAP(mesh, lambda, lambda1, lambda_epsilon, lambda_u,
-#               y, A, m_u, maxiterations = 600)
-
-
-
-map_pc_2 <- MAP_prior(
-  logprior = log_pc_prior, mesh = mesh,
-  y = y, A = A, m_u = m_u, maxiterations = maxit,
-  theta0 = unlist(map_pc$par)
-  #,log_sigma_epsilon = log_sigma_epsilon
-)
+#Showing true parameters, MAP, and standard deviation of the parameters
+unlist(true_params)
 map_pc$par
-# map_pc_2$par
+sqrt(-diag(hessian_inv))

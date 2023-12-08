@@ -2,7 +2,7 @@
 % Please edit documentation in R/PCPrior.R
 \name{log_gaussian_density}
 \alias{log_gaussian_density}
-\title{Calculates  the MAP estimate for linear noisy observation of field.}
+\title{Log Gaussian density 1D}
 \usage{
 log_gaussian_density(x, mu, logsigma)
 }
@@ -12,29 +12,11 @@ log_gaussian_density(x, mu, logsigma)
 \item{mu}{A numeric vector representing the mean mu}
 
 \item{logsigma}{A numeric vector representing the variance logsigma}
-
-\item{mesh}{The mesh}
-
-\item{lambda}{A hyperparameter controlling the size of kappa.}
-
-\item{lambda1}{A hyperparameter controlling the size of |v|.}
-
-\item{lambda_epsilon}{A hyperparameter controlling the size of sigma_epsilon.}
-
-\item{y}{A vector with length equal to the number of basis elements n representing the observed data.}
-
-\item{A}{Matrix of size nxn representing the transformation A}
-
-\item{m_u}{A vector with length n representing the prior mean m_u}
 }
 \value{
-The calculated log-posterior density
-
 The calculated log gaussian density
 }
 \description{
-Calculated by maximizing log posterior using optim. Only stationary parameters accepted.
-
 Calculates  the log of the gaussian density with mean mu and variance sigma^2
 }
 \examples{
