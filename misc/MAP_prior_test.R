@@ -107,7 +107,7 @@ log_pc_prior_theta(
 library(sf)
 boundary_sf <- st_sfc(st_polygon(list(rbind(c(0, 0.01), c(10, 0.01), c(10, 10), c(0, 10), c(0, 0.01)))))
 boundary <- fm_as_segm(boundary_sf)
-mesh <- fm_mesh_2d_inla(boundary = boundary, max.edge = c(0.75, 0.75))
+mesh <- fm_mesh_2d_inla(boundary = boundary, max.edge = c(0.5, 0.5))
 nodes <- mesh$loc
 n <- mesh$n
 plot(mesh)
@@ -165,9 +165,9 @@ map_pc$value == log_posterior_pc(
 
 print("Checking if MAP_prior with PC priors returns the same thing as MAP using PC priors defined through hyperparameters")
 
-maphyper<-MAP(mesh, lambda, lambda1, lambda_epsilon, lambda_u,
-              y, A, m_u, maxiterations = maxit, theta0 = unlist(true_params))
-maphyper$value == map_pc$value & maphyper$par == map_pc$par
+# maphyper<-MAP(mesh, lambda, lambda1, lambda_epsilon, lambda_u,
+#               y, A, m_u, maxiterations = maxit, theta0 = unlist(true_params))
+# maphyper$value == map_pc$value & maphyper$par == map_pc$par
 
 print("Checking if Hessian of MAP_prior is invertible and calculating marginal standard deviation")
 hessian <- map_pc$hessian
@@ -217,7 +217,7 @@ partition_log_kappa <- seq(map_pc$par[1] - 0.5, map_pc$par[1] + 0.5, length.out 
 partition_v1 <- seq(map_pc$par[2] - 0.5, map_pc$par[2] + 0.5, length.out = n_points)
 partition_v2 <- seq(map_pc$par[3] - 0.5, map_pc$par[3] + 0.5, length.out = n_points)
 partition_log_sigma_u <- seq(map_pc$par[4] - 0.5, map_pc$par[4] + 0.5, length.out = n_points)
-partition_log_sigma_epsilon <- seq(map_pc$par[5] - 4, map_pc$par[5] + 0.5, length.out = n_points)
+partition_log_sigma_epsilon <- seq(map_pc$par[5] - 4, map_pc$par[5] +4, length.out = n_points)
 
 # Apply the function to each point in the partition
 posterior_values_log_kappa <- sapply(partition_log_kappa, log_posterior_pc_log_kappa)
@@ -235,7 +235,7 @@ plot(partition_v1, posterior_values_v1, type = "l", xlab = "v1", ylab = "log_pos
 abline(v = map_pc$par[2], col = "red")
 
 # Plot the results with a vertical line at the MAP_prior value of v2
-plot(partition, posterior_values_v2, type = "l", xlab = "v2", ylab = "log_posterior")
+plot(partition_v2, posterior_values_v2, type = "l", xlab = "v2", ylab = "log_posterior")
 abline(v = map_pc$par[3], col = "red")
 
 # Plot the results with a vertical line at the MAP_prior value of log_sigma_u
@@ -251,12 +251,18 @@ abline(v = map_pc$par[5], col = "red")
 
 
 # Testing convergence of MAP with arbitrary and good hyperparameters
-maphyper<-MAP(mesh, lambda=1, lambda1=1, lambda_epsilon=1, lambda_u=1,
-              y, A, m_u, maxiterations = 600, theta0 = unlist(true_params))
-maphypergood<-MAP(mesh, lambda, lambda1, lambda_epsilon, lambda_u,
-              y, A, m_u, maxiterations = 600)
+# maphyper<-MAP(mesh, lambda=1, lambda1=1, lambda_epsilon=1, lambda_u=1,
+#               y, A, m_u, maxiterations = 600, theta0 = unlist(true_params))
+# maphypergood<-MAP(mesh, lambda, lambda1, lambda_epsilon, lambda_u,
+#               y, A, m_u, maxiterations = 600)
 
 
 
-
-
+map_pc_2 <- MAP_prior(
+  logprior = log_pc_prior, mesh = mesh,
+  y = y, A = A, m_u = m_u, maxiterations = maxit,
+  theta0 = unlist(map_pc$par)
+  #,log_sigma_epsilon = log_sigma_epsilon
+)
+map_pc$par
+# map_pc_2$par
