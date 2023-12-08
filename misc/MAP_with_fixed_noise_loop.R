@@ -46,13 +46,13 @@ log_not_pc_prior <- log_gaussian_prior_quantile(
 library(sf)
 boundary_sf <- st_sfc(st_polygon(list(rbind(c(0, 0.01), c(10, 0.01), c(10, 10), c(0, 10), c(0, 0.01)))))
 boundary <- fm_as_segm(boundary_sf)
-mesh <- fm_mesh_2d_inla(boundary = boundary, max.edge = c(0.5, 0.5))
+mesh <- fm_mesh_2d_inla(boundary = boundary, max.edge = c(1, 1))
 nodes <- mesh$loc
 n <- mesh$n
 plot(mesh)
 
 m <- 100 # number of iterations
-maxit <- 1200
+maxit <- 600
 results <- vector("list", m) # Pre-allocates a list for m iterations
 for (i in 1:m) {
   tryCatch(
