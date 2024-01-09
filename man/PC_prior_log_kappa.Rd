@@ -9,9 +9,9 @@ PC_prior_log_kappa(log_kappa, lambda, lambda1)
 \arguments{
 \item{log_kappa}{Logarithm of the inverse correlation range kappa.}
 
-\item{lambda}{A hyperparameter controlling the penalization of the distance from the base moedel as a function of kappa}
+\item{lambda}{A hyperparameter controlling the penalization of the distance from the base model as a function of kappa}
 
-\item{lambda1}{A hyperparameter controlling the penalization of the distance from the base moedel as a function of v}
+\item{lambda1}{A hyperparameter controlling the penalization of the distance from the base model as a function of v}
 }
 \value{
 The calculated marginal prior density of log(kappa) .

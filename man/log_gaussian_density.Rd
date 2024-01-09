@@ -11,13 +11,13 @@ log_gaussian_density(x, mu, logsigma)
 
 \item{mu}{A numeric vector representing the mean mu}
 
-\item{logsigma}{A numeric vector representing the variance logsigma}
+\item{log}{sigma A numeric vector representing the variance log sigma}
 }
 \value{
-The calculated log gaussian density
+The calculated log Gaussian density
 }
 \description{
-Calculates  the log of the gaussian density with mean mu and variance sigma^2
+Calculates  the log of the Gaussian density with mean mu and variance sigma^2
 }
 \examples{
 x <- 1

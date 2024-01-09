@@ -2,7 +2,7 @@
 % Please edit documentation in R/PCPrior.R
 \name{MAP_prior}
 \alias{MAP_prior}
-\title{Calculates  the MAP estimate for linear noisy observation of field with a general prior on theta = (log(kappa),v, log(sigma_u), log(sigma_epsilon)).}
+\title{Calculates the MAP estimate for linear noisy observation of field with a general prior on theta = (log(kappa),v, log(sigma_u), log(sigma_epsilon)).}
 \usage{
 MAP_prior(
   logprior = function(log_kappa, v, log_sigma_u, log_sigma_epsilon) {
@@ -29,15 +29,15 @@ If not specified, it is assumed to be the function that returns 0.}
 
 \item{m_u}{A vector with length n representing the prior mean m_u}
 
-\item{log_sigma_epsilon}{Variance of noise, if NULL it is estimated by the MAP}
+\item{log_sigma_epsilon}{Variance of noise, if NULL, it is estimated by the MAP}
 
 \item{maxiterations}{Maximum number of iterations for optim, by default 300}
 
-\item{theta0}{Initial value for the parameters (log(kappa), v, log(sigma_u), log(sigma_epsilon)). By default set to (log(0.5), 1, 2, 1, 1)}
+\item{theta0}{Initial value for the parameters (log(kappa), v, log(sigma_u), log(sigma_epsilon)). By default, set to (log(0.5), 1, 2, 1, 1)}
 }
 \value{
 The parameters (log_kappa, v, log_sigma_u, log_sigma_epsilon) that maximize the posterior
 }
 \description{
-Calculated by maximizing log posterior using optim. Only stationary parameters accepted.
+Calculated by maximizing log posterior using optim. Only stationary parameters are accepted.
 }

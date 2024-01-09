@@ -13,7 +13,7 @@ fdist(r)
 The calculated component of the distance from the flexible to the base model depending on |v|
 }
 \description{
-Calculates the compenent of the distance from the flexible to the base model depending on |v|
+Calculates the component of the distance from the flexible to the base model depending on |v|
 }
 \examples{
 r <- 0.5

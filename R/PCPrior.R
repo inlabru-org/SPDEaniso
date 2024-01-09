@@ -1,7 +1,7 @@
 #' @importFrom Matrix t solve
 
 #' @title fdist
-#' @description Calculates the compenent of the distance from the flexible to the base model depending on |v|
+#' @description Calculates the component of the distance from the flexible to the base model depending on |v|
 #'
 #' @param r A positive number representing the norm of the anisotropy vector
 #' @return The calculated component of the distance from the flexible to the base model depending on |v|
@@ -15,7 +15,7 @@ fdist <- function(r) {
 
 
 #' @title fdist_prime
-#' @description Calculates the derivative of the compenent of the distance from the flexible to the base model depending on |v|
+#' @description Calculates the derivative of the component of the distance from the flexible to the base model depending on |v|
 #'
 #' @param r A positive number representing the norm of the anisotropy vector
 #' @return The calculated derivative of the component of the distance from the flexible to the base model depending on |v|
@@ -31,8 +31,8 @@ fdist_prime <- function(r) {
 #' @title Marginal PC prior density of log(kappa)
 #' @description Calculates  the marginal PC prior pi_{log(kappa)} of the inverse correlation range kappa
 #'
-#' @param lambda A hyperparameter controlling the penalization of the distance from the base moedel as a function of kappa
-#' @param lambda1 A hyperparameter controlling the penalization of the distance from the base moedel as a function of v
+#' @param lambda A hyperparameter controlling the penalization of the distance from the base model as a function of kappa
+#' @param lambda1 A hyperparameter controlling the penalization of the distance from the base model as a function of v
 #' @param log_kappa Logarithm of the inverse correlation range kappa.
 #'
 #' @return The calculated marginal prior density of log(kappa) .
@@ -53,7 +53,7 @@ PC_prior_log_kappa <- function(log_kappa, lambda, lambda1) {
 #' @title Marginal PC prior density of r = |v|
 #' @description Calculates  the marginal PC prior, pi_r, of the norm of the anisotropy vector
 #'
-#' @param lambda1 A hyperparameter controlling the penalization of the distance from the base moedel as a function of r.
+#' @param lambda1 A hyperparameter controlling the penalization of the distance from the base model as a function of r.
 #' @param log_r The logarithm of |v|, which controls the magnitude of the anisotropy
 #'
 #' @return The calculated marginal prior density of log(r).
@@ -74,8 +74,8 @@ PC_prior_r <- function(log_r, lambda1) {
 #' @title Marginal PC prior density of v
 #' @description Calculates  the marginal PC prior, pi_v, of the anisotropy vector
 #'
-#' @param lambda1 A hyperparameter controlling the penalization of the distance from the base moedel as a function of v
-#' @param v A two dimensional vector which controls the direction and magintude of anisotropy
+#' @param lambda1 A hyperparameter controlling the penalization of the distance from the base model as a function of v
+#' @param v A two dimensional vector that controls the direction and magnitude of anisotropy
 #'
 #' @return The calculated marginal prior density of v.
 #' @export
@@ -152,7 +152,7 @@ log_pc_prior_aniso <- function(lambda, lambda1, log_kappa, v) {
   return(term1 + term2 + change_variable)
 }
 
-#' @title Log PC Prior calcualtion for log variance of noise (and u)
+#' @title Log PC Prior calculation for log variance of noise (and u)
 #' @description Calculates  the log of the PC prior for sigma_epsilon based on given hyperparameters and vectors.
 #'
 #' @param lambda_epsilon A hyperparameter controlling the size of epsilon.
@@ -211,7 +211,7 @@ log_pc_prior_theta <- function(lambda, lambda1, lambda_epsilon, lambda_u, log_ka
 }
 
 #' @title Sparse Matrix Determinant using Cholesky Factorization
-#' @description Calculates  the determinant of a sparse matrix using Cholesky factorization.
+#' @description Calculates the determinant of a sparse matrix using Cholesky factorization.
 #'
 #' @param Q A sparse matrix.
 #'
@@ -296,7 +296,7 @@ logGdensity <- function(x, mu, Q) {
 #' @param y A vector with length equal to the number of basis elements n representing the observed data.
 #' @param A Matrix of size nxn representing the transformation A
 #' @param Q_epsilon A sparse matrix of size nxn representing the noise precision matrix
-#' @param m_u A vector with length n representing the prior mean m_u. If a number is given is transformed into (m_u, m_u,..., m_u)
+#' @param m_u A vector with length n representing the prior mean m_u. If a number is given, it is transformed into (m_u, m_u,..., m_u)
 #'
 #' @return The calculated log-posterior density
 #' @export
@@ -340,10 +340,10 @@ log_pc_posterior <- function(mesh, log_kappa, v, log_sigma_u = 0, log_sigma_epsi
   return(log_posterior_val)
 }
 
-#' @title Calculates  the MAP estimate for linear noisy observation of field using PC priors on all parameters.
+#' @title Calculates the MAP estimate for linear noisy observation of the field using PC priors on all parameters.
 #'
 #' @description
-#' Calculated by maximizing log posterior using optim. Only stationary parameters accepted.
+#' Calculated by maximizing log posterior using optim. Only stationary parameters are accepted.
 #'
 #' @param mesh The mesh
 #' @param lambda A hyperparameter controlling the size of kappa.
@@ -353,7 +353,7 @@ log_pc_posterior <- function(mesh, log_kappa, v, log_sigma_u = 0, log_sigma_epsi
 #' @param A Matrix of size nxn representing the transformation A
 #' @param m_u A vector with length n representing the prior mean m_u
 #' @param maxiterations Maximum number of iterations for optim, by default 300
-#' @param log_sigma_epsilon Variance of noise, if NULL it is estimated by the MAP
+#' @param log_sigma_epsilon Variance of noise, if NULL, it is estimated by the MAP
 #'
 #' @return The parameters (log_kappa, v, log_sigma_u, log_sigma_epsilon) that maximize the posterior
 #' @export
@@ -396,13 +396,13 @@ MAP_pc <- function(mesh, lambda, lambda1, lambda_epsilon, lambda_u, y, A, m_u, m
 }
 
 #' @title Log Gaussian density 1D
-#' @description Calculates  the log of the gaussian density with mean mu and variance sigma^2
+#' @description Calculates  the log of the Gaussian density with mean mu and variance sigma^2
 #'
 #' @param x A numeric vector representing the point x
 #' @param mu A numeric vector representing the mean mu
-#' @param logsigma A numeric vector representing the variance logsigma
+#' @param logsigma A numeric vector representing the variance log sigma
 #'
-#' @return The calculated log gaussian density
+#' @return The calculated log Gaussian density
 #' @export
 #' @examples
 #' x <- 1
@@ -436,7 +436,7 @@ log_gaussian_density <- function(x, mu, logsigma) {
 #' @param y A vector with length equal to the number of basis elements n representing the observed data.
 #' @param A Matrix of size nxn representing the transformation A
 #' @param Q_epsilon A sparse matrix of size nxn representing the noise precision matrix
-#' @param m_u A vector with length n representing the prior mean m_u. If a number is given is transformed into (m_u, m_u,..., m_u)
+#' @param m_u A vector with length n representing the prior mean m_u. If a number is given, it is transformed into (m_u, m_u,..., m_u)
 #'
 #' @return The calculated log-posterior density
 #' @export
@@ -498,7 +498,7 @@ log_posterior_general <- function(logprior_aniso, mesh, log_kappa, v, log_sigma_
 #' @param y A vector with length equal to the number of basis elements n representing the observed data.
 #' @param A Matrix of size nxn representing the transformation A
 #' @param Q_epsilon A sparse matrix of size nxn representing the noise precision matrix
-#' @param m_u A vector with length n representing the prior mean m_u. If a number is given is transformed into (m_u, m_u,..., m_u)
+#' @param m_u A vector with length n representing the prior mean m_u. If a number is given, it is transformed into (m_u, m_u,..., m_u)
 
 #' @return The calculated log-posterior
 #' @export
@@ -539,10 +539,10 @@ log_posterior_prior <- function(logprior, mesh, log_kappa, v, log_sigma_u = 0, l
 
   return(log_posterior_val)
 }
-#' @title Calculates  the MAP estimate for linear noisy observation of field with a general prior on theta = (log(kappa),v, log(sigma_u), log(sigma_epsilon)).
+#' @title Calculates the MAP estimate for linear noisy observation of field with a general prior on theta = (log(kappa),v, log(sigma_u), log(sigma_epsilon)).
 #'
 #' @description
-#' Calculated by maximizing log posterior using optim. Only stationary parameters accepted.
+#' Calculated by maximizing log posterior using optim. Only stationary parameters are accepted.
 #'
 #' @param logprior A function that calculates the log prior of (log(kappa), v, log(sigma_u), log(sigma_epsilon)).
 #' If not specified, it is assumed to be the function that returns 0.
@@ -551,8 +551,8 @@ log_posterior_prior <- function(logprior, mesh, log_kappa, v, log_sigma_u = 0, l
 #' @param A Matrix of size nxn representing the transformation A
 #' @param m_u A vector with length n representing the prior mean m_u
 #' @param maxiterations Maximum number of iterations for optim, by default 300
-#' @param log_sigma_epsilon Variance of noise, if NULL it is estimated by the MAP
-#' @param theta0 Initial value for the parameters (log(kappa), v, log(sigma_u), log(sigma_epsilon)). By default set to (log(0.5), 1, 2, 1, 1)
+#' @param log_sigma_epsilon Variance of noise, if NULL, it is estimated by the MAP
+#' @param theta0 Initial value for the parameters (log(kappa), v, log(sigma_u), log(sigma_epsilon)). By default, set to (log(0.5), 1, 2, 1, 1)
 #'
 #' @return The parameters (log_kappa, v, log_sigma_u, log_sigma_epsilon) that maximize the posterior
 #' @export

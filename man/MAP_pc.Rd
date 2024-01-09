@@ -2,7 +2,7 @@
 % Please edit documentation in R/PCPrior.R
 \name{MAP_pc}
 \alias{MAP_pc}
-\title{Calculates  the MAP estimate for linear noisy observation of field using PC priors on all parameters.}
+\title{Calculates the MAP estimate for linear noisy observation of the field using PC priors on all parameters.}
 \usage{
 MAP_pc(
   mesh,
@@ -35,11 +35,11 @@ MAP_pc(
 
 \item{maxiterations}{Maximum number of iterations for optim, by default 300}
 
-\item{log_sigma_epsilon}{Variance of noise, if NULL it is estimated by the MAP}
+\item{log_sigma_epsilon}{Variance of noise, if NULL, it is estimated by the MAP}
 }
 \value{
 The parameters (log_kappa, v, log_sigma_u, log_sigma_epsilon) that maximize the posterior
 }
 \description{
-Calculated by maximizing log posterior using optim. Only stationary parameters accepted.
+Calculated by maximizing log posterior using optim. Only stationary parameters are accepted.
 }

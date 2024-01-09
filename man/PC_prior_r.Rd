@@ -9,7 +9,7 @@ PC_prior_r(log_r, lambda1)
 \arguments{
 \item{log_r}{The logarithm of |v|, which controls the magnitude of the anisotropy}
 
-\item{lambda1}{A hyperparameter controlling the penalization of the distance from the base moedel as a function of r.}
+\item{lambda1}{A hyperparameter controlling the penalization of the distance from the base model as a function of r.}
 }
 \value{
 The calculated marginal prior density of log(r).

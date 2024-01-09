@@ -42,7 +42,7 @@ log_pc_posterior(
 
 \item{A}{Matrix of size nxn representing the transformation A}
 
-\item{m_u}{A vector with length n representing the prior mean m_u. If a number is given is transformed into (m_u, m_u,..., m_u)}
+\item{m_u}{A vector with length n representing the prior mean m_u. If a number is given, it is transformed into (m_u, m_u,..., m_u)}
 
 \item{Q_epsilon}{A sparse matrix of size nxn representing the noise precision matrix}
 }

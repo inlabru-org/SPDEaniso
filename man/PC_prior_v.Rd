@@ -7,9 +7,9 @@
 PC_prior_v(v, lambda1)
 }
 \arguments{
-\item{v}{A two dimensional vector which controls the direction and magintude of anisotropy}
+\item{v}{A two dimensional vector that controls the direction and magnitude of anisotropy}
 
-\item{lambda1}{A hyperparameter controlling the penalization of the distance from the base moedel as a function of v}
+\item{lambda1}{A hyperparameter controlling the penalization of the distance from the base model as a function of v}
 }
 \value{
 The calculated marginal prior density of v.

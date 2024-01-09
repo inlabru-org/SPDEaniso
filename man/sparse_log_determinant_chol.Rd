@@ -13,7 +13,7 @@ sparse_log_determinant_chol(Q)
 The determinant of the sparse matrix.
 }
 \description{
-Calculates  the determinant of a sparse matrix using Cholesky factorization.
+Calculates the determinant of a sparse matrix using Cholesky factorization.
 }
 \examples{
 library(Matrix)
