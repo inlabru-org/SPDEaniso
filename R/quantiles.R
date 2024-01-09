@@ -9,7 +9,7 @@
 #' a0 <- 10
 #' lambda1 <- lambda1_quantile(a0 = a0, alpha_a = alpha_a)
 lambda1_quantile <- function(a0, alpha_a = 0.01) {
-  if (alpha_a <= 0 | alpha_a >= 1) {
+  if (alpha_a <= 0 || alpha_a >= 1) {
     warning("alpha_a should be in (0,1)")
   }
   if (a0 <= 1) {
@@ -32,7 +32,7 @@ lambda1_quantile <- function(a0, alpha_a = 0.01) {
 #' lambda <- lambda_quantile(alpha = alpha, rho0 = rho0, lambda1 = lambda1)
 lambda_quantile <- function(rho0, lambda1, alpha = 0.01) {
   # This warns the user if alpha is not in (0,1)
-  if (alpha <= 0 | alpha >= 1) {
+  if (alpha <= 0 || alpha >= 1) {
     warning("alpha should be in (0,1)")
   }
   kappa0 <- sqrt(8) / rho0
@@ -58,7 +58,7 @@ lambda_quantile <- function(rho0, lambda1, alpha = 0.01) {
 #' lambda_sigma <- lambda_variance_quantile(alpha_sigma = alpha_sigma, sigma0 = sigma0)
 lambda_variance_quantile <- function(sigma0, alpha_sigma = 0.01) {
   # This warns the user if alpha is not in (0,1)
-  if (alpha_sigma <= 0 | alpha_sigma >= 1) {
+  if (alpha_sigma <= 0 || alpha_sigma >= 1) {
     warning("alpha_sigma should be in (0,1)")
   }
   if (sigma0 <= 0) {
@@ -80,7 +80,7 @@ lambda_variance_quantile <- function(sigma0, alpha_sigma = 0.01) {
 #' a0 <- 10
 #' sigma2_v <- sigm2_quantile_v(alpha_v = alpha_v, a0 = a0)
 sigma2_quantile_v <- function(a0, alpha_v = 0.01) {
-  if (alpha_v <= 0 | alpha_v >= 1) {
+  if (alpha_v <= 0 || alpha_v >= 1) {
     warning("alpha_v should be in (0,1)")
   }
   if (a0 <= 1) {
@@ -104,7 +104,7 @@ sigma2_quantile_v <- function(a0, alpha_v = 0.01) {
 #' rho0 <- 0.1
 #' lambda_k <- lambda_quantile_kappa(alpha_k = alpha_k, rho0 = rho0)
 lambda_quantile_kappa <- function(rho0, alpha_k = 0.01) {
-  if (alpha_k <= 0 | alpha_k >= 1) {
+  if (alpha_k <= 0 || alpha_k >= 1) {
     warning("alpha_k should be in (0,1)")
   }
   if (rho0 < 0) {
@@ -161,19 +161,19 @@ log_gaussian_prior_quantile <- function(sigmau0, sigmaepsilon0, a0, rho0, alpha 
     alpha_v <- alpha
   }
   # This warns the user if alpha is not in (0,1)
-  if (alpha <= 0 | alpha >= 1) {
+  if (alpha <= 0 || alpha >= 1) {
     warning("alpha should be in (0,1)")
   }
-  if (alpha_u <= 0 | alpha_u >= 1) {
+  if (alpha_u <= 0 || alpha_u >= 1) {
     warning("alpha_u should be in (0,1)")
   }
-  if (alpha_epsilon <= 0 | alpha_epsilon >= 1) {
+  if (alpha_epsilon <= 0 || alpha_epsilon >= 1) {
     warning("alpha_epsilon should be in (0,1)")
   }
-  if (alpha_k <= 0 | alpha_k >= 1) {
+  if (alpha_k <= 0 || alpha_k >= 1) {
     warning("alpha_k should be in (0,1)")
   }
-  if (alpha_v <= 0 | alpha_v >= 1) {
+  if (alpha_v <= 0 || alpha_v >= 1) {
     warning("alpha_v should be in (0,1)")
   }
   # This warns the user if a0 is not greater than 1
@@ -234,7 +234,7 @@ log_gaussian_prior_quantile <- function(sigmau0, sigmaepsilon0, a0, rho0, alpha 
 #' log_pc_prior <- log_pc_prior_quantile(sigmau0 = sigmau0, sigmaepsilon0 = sigmaepsilon0, a0 = a0, rho0 = rho0, alpha = alpha)
 log_pc_prior_quantile <- function(sigmau0, sigmaepsilon0, a0, rho0, alpha = 0.01, alpha_u = NULL, alpha_epsilon = NULL, alpha_k = NULL, alpha_v = NULL) {
   # This warns the user if alpha is not in (0,1)
-  if (alpha <= 0 | alpha >= 1) {
+  if (alpha <= 0 || alpha >= 1) {
     warning("alpha should be in (0,1)")
   }
   # This sets the NULL values to alpha
@@ -251,16 +251,16 @@ log_pc_prior_quantile <- function(sigmau0, sigmaepsilon0, a0, rho0, alpha = 0.01
     alpha_v <- alpha
   }
   # This warns the user if alpha is not in (0,1)
-  if (alpha_u <= 0 | alpha_u >= 1) {
+  if (alpha_u <= 0 || alpha_u >= 1) {
     warning("alpha_u should be in (0,1)")
   }
-  if (alpha_epsilon <= 0 | alpha_epsilon >= 1) {
+  if (alpha_epsilon <= 0 || alpha_epsilon >= 1) {
     warning("alpha_epsilon should be in (0,1)")
   }
-  if (alpha_k <= 0 | alpha_k >= 1) {
+  if (alpha_k <= 0 || alpha_k >= 1) {
     warning("alpha_k should be in (0,1)")
   }
-  if (alpha_v <= 0 | alpha_v >= 1) {
+  if (alpha_v <= 0 || alpha_v >= 1) {
     warning("alpha_v should be in (0,1)")
   }
   # This warns the user if a0 is not greater than 1
@@ -337,20 +337,20 @@ sim_theta_pc_quantile <- function(sigmau0, sigmaepsilon0, a0, rho0, alpha = 0.01
     alpha_v <- alpha
   }
   # This warns the user if alpha is not in (0,1)
-  if (alpha <= 0 | alpha >= 1) {
+  if (alpha <= 0 || alpha >= 1) {
     warning("alpha should be in (0,1)")
   }
   # This warns the user if alpha is not in (0,1)
-  if (alpha_u <= 0 | alpha_u >= 1) {
+  if (alpha_u <= 0 || alpha_u >= 1) {
     warning("alpha_u should be in (0,1)")
   }
-  if (alpha_epsilon <= 0 | alpha_epsilon >= 1) {
+  if (alpha_epsilon <= 0 || alpha_epsilon >= 1) {
     warning("alpha_epsilon should be in (0,1)")
   }
-  if (alpha_k <= 0 | alpha_k >= 1) {
+  if (alpha_k <= 0 || alpha_k >= 1) {
     warning("alpha_k should be in (0,1)")
   }
-  if (alpha_v <= 0 | alpha_v >= 1) {
+  if (alpha_v <= 0 || alpha_v >= 1) {
     warning("alpha_v should be in (0,1)")
   }
   # This warns the user if a0 is not greater than 1
