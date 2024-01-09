@@ -374,9 +374,9 @@ MAP_pc <- function(mesh, lambda, lambda1, lambda_epsilon, lambda_u, y, A, m_u, m
         y = y, A = A, m_u = m_u
       ))
     }
-    theta0 <-optim(par = theta0, fn = log_post, control = list(fnscale = -1, maxit = maxiterations/2), hessian = TRUE)$par
-    return(optim(par = theta0, fn = log_post, control = list(fnscale = -1, maxit = maxiterations/2), hessian = TRUE, method = "BFGS"))
-    
+    theta0 <- optim(par = theta0, fn = log_post, control = list(fnscale = -1, maxit = maxiterations / 2), hessian = TRUE)$par
+    return(optim(par = theta0, fn = log_post, control = list(fnscale = -1, maxit = maxiterations / 2), hessian = TRUE, method = "BFGS"))
+
     # Maximizes the log-posterior density over (log_kappa, v, log_sigma_u)
     log_post <- function(theta) {
       log_kappa <- theta[1]
@@ -390,8 +390,8 @@ MAP_pc <- function(mesh, lambda, lambda1, lambda_epsilon, lambda_u, y, A, m_u, m
       ))
     }
     theta0 <- theta0[1:4]
-    theta0 <-optim(par = theta0, fn = log_post, control = list(fnscale = -1, maxit = maxiterations/2), hessian = TRUE)$par
-    return(optim(par = theta0, fn = log_post, control = list(fnscale = -1, maxit = maxiterations/2), hessian = TRUE, method = "BFGS"))
+    theta0 <- optim(par = theta0, fn = log_post, control = list(fnscale = -1, maxit = maxiterations / 2), hessian = TRUE)$par
+    return(optim(par = theta0, fn = log_post, control = list(fnscale = -1, maxit = maxiterations / 2), hessian = TRUE, method = "BFGS"))
   }
 }
 
@@ -561,47 +561,52 @@ MAP_prior <- function(logprior = function(log_kappa, v, log_sigma_u, log_sigma_e
                       }, mesh, y, A, m_u, log_sigma_epsilon = NULL, maxiterations = 300, theta0 = c(-0.5, c(0.1, 0.1), 0, -3)) {
   if (missing(log_sigma_epsilon) || is.null(log_sigma_epsilon)) {
     # Maximizes the log-posterior density over (log_kappa, v, log_sigma_u, log_sigma_epsilon)
-    # First uses Nelder-Mead to find a good starting point for the optimization 
+    # First uses Nelder-Mead to find a good starting point for the optimization
     # and then uses BFGS to maximize the log-posterior density
     log_post <- function(theta) {
       log_kappa <- theta[1]
       v <- theta[2:3]
       log_sigma_u <- theta[4]
       log_sigma_epsilon <- theta[5]
-      tryCatch({
-        log_posterior_prior(
-          logprior = logprior,
-          mesh = mesh, log_kappa = log_kappa, v = v,
-          log_sigma_u = log_sigma_u, log_sigma_epsilon = log_sigma_epsilon,
-          y = y, A = A, m_u = m_u
-        )
-      }, error = function(e) {
-        -Inf
-      })
+      tryCatch(
+        {
+          log_posterior_prior(
+            logprior = logprior,
+            mesh = mesh, log_kappa = log_kappa, v = v,
+            log_sigma_u = log_sigma_u, log_sigma_epsilon = log_sigma_epsilon,
+            y = y, A = A, m_u = m_u
+          )
+        },
+        error = function(e) {
+          -Inf
+        }
+      )
     }
-    theta0 <-optim(par = theta0, fn = log_post, control = list(fnscale = -1, maxit = maxiterations/2), hessian = TRUE)$par
-    return(optim(par = theta0, fn = log_post, control = list(fnscale = -1, maxit = maxiterations/2), hessian = TRUE, method = "BFGS"))
-    
+    theta0 <- optim(par = theta0, fn = log_post, control = list(fnscale = -1, maxit = maxiterations / 2), hessian = TRUE)$par
+    return(optim(par = theta0, fn = log_post, control = list(fnscale = -1, maxit = maxiterations / 2), hessian = TRUE, method = "BFGS"))
   } else {
     # Maximizes the log-posterior density over (log_kappa, v, log_sigma_u)
     log_post <- function(theta) {
       log_kappa <- theta[1]
       v <- theta[2:3]
       log_sigma_u <- theta[4]
-      tryCatch({
-        log_posterior_prior(
-          logprior = logprior,
-          mesh = mesh, log_kappa = log_kappa, v = v,
-          log_sigma_u = log_sigma_u, log_sigma_epsilon = log_sigma_epsilon,
-          y = y, A = A, m_u = m_u
-        )
-      }, error = function(e) {
-        -Inf
-      })
+      tryCatch(
+        {
+          log_posterior_prior(
+            logprior = logprior,
+            mesh = mesh, log_kappa = log_kappa, v = v,
+            log_sigma_u = log_sigma_u, log_sigma_epsilon = log_sigma_epsilon,
+            y = y, A = A, m_u = m_u
+          )
+        },
+        error = function(e) {
+          -Inf
+        }
+      )
     }
     theta0 <- theta0[1:4]
-    theta0 <-optim(par = theta0, fn = log_post, control = list(fnscale = -1, maxit = maxiterations/2), hessian = TRUE)$par
-    return(optim(par = theta0, fn = log_post, control = list(fnscale = -1, maxit = maxiterations/2), hessian = TRUE, method = "BFGS"))
+    theta0 <- optim(par = theta0, fn = log_post, control = list(fnscale = -1, maxit = maxiterations / 2), hessian = TRUE)$par
+    return(optim(par = theta0, fn = log_post, control = list(fnscale = -1, maxit = maxiterations / 2), hessian = TRUE, method = "BFGS"))
   }
 }
 
