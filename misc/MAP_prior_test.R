@@ -1,8 +1,8 @@
-#Tests that functions to calculate hyperparameters given quantiles work
-#Tests that parameters samples with PC-priors verify quantiles
-#Tests that PC_prior defined through quantiles is the same as PC_prior defined through hyperparameters
-#Tests that MAP_prior(log_pc_prior) works and gives a larger posterior density than the true parameters
-#Tests that MAP_prior with PC priors returns the same thing as MAP using PC priors defined through hyperparameters
+# Tests that functions to calculate hyperparameters given quantiles work
+# Tests that parameters samples with PC-priors verify quantiles
+# Tests that PC_prior defined through quantiles is the same as PC_prior defined through hyperparameters
+# Tests that MAP_prior(log_pc_prior) works and gives a larger posterior density than the true parameters
+# Tests that MAP_prior with PC priors returns the same thing as MAP using PC priors defined through hyperparameters
 library(SPDEaniso)
 library(devtools)
 library(ggplot2)
@@ -33,7 +33,7 @@ hyper_pc <- list(
   lambda_epsilon = lambda_epsilon
 )
 
-#Simulates the "true parameters" from the pc_prior.
+# Simulates the "true parameters" from the pc_prior.
 true_params <- sim_theta_pc_quantile(
   alpha = alpha, sigmau0 = sigmau0,
   sigmaepsilon0 = sigmaepsilon0, a0 = a0, rho0 = rho0, m = 1
@@ -51,7 +51,7 @@ log_sigma_epsilon <- true_params$log_sigma_epsilon
 
 print("Testing that the true parameters are correct. They should verify the quantiles.")
 print("The correlation length sqrt(8)/exp(log_kappa) is greater than rho0")
-print(sqrt(8)/exp(log_kappa) > rho0)
+print(sqrt(8) / exp(log_kappa) > rho0)
 print("The anisotropy ratio exp(||v||) is smaller than a0")
 print(exp(sqrt(v[1]^2 + v[2]^2)) < a0)
 print("The standard deviation of the field exp(log_sigma_u) is smaller than sigmau0")
@@ -83,11 +83,11 @@ print("Testing that log_pc_prior is the same when using quantiles and hyper_para
 abs(log_pc_prior(
   log_kappa = log_kappa, v = v,
   log_sigma_u = log_sigma_u, log_sigma_epsilon = log_sigma_epsilon
-)-log_pc_prior_theta(
+) - log_pc_prior_theta(
   lambda = lambda, lambda1 = lambda1, lambda_epsilon = lambda_epsilon,
   lambda_u = lambda_u, log_kappa = log_kappa, v = v,
   log_sigma_u = log_sigma_u, log_sigma_epsilon = log_sigma_epsilon
-))<1e-10
+)) < 1e-10
 
 
 print("Comparing against value with arbitraty hyperparameters. With arbitrary hyperparameters
@@ -96,7 +96,7 @@ log_pc_prior_theta(
   lambda = lambda, lambda1 = lambda1, lambda_epsilon = lambda_epsilon,
   lambda_u = lambda_u, log_kappa = log_kappa, v = v,
   log_sigma_u = log_sigma_u, log_sigma_epsilon = log_sigma_epsilon
-)>log_pc_prior_theta(
+) > log_pc_prior_theta(
   lambda = 1, lambda1 = 1, lambda_epsilon = 1, lambda_u = 1,
   log_kappa = log_kappa, v = v, log_sigma_u = log_sigma_u,
   log_sigma_epsilon = log_sigma_epsilon
@@ -120,8 +120,7 @@ y <- A %*% x + exp(log_sigma_epsilon) * stats::rnorm(n)
 
 # Testing the MAP_prior function for log_prior = log_pc_prior
 maxit <- 600
-tryCatch(
-  {
+tryCatch({
   v <- true_params$v
   log_sigma_u <- true_params$log_sigma_u
   log_sigma_epsilon <- true_params$log_sigma_epsilon
@@ -132,22 +131,21 @@ tryCatch(
     logprior = log_pc_prior, mesh = mesh,
     y = y, A = A, m_u = m_u, maxiterations = maxit,
     theta0 = unlist(true_params)
-    #,log_sigma_epsilon = log_sigma_epsilon
+    # ,log_sigma_epsilon = log_sigma_epsilon
   )
 
-  error = function(e) {}
-  }
-)
+  error <- function(e) {}
+})
 #### TESTING MAP_prior ####
 
 # Defining the log posterior density as a function of the parameters using the log_pc_prior
 log_posterior_pc <- function(log_kappa, v, log_sigma_u, log_sigma_epsilon) {
   log_posterior_prior(
-  logprior = log_pc_prior,
-  mesh = mesh, log_kappa = log_kappa, v = v,
-  log_sigma_epsilon = log_sigma_epsilon, log_sigma_u = log_sigma_u,
-  y = y, A = A, m_u = m_u
-)
+    logprior = log_pc_prior,
+    mesh = mesh, log_kappa = log_kappa, v = v,
+    log_sigma_epsilon = log_sigma_epsilon, log_sigma_u = log_sigma_u,
+    y = y, A = A, m_u = m_u
+  )
 }
 
 print("Checking if map for pc_prior is larger than posterior value at true parameters. ")
@@ -165,8 +163,10 @@ map_pc$value == log_posterior_pc(
 
 print("Checking if MAP_prior with PC priors returns the same thing as MAP using PC priors defined through hyperparameters")
 
-maphyper<-MAP_pc(mesh, lambda, lambda1, lambda_epsilon, lambda_u,
-              y, A, m_u, maxiterations = maxit, theta0 = unlist(true_params))
+maphyper <- MAP_pc(mesh, lambda, lambda1, lambda_epsilon, lambda_u,
+  y, A, m_u,
+  maxiterations = maxit, theta0 = unlist(true_params)
+)
 maphyper$value == map_pc$value & maphyper$par == map_pc$par
 
 print("Checking if Hessian of MAP_prior is invertible and calculating marginal standard deviation")
@@ -176,7 +176,7 @@ sqrt(-diag(hessian_inv))
 
 print("Plotting the posterior distribution of the parameters")
 
-plotter <- function(map){
+plotter <- function(map) {
   # Defines the log_pc_posterior density as a function of log_kappa keeping the other parameters fixed at the MAP
   log_posterior_pc_log_kappa <- function(log_kappa) {
     log_posterior_pc(
@@ -212,13 +212,13 @@ plotter <- function(map){
       log_sigma_u = map$par[4], log_sigma_epsilon = log_sigma_epsilon
     )
   }
-  #Defines the partitions for plotting
-  n_points <- 51  # Number of points in the partition centered at MAP_prior value of kappa
+  # Defines the partitions for plotting
+  n_points <- 51 # Number of points in the partition centered at MAP_prior value of kappa
   partition_log_kappa <- seq(map$par[1] - 0.5, map$par[1] + 0.5, length.out = n_points)
   partition_v1 <- seq(map$par[2] - 0.5, map$par[2] + 0.5, length.out = n_points)
   partition_v2 <- seq(map$par[3] - 0.5, map$par[3] + 0.5, length.out = n_points)
   partition_log_sigma_u <- seq(map$par[4] - 0.5, map$par[4] + 0.5, length.out = n_points)
-  partition_log_sigma_epsilon <- seq(map$par[5] - 4, map$par[5] +4, length.out = n_points)
+  partition_log_sigma_epsilon <- seq(map$par[5] - 4, map$par[5] + 4, length.out = n_points)
 
   # Apply the function to each point in the partition
   posterior_values_log_kappa <- sapply(partition_log_kappa, log_posterior_pc_log_kappa)
@@ -249,7 +249,7 @@ plotter <- function(map){
 }
 plotter(map = map_pc)
 
-#Showing true parameters, MAP, and standard deviation of the parameters
+# Showing true parameters, MAP, and standard deviation of the parameters
 unlist(true_params)
 map_pc$par
 sqrt(-diag(hessian_inv))

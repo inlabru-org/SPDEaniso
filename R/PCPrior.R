@@ -689,6 +689,5 @@ sim_theta_pc <- function(lambda, lambda1, lambda_u, lambda_epsilon, m = 1) {
   if (m == 1) {
     return(results[[1]])
   }
-
   return(results)
 }

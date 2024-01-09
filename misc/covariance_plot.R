@@ -35,7 +35,7 @@ covarianceH <- function(kappa, v, x) {
 
 # Create a density plot
 kappa <- 1
-v <- c(0,1)
+v <- c(0,0.00001)
 l <- 4
 pxl <- expand.grid(x = seq(-l, l, length.out = 300), y = seq(-l, l, length.out = 300))
 pxl$Covariance <- mapply(function(x, y) covarianceH(kappa, v, c(x, y)), pxl$x, pxl$y)
