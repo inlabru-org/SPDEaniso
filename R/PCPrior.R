@@ -414,7 +414,8 @@ log_gaussian_density <- function(x, mu, logsigma) {
   return(-0.5 * log(2 * pi) - logsigma - 0.5 * (x - mu)^2 / sigma^2)
 }
 
-#' @title Calculates  the log-posterior density for parameters (log_kappa,v, log_sigma_u, log_sigma_epsilon) with a general prior.
+#' @title Calculates  the log-posterior density for parameters (log_kappa,v, log_sigma_u, log_sigma_epsilon) 
+#' with a general prior on the anisotropy and PC priors on log(sigma_u) and log(sigma_epsilon).
 #'
 #' @description
 #' Calculates  the log-posterior density of parameters (log(kappa),v, log(sigma_u), log(epsilon)))
@@ -429,8 +430,6 @@ log_gaussian_density <- function(x, mu, logsigma) {
 #' @param v 2D vector that controls anisotropy
 #' @param log_sigma_u Variance of field u. If unspecified, it is assumed to be 0.
 #' @param log_sigma_epsilon Variance of noise
-#' @param lambda A hyperparameter controlling the size of kappa.
-#' @param lambda1 A hyperparameter controlling the size of |v|.
 #' @param lambda_epsilon A hyperparameter controlling the size of sigma_epsilon.
 #' @param lambda_u A hyperparameter controlling the size of sigma_u.
 #' @param y A vector with length equal to the number of basis elements n representing the observed data.
@@ -440,7 +439,7 @@ log_gaussian_density <- function(x, mu, logsigma) {
 #'
 #' @return The calculated log-posterior density
 #' @export
-log_posterior_general <- function(logprior_aniso, mesh, log_kappa, v, log_sigma_u = 0, log_sigma_epsilon, lambda, lambda1, lambda_epsilon, lambda_u = 1, y, A, m_u) {
+log_posterior_prior_on_aniso <- function(logprior_aniso, mesh, log_kappa, v, log_sigma_u = 0, log_sigma_epsilon, lambda_epsilon, lambda_u = 1, y, A, m_u) {
   kappa <- exp(log_kappa)
   sigma_epsilon <- exp(log_sigma_epsilon)
 

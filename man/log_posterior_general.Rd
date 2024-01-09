@@ -2,7 +2,8 @@
 % Please edit documentation in R/PCPrior.R
 \name{log_posterior_general}
 \alias{log_posterior_general}
-\title{Calculates  the log-posterior density for parameters (log_kappa,v, log_sigma_u, log_sigma_epsilon) with a general prior.}
+\title{Calculates  the log-posterior density for parameters (log_kappa,v, log_sigma_u, log_sigma_epsilon)
+with a general prior on the anisotropy and PC priors on log(sigma_u) and log(sigma_epsilon).}
 \usage{
 log_posterior_general(
   logprior_aniso,
@@ -11,8 +12,6 @@ log_posterior_general(
   v,
   log_sigma_u = 0,
   log_sigma_epsilon,
-  lambda,
-  lambda1,
   lambda_epsilon,
   lambda_u = 1,
   y,
@@ -32,10 +31,6 @@ log_posterior_general(
 \item{log_sigma_u}{Variance of field u. If unspecified, it is assumed to be 0.}
 
 \item{log_sigma_epsilon}{Variance of noise}
-
-\item{lambda}{A hyperparameter controlling the size of kappa.}
-
-\item{lambda1}{A hyperparameter controlling the size of |v|.}
 
 \item{lambda_epsilon}{A hyperparameter controlling the size of sigma_epsilon.}
 
