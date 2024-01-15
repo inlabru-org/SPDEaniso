@@ -89,7 +89,7 @@ sigma <- -solve(hessian)
 
 log_laplace <- function(theta) {
     logGdensity(
-        x = theta, mu = map_pc$par, Q = -hessian_inv
+        x = theta, mu = map_pc$par, Q = -hessian
     )
 }
 # ---------------------- IMPORTANCE SAMPLING ----------------------

@@ -50,7 +50,7 @@ log_sigma_u <- true_params$log_sigma_u
 log_sigma_epsilon <- true_params$log_sigma_epsilon
 
 print("Testing that the true parameters are correct. They should verify the quantiles with high probability.")
-print("The correlation length sqrt(8)/exp(log_kappa) is greater than rho0")
+print("The correlation l sqrt(8)/exp(log_kappa) is greater than rho0")
 print(sqrt(8) / exp(log_kappa) > rho0)
 print("The anisotropy ratio exp(||v||) is smaller than a0")
 print(exp(sqrt(v[1]^2 + v[2]^2)) < a0)
@@ -168,6 +168,15 @@ hessian <- map_pc$hessian
 hessian_inv <- solve(hessian)
 sqrt(-diag(hessian_inv))
 
+########## UNNORMALIZED LAPLACE APPROXIMATION TO THE POSTERIOR############
+log_laplace <- function(theta) {
+    logGdensity(
+        x = theta, mu = map_pc$par, Q = -hessian
+    )+map_pc$value-logGdensity(
+        x = map_pc$par, mu = map_pc$par, Q = -hessian
+    )
+}
+
 print("Plotting the posterior distribution of the parameters")
 
 plotter <- function(map) {
@@ -206,13 +215,44 @@ plotter <- function(map) {
       log_sigma_u = map$par[4], log_sigma_epsilon = log_sigma_epsilon
     )
   }
+log_laplace_log_kappa <- function(log_kappa) {
+    log_laplace(
+      theta = c(log_kappa, map$par[2:5])
+    )
+  }
+
+  log_laplace_v1 <- function(v1) {
+    log_laplace(
+      theta = c(map$par[1], v1, map$par[3:5])
+    )
+  }
+
+  log_laplace_v2 <- function(v2) {
+    log_laplace(
+      theta = c(map$par[1:2], v2, map$par[4:5])
+    )
+  }
+
+  log_laplace_log_sigma_u <- function(log_sigma_u) {
+    log_laplace(
+      theta = c(map$par[1:3], log_sigma_u, map$par[5])
+    )
+  }
+
+  log_laplace_log_sigma_epsilon <- function(log_sigma_epsilon) {
+    log_laplace(
+      theta = c(map$par[1:4], log_sigma_epsilon)
+    )
+  }
+    l <- 2 # l of the partition
   # Defines the partitions for plotting
   n_points <- 51 # Number of points in the partition centered at MAP_prior value of kappa
-  partition_log_kappa <- seq(map$par[1] - 0.5, map$par[1] + 0.5, length.out = n_points)
-  partition_v1 <- seq(map$par[2] - 0.5, map$par[2] + 0.5, length.out = n_points)
-  partition_v2 <- seq(map$par[3] - 0.5, map$par[3] + 0.5, length.out = n_points)
-  partition_log_sigma_u <- seq(map$par[4] - 0.5, map$par[4] + 0.5, length.out = n_points)
-  partition_log_sigma_epsilon <- seq(map$par[5] - 4, map$par[5] + 4, length.out = n_points)
+
+  partition_log_kappa <- seq(map$par[1] - l, map$par[1] + l, length.out = n_points)
+  partition_v1 <- seq(map$par[2] - l, map$par[2] + l, length.out = n_points)
+  partition_v2 <- seq(map$par[3] - l, map$par[3] + l, length.out = n_points)
+  partition_log_sigma_u <- seq(map$par[4] - l, map$par[4] + l, length.out = n_points)
+  partition_log_sigma_epsilon <- seq(map$par[5] - l, map$par[5] + l, length.out = n_points)
 
   # Apply the function to each point in the partition
   posterior_values_log_kappa <- sapply(partition_log_kappa, log_posterior_pc_log_kappa)
@@ -220,27 +260,46 @@ plotter <- function(map) {
   posterior_values_v2 <- sapply(partition_v2, log_posterior_pc_v2)
   posterior_values_log_sigma_u <- sapply(partition_log_sigma_u, log_posterior_pc_log_sigma_u)
   posterior_values_log_sigma_epsilon <- sapply(partition_log_sigma_epsilon, log_posterior_pc_log_sigma_epsilon)
+  laplace_values_log_kappa <- sapply(partition_log_kappa, log_laplace_log_kappa)
+  laplace_values_v1 <- sapply(partition_v1, log_laplace_v1)
+  laplace_values_v2 <- sapply(partition_v2, log_laplace_v2)
+  laplace_values_log_sigma_u <- sapply(partition_log_sigma_u, log_laplace_log_sigma_u)
+  laplace_values_log_sigma_epsilon <- sapply(partition_log_sigma_epsilon, log_laplace_log_sigma_epsilon)
+
 
   # Plot the results with a vertical line at the MAP_prior value of kappa
-  plot(partition_log_kappa, posterior_values_log_kappa, type = "l", xlab = "log_kappa", ylab = "log_pc_posterior")
+  plot(partition_log_kappa, posterior_values_log_kappa, type = "l", xlab = "log_kappa", ylab = "log density")
+  points(partition_log_kappa, laplace_values_log_kappa, type = "l", col = "blue")
   abline(v = map$par[1], col = "red")
+  legend("bottomleft", legend = c("posterior", "Laplace"), col = c("black", "blue"), pch=1)
 
   # Plot the results with a vertical line at the MAP_prior value of v1
-  plot(partition_v1, posterior_values_v1, type = "l", xlab = "v1", ylab = "log_pc_posterior")
+  plot(partition_v1, posterior_values_v1, type = "l", xlab = "v1", ylab = "log density")
+  points(partition_v1, laplace_values_v1, type = "l", col = "blue")
   abline(v = map$par[2], col = "red")
+  legend("bottomleft", legend = c("posterior", "Laplace"), col = c("black", "blue"), pch=1)
+
 
   # Plot the results with a vertical line at the MAP_prior value of v2
-  plot(partition_v2, posterior_values_v2, type = "l", xlab = "v2", ylab = "log_pc_posterior")
+  plot(partition_v2, posterior_values_v2, type = "l", xlab = "v2", ylab = "log density")
+  points(partition_v2, laplace_values_v2, type = "l", col = "blue")
   abline(v = map$par[3], col = "red")
+  legend("bottomleft", legend = c("posterior", "Laplace"), col = c("black", "blue"), pch=1)
+
 
   # Plot the results with a vertical line at the MAP_prior value of log_sigma_u
-  plot(partition_log_sigma_u, posterior_values_log_sigma_u, type = "l", xlab = "log_sigma_u", ylab = "log_pc_posterior")
+  plot(partition_log_sigma_u, posterior_values_log_sigma_u, type = "l", xlab = "log_sigma_u", ylab = "log density")
+  points(partition_log_sigma_u, laplace_values_log_sigma_u, type = "l", col = "blue")
   abline(v = map$par[4], col = "red")
+  legend("bottomleft", legend = c("posterior", "Laplace"), col = c("black", "blue"), pch = 1)
 
   # Plot the results with a vertical line at the MAP_prior value of log_sigma_epsilon
-  plot(partition_log_sigma_epsilon, posterior_values_log_sigma_epsilon, type = "l", xlab = "log_sigma_epsilon", ylab = "log_pc_posterior")
+  plot(partition_log_sigma_epsilon, posterior_values_log_sigma_epsilon, type = "l", xlab = "log_sigma_epsilon", ylab = "log density")
+  points(partition_log_sigma_epsilon, laplace_values_log_sigma_epsilon, type = "l", col = "blue")
   abline(v = map$par[5], col = "red")
+  legend("bottomleft", legend = c("posterior", "Laplace"), col = c("black", "blue"), pch = 1)
 }
+
 plotter(map = map_pc)
 
 # Showing true parameters, MAP, and standard deviation of the parameters
