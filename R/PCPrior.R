@@ -534,9 +534,7 @@ log_posterior_prior <- function(logprior, mesh, log_kappa, v, log_sigma_u = 0, l
   logGdty_observation <- logGdensity(x = y, mu = A %*% u, Q = Q_epsilon)
 
   # Calculates  log-posterior density
-  log_posterior_val <- log_prior_value + logGdty_prior + logGdty_observation - logGdty_posterior
-
-  return(log_posterior_val)
+ unname(log_prior_value + logGdty_prior + logGdty_observation - logGdty_posterior)
 }
 #' @title Calculates the MAP estimate for linear noisy observation of field with a general prior on theta = (log(kappa),v, log(sigma_u), log(sigma_epsilon)).
 #'

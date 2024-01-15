@@ -49,7 +49,7 @@ v <- true_params$v
 log_sigma_u <- true_params$log_sigma_u
 log_sigma_epsilon <- true_params$log_sigma_epsilon
 
-print("Testing that the true parameters are correct. They should verify the quantiles.")
+print("Testing that the true parameters are correct. They should verify the quantiles with high probability.")
 print("The correlation length sqrt(8)/exp(log_kappa) is greater than rho0")
 print(sqrt(8) / exp(log_kappa) > rho0)
 print("The anisotropy ratio exp(||v||) is smaller than a0")
@@ -79,7 +79,7 @@ log_not_pc_prior <- log_gaussian_prior_quantile(
 )
 
 ### Testing value of priors ###
-print("Testing that log_pc_prior is the same when using quantiles and hyper_parameters")
+print("Testing that log_pc_prior is the same when using quantiles and hyper_parameters calculated by hand.")
 abs(log_pc_prior(
   log_kappa = log_kappa, v = v,
   log_sigma_u = log_sigma_u, log_sigma_epsilon = log_sigma_epsilon
@@ -90,7 +90,7 @@ abs(log_pc_prior(
 )) < 1e-10
 
 
-print("Comparing against value with arbitraty hyperparameters. With arbitrary hyperparameters
+print("Comparing against value with arbitrary hyperparameters. With arbitrary hyperparameters
       the prior density should be smaller in general.")
 log_pc_prior_theta(
   lambda = lambda, lambda1 = lambda1, lambda_epsilon = lambda_epsilon,
@@ -112,7 +112,7 @@ nodes <- mesh$loc
 n <- mesh$n
 plot(mesh)
 
-# Sample from noisyy data
+# Sample from noisy data
 aniso <- list(rep(kappa, n), matrix(v, n, 2))
 x <- fm_aniso_basis_weights_sample(x = mesh, aniso = aniso)
 A <- Matrix::Diagonal(n, 1)
@@ -121,11 +121,6 @@ y <- A %*% x + exp(log_sigma_epsilon) * stats::rnorm(n)
 # Testing the MAP_prior function for log_prior = log_pc_prior
 maxit <- 600
 tryCatch({
-  v <- true_params$v
-  log_sigma_u <- true_params$log_sigma_u
-  log_sigma_epsilon <- true_params$log_sigma_epsilon
-
-
   # Calculating the MAP under each prior knowing simulated data
   map_pc <- MAP_prior(
     logprior = log_pc_prior, mesh = mesh,
@@ -148,7 +143,7 @@ log_posterior_pc <- function(log_kappa, v, log_sigma_u, log_sigma_epsilon) {
   )
 }
 
-print("Checking if map for pc_prior is larger than posterior value at true parameters. ")
+print("Checking if map is larger than posterior value at true parameters. ")
 map_pc$value > log_posterior_pc(
   log_kappa = log_kappa, v = v, log_sigma_u = log_sigma_u,
   log_sigma_epsilon = log_sigma_epsilon
@@ -159,7 +154,6 @@ map_pc$value == log_posterior_pc(
   log_kappa = map_pc$par[1], v = map_pc$par[2:3],
   log_sigma_u = map_pc$par[4], log_sigma_epsilon = map_pc$par[5]
 )
-
 
 print("Checking if MAP_prior with PC priors returns the same thing as MAP using PC priors defined through hyperparameters")
 
