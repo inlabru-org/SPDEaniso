@@ -94,43 +94,36 @@ log_laplace <- function(theta) {
 }
 # ---------------------- IMPORTANCE SAMPLING ----------------------
 # Simulate from Laplace approximation
-n_sim <- 10000
+n_sim <- 100
 theta_sim <- MASS::mvrnorm(n_sim, map_pc$par, sigma)
 log_ratio_function <- function(theta) {
-    log_posterior_pc(theta) - log_laplace(theta)
+    log_posterior_pc(theta)  - log_laplace(theta)
 }
 
 # Calculate the importance weights
 log_importance_ratios <- apply(theta_sim, 1, log_ratio_function)
-log_importance_ratios_2 <- log_importance_ratios - mean(log_importance_ratios)
-print(log_importance_ratios_2[1:10])
-# Test that the importance weights are well normalized
-sum(exp(log_importance_ratios_2))
-
-# Calculate the importance weights
-psis_result <- psis(-log_importance_ratios_2, r_eff = NULL)
-# print(psis_result$diagnostics)
-# str(psis_result)
-# plot(psis_result)
-# psis_result$log_weights
-psis_result <- psis(-log_importance_ratios_2, r_eff = NULL)
-# Calculate the mean using the importance weights
+psis_result <- psis(-log_importance_ratios, r_eff = NA)
 weights_smoothed <- exp(psis_result$log_weights)
-mean_importance_smoothed <- apply(theta_sim, 2, weighted.mean, w = weights_smoothed)
+weights_smoothed_normalized <- weights_smoothed / sum(weights_smoothed)
+print(paste("The value of k is:", psis_result$diagnostics$pareto_k))
+print(paste("The variance of the importance weights is:", var(weights_smoothed)))
+
+#Compare the mean and covariance of the importance weights with the MAP and -hessian^{-1}
+mean_importance_smoothed <- apply(theta_sim, 2, weighted.mean, w = weights_smoothed_normalized)
 print(mean_importance_smoothed)
+apply(theta_sim, 2, weighted.mean, w = weights_smoothed_normalized)
 (mean_importance_smoothed - map_pc$par) / map_pc$par
-
-# Calculate the covariance matrix using the importance weights
 cov_importance_smoothed <- stats::cov.wt(theta_sim, wt = as.vector(weights_smoothed))$cov
-sweep(cov_importance_smoothed - sigma, 2, diag(cov_importance), "/")
+sweep(cov_importance_smoothed - sigma, 2, diag(cov_importance_smoothed), "/")
 
-# Now we compute same quantities using no smoothing
-weights <- exp(log_importance_ratios_2)
-mean_importance <- apply(theta_sim, 2, weighted.mean, w = weights)
+#No smoothing
+weights <- exp(log_importance_ratios)
+weights_normalized <- weights / sum(weights)
+print(paste("The variance of the importance weights is:", var(weights)))
+mean_importance <- apply(theta_sim, 2, weighted.mean, w = weights_normalized)
 print(mean_importance)
 (mean_importance - map_pc$par) / map_pc$par
 
-# Calculate the covariance matrix using the importance weights
 cov_importance <- stats::cov.wt(theta_sim, wt = weights)$cov
 sweep(cov_importance - sigma, 2, diag(cov_importance), "/")
 
