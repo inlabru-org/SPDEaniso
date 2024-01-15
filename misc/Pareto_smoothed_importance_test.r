@@ -102,7 +102,11 @@ log_ratio_function <- function(theta) {
 
 # Calculate the importance weights
 log_importance_ratios <- apply(theta_sim, 1, log_ratio_function)
-psis_result <- psis(-log_importance_ratios, r_eff = NA)
+
+# Subtract the mean to avoid numerical issues as it shouldn't change the result
+log_importance_ratios_2 <- log_importance_ratios - mean(log_importance_ratios)
+
+psis_result <- psis(-log_importance_ratios_2, r_eff = NA)
 weights_smoothed <- exp(psis_result$log_weights)
 weights_smoothed_normalized <- weights_smoothed / sum(weights_smoothed)
 print(paste("The value of k is:", psis_result$diagnostics$pareto_k))
@@ -117,7 +121,7 @@ cov_importance_smoothed <- stats::cov.wt(theta_sim, wt = as.vector(weights_smoot
 sweep(cov_importance_smoothed - sigma, 2, diag(cov_importance_smoothed), "/")
 
 #No smoothing
-weights <- exp(log_importance_ratios)
+weights <- exp(log_importance_ratios_2)
 weights_normalized <- weights / sum(weights)
 print(paste("The variance of the importance weights is:", var(weights)))
 mean_importance <- apply(theta_sim, 2, weighted.mean, w = weights_normalized)
@@ -126,9 +130,3 @@ print(mean_importance)
 
 cov_importance <- stats::cov.wt(theta_sim, wt = weights)$cov
 sweep(cov_importance - sigma, 2, diag(cov_importance), "/")
-
-dim(weights)
-dim(weights_smoothed)
-sigma
-cov_importance_smoothed
-cov_importance
