@@ -244,7 +244,7 @@ log_laplace_log_kappa <- function(log_kappa) {
       theta = c(map$par[1:4], log_sigma_epsilon)
     )
   }
-    l <- 2 # l of the partition
+    l <- 4 # l of the partition
   # Defines the partitions for plotting
   n_points <- 51 # Number of points in the partition centered at MAP_prior value of kappa
 
