@@ -4,14 +4,14 @@
 \alias{log_gaussian_density}
 \title{Log Gaussian density 1D}
 \usage{
-log_gaussian_density(x, mu, logsigma)
+log_gaussian_density(x, mu, log_sigma)
 }
 \arguments{
 \item{x}{A numeric vector representing the point x}
 
 \item{mu}{A numeric vector representing the mean mu}
 
-\item{logsigma}{A numeric vector representing the variance log sigma}
+\item{log_sigma}{A numeric vector representing the variance log sigma}
 }
 \value{
 The calculated log Gaussian density
@@ -22,6 +22,6 @@ Calculates  the log of the Gaussian density with mean mu and variance sigma^2
 \examples{
 x <- 1
 mu <- 0
-logsigma <- 1
-log_gaussian_density(x, mu, logsigma)
+log_sigma <- 1
+log_gaussian_density(x, mu, log_sigma)
 }

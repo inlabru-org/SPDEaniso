@@ -1,6 +1,6 @@
-#In this file, parameters are simulated from the PC prior,
-#the posterior distribution given a noisy observation is calculated both for pc and non-pc priors
-#and is maximized while keeping the noise parameter log_sigma_epsilon fixed.
+# In this file, parameters are simulated from the PC prior,
+# the posterior distribution given a noisy observation is calculated both for pc and non-pc priors
+# and is maximized while keeping the noise parameter log_sigma_epsilon fixed.
 library(devtools)
 document()
 library(SPDEaniso)
@@ -22,8 +22,8 @@ set.seed(123)
 a0 <- 2 # Controls the size of v
 rho0 <- 0.1 # Controls the size of kappa
 sigma0 <- 1.5 # Controls the size of v in non PC priors
-sigmau0 <- 2 # controls standard deviation of field
-sigmaepsilon0 <- 0.1 # control standard deviation of noise
+sigma_u0 <- 2 # controls standard deviation of field
+sigma_epsilon0 <- 0.1 # control standard deviation of noise
 
 # Defines the quantile
 alpha <- 0.01
@@ -33,12 +33,12 @@ alpha <- 0.01
 m_u <- 0
 # Calculates the log prior density function of theta for PC and non-PC priors
 log_pc_prior <- log_pc_prior_quantile(
-  sigmau0 = sigmau0, sigmaepsilon0 = sigmaepsilon0,
+  sigma_u0 = sigma_u0, sigma_epsilon0 = sigma_epsilon0,
   a0 = a0, rho0 = rho0, alpha = alpha
 )
 
 log_not_pc_prior <- log_gaussian_prior_quantile(
-  sigmau0 = sigmau0, sigmaepsilon0 = sigmaepsilon0,
+  sigma_u0 = sigma_u0, sigma_epsilon0 = sigma_epsilon0,
   a0 = a0, rho0 = rho0, alpha = alpha
 )
 
@@ -59,8 +59,8 @@ for (i in 1:m) {
     {
       # Simulate parameters from PC prior
       true_params <- sim_theta_pc_quantile(
-        alpha = alpha, sigmau0 = sigmau0,
-        sigmaepsilon0 = sigmaepsilon0,
+        alpha = alpha, sigma_u0 = sigma_u0,
+        sigma_epsilon0 = sigma_epsilon0,
         a0 = a0, rho0 = rho0, m = 1
       )
       # Extract true parameters
@@ -78,14 +78,14 @@ for (i in 1:m) {
 
       # Calculating the MAP under each prior knowing simulated data
       map_pc <- MAP_prior(
-        logprior = log_pc_prior, mesh = mesh,
-        y = y, A = A, m_u = m_u, maxiterations = maxit,
+        log_prior = log_pc_prior, mesh = mesh,
+        y = y, A = A, m_u = m_u, max_iterations = maxit,
         theta0 = unlist(true_params), log_sigma_epsilon = log_sigma_epsilon
       )
 
       map_not_pc <- MAP_prior(
-        logprior = log_not_pc_prior, mesh = mesh,
-        y = y, A = A, m_u = m_u, maxiterations = maxit,
+        log_prior = log_not_pc_prior, mesh = mesh,
+        y = y, A = A, m_u = m_u, max_iterations = maxit,
         theta0 = unlist(true_params), log_sigma_epsilon = log_sigma_epsilon
       )
 
@@ -98,15 +98,14 @@ for (i in 1:m) {
         covariance_estimate = solve(-map_pc$hessian), # a 5x5 matrix
         std_dev_estimates = sqrt(diag(solve(-map_pc$hessian))), # a 5d vector
         within_cinterval = c(1, 1, 1, 1) * (abs(map_pc$par - unlist(true_params)[1:4])
-                                               < 1.96 * sqrt(diag(solve(-map_pc$hessian)))), # a 5d vector
+        < 1.96 * sqrt(diag(solve(-map_pc$hessian)))), # a 5d vector
         # To calculate the probability that the MAP estimate is greater than the true parameter we estimate the
         # marginal posterior of the posterior using the marginal standard deviations of the posterior. So this probability is calculated
         # using the CDF of the normal distribution with mean equal to the MAP estimate and standard deviation equal to the
         # marginal standard deviation of the posterior
-         prob_MAP_greater = pnorm(map_pc$par, mean = unlist(true_params)[1:4], sd = sqrt(diag(solve(-map_pc$hessian))))
-
+        prob_MAP_greater = pnorm(map_pc$par, mean = unlist(true_params)[1:4], sd = sqrt(diag(solve(-map_pc$hessian))))
       )
-    #  Not-PC results
+      #  Not-PC results
       not_pc_results <- list(
         MAP_estimate = map_not_pc$par, # a 5d vector
         MAP_value <- map_not_pc$value,
@@ -115,15 +114,15 @@ for (i in 1:m) {
         covariance_estimate = solve(-map_not_pc$hessian), # a 5x5 matrix
         std_dev_estimates = sqrt(diag(solve(-map_pc$hessian))), # a 5d vector
         within_cinterval = c(1, 1, 1, 1) * (abs(map_not_pc$par - unlist(true_params)[1:4])
-                                               < 1.96 * sqrt(diag(solve(-map_not_pc$hessian)))), # a 5d vector
+        < 1.96 * sqrt(diag(solve(-map_not_pc$hessian)))), # a 5d vector
         prob_MAP_greater = pnorm(map_not_pc$par, mean = unlist(true_params)[1:4], sd = sqrt(diag(solve(-map_not_pc$hessian))))
       )
 
       # Store results
       results[[i]] <- list(
         true_params = true_params,
-        pc = pc_results
-         , not_pc = not_pc_results
+        pc = pc_results,
+        not_pc = not_pc_results
       )
     },
     error = function(e) {}
@@ -133,25 +132,24 @@ for (i in 1:m) {
 # This calculates the proportion of times the MAP estimate is in the 95% confidence intervalfor each parameter ignoring
 # results with any NANs
 pc_within_cinterval <- lapply(results, function(x) x$pc$within_cinterval)
-#This transforms the list into a matrix
+# This transforms the list into a matrix
 pc_within_cinterval <- do.call(rbind, pc_within_cinterval)
-#This calculates the mean of each column ignoring NA values
+# This calculates the mean of each column ignoring NA values
 pc_within_cinterval <- colMeans(pc_within_cinterval, na.rm = TRUE)
 pc_within_cinterval
 
 # This calculates the proportion of times the MAP estimate is in the 95% confidence intervalfor each parameter ignoring
 # results with any NANs
 not_pc_within_cinterval <- lapply(results, function(x) x$not_pc$within_cinterval)
-#This transforms the list into a matrix
+# This transforms the list into a matrix
 not_pc_within_cinterval <- do.call(rbind, not_pc_within_cinterval)
-#This calculates the mean of each column ignoring NA values
+# This calculates the mean of each column ignoring NA values
 not_pc_within_cinterval <- colMeans(not_pc_within_cinterval, na.rm = TRUE)
 not_pc_within_cinterval
 
-#This plots a histogram of the probability that the MAP estimate is greater than the true parameter
+# This plots a histogram of the probability that the MAP estimate is greater than the true parameter
 # It should be uniform if the MAP estimate is unbiased
 pc_prob_MAP_greater <- lapply(results, function(x) x$pc$prob_MAP_greater)
 pc_prob_MAP_greater <- do.call(rbind, pc_prob_MAP_greater)
 pc_prob_MAP_greater <- colMeans(pc_prob_MAP_greater, na.rm = TRUE)
 hist(pc_prob_MAP_greater)
-

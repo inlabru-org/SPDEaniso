@@ -6,7 +6,7 @@
 with a general prior on the anisotropy and PC priors on log(sigma_u) and log(sigma_epsilon).}
 \usage{
 log_posterior_prior_on_aniso(
-  logprior_aniso,
+  log_prior_aniso,
   mesh,
   log_kappa,
   v,
@@ -20,7 +20,7 @@ log_posterior_prior_on_aniso(
 )
 }
 \arguments{
-\item{logprior_aniso}{A function that calculates the log prior of (kappa, v)}
+\item{log_prior_aniso}{A function that calculates the log prior of (kappa, v)}
 
 \item{mesh}{The mesh}
 

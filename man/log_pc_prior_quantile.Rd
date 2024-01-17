@@ -5,8 +5,8 @@
 \title{Log PC prior on theta=(log(kappa),v, log(sigma_u), log(sigma_epsilon)) given certain quantiles.}
 \usage{
 log_pc_prior_quantile(
-  sigmau0,
-  sigmaepsilon0,
+  sigma_u0,
+  sigma_epsilon0,
   a0,
   rho0,
   alpha = 0.01,
@@ -17,9 +17,9 @@ log_pc_prior_quantile(
 )
 }
 \arguments{
-\item{sigmau0}{A surprisingly high variance of field, in (0,infinity)}
+\item{sigma_u0}{A surprisingly high variance of field, in (0,infinity)}
 
-\item{sigmaepsilon0}{A surprisingly high variance of noise, in (0,infinity)}
+\item{sigma_epsilon0}{A surprisingly high variance of noise, in (0,infinity)}
 
 \item{a0}{A surprisingly high ratio of anisotropy, in (1,infinity)}
 
@@ -43,9 +43,9 @@ Calculates  the log of the PC prior on the (log(kappa),v, log(sigma_u), log(sigm
 }
 \examples{
 alpha <- 0.05
-sigmau0 <- 10
-sigmaepsilon0 <- 1
+sigma_u0 <- 10
+sigma_epsilon0 <- 1
 a0 <- 10
 rho0 <- 0.1
-log_pc_prior <- log_pc_prior_quantile(sigmau0 = sigmau0, sigmaepsilon0 = sigmaepsilon0, a0 = a0, rho0 = rho0, alpha = alpha)
+log_pc_prior <- log_pc_prior_quantile(sigma_u0 = sigma_u0, sigma_epsilon0 = sigma_epsilon0, a0 = a0, rho0 = rho0, alpha = alpha)
 }

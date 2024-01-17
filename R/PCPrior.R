@@ -270,9 +270,7 @@ logGdensity <- function(x, mu, Q) {
   norm_term <- norm_Q(Q, x - mu)
 
   # Calculates  the log Gaussian density
-  logGdty <- 0.5 * (log_det_val - norm_term - nrow(Q) * log(2 * pi))
-
-  return(logGdty)
+  0.5 * (log_det_val - norm_term - nrow(Q) * log(2 * pi))
 }
 
 #' @title Calculates  the log-posterior density for parameters (log_kappa,v, log_sigma_u, log_sigma_epsilon) with PC prior.
@@ -352,14 +350,14 @@ log_pc_posterior <- function(mesh, log_kappa, v, log_sigma_u = 0, log_sigma_epsi
 #' @param y A vector with length equal to the number of basis elements n representing the observed data.
 #' @param A Matrix of size nxn representing the transformation A
 #' @param m_u A vector with length n representing the prior mean m_u
-#' @param maxiterations Maximum number of iterations for optim, by default 300
+#' @param max_iterations Maximum number of iterations for optim, by default 300
 #' @param log_sigma_epsilon Variance of noise, if NULL, it is estimated by the MAP
 #'
 #' @return The parameters (log_kappa, v, log_sigma_u, log_sigma_epsilon) that maximize the posterior
 #' @export
 
 
-MAP_pc <- function(mesh, lambda, lambda1, lambda_epsilon, lambda_u, y, A, m_u, maxiterations = 300, log_sigma_epsilon = NULL, theta0 = c(-0.5, c(0.1, 0.1), 0, -3)) {
+MAP_pc <- function(mesh, lambda, lambda1, lambda_epsilon, lambda_u, y, A, m_u, max_iterations = 300, log_sigma_epsilon = NULL, theta0 = c(-0.5, c(0.1, 0.1), 0, -3)) {
   if (missing(log_sigma_epsilon)) {
     # Maximizes the log-posterior density over (log_kappa, v, log_sigma_u, log_sigma_epsilon)
     log_post <- function(theta) {
@@ -374,8 +372,8 @@ MAP_pc <- function(mesh, lambda, lambda1, lambda_epsilon, lambda_u, y, A, m_u, m
         y = y, A = A, m_u = m_u
       ))
     }
-    theta0 <- optim(par = theta0, fn = log_post, control = list(fnscale = -1, maxit = maxiterations / 2), hessian = TRUE)$par
-    return(optim(par = theta0, fn = log_post, control = list(fnscale = -1, maxit = maxiterations / 2), hessian = TRUE, method = "BFGS"))
+    theta0 <- optim(par = theta0, fn = log_post, control = list(fnscale = -1, maxit = max_iterations / 2), hessian = TRUE)$par
+    return(optim(par = theta0, fn = log_post, control = list(fnscale = -1, maxit = max_iterations / 2), hessian = TRUE, method = "BFGS"))
 
     # Maximizes the log-posterior density over (log_kappa, v, log_sigma_u)
     log_post <- function(theta) {
@@ -390,8 +388,8 @@ MAP_pc <- function(mesh, lambda, lambda1, lambda_epsilon, lambda_u, y, A, m_u, m
       ))
     }
     theta0 <- theta0[1:4]
-    theta0 <- optim(par = theta0, fn = log_post, control = list(fnscale = -1, maxit = maxiterations / 2), hessian = TRUE)$par
-    return(optim(par = theta0, fn = log_post, control = list(fnscale = -1, maxit = maxiterations / 2), hessian = TRUE, method = "BFGS"))
+    theta0 <- optim(par = theta0, fn = log_post, control = list(fnscale = -1, maxit = max_iterations / 2), hessian = TRUE)$par
+    return(optim(par = theta0, fn = log_post, control = list(fnscale = -1, maxit = max_iterations / 2), hessian = TRUE, method = "BFGS"))
   }
 }
 
@@ -400,21 +398,21 @@ MAP_pc <- function(mesh, lambda, lambda1, lambda_epsilon, lambda_u, y, A, m_u, m
 #'
 #' @param x A numeric vector representing the point x
 #' @param mu A numeric vector representing the mean mu
-#' @param logsigma A numeric vector representing the variance log sigma
+#' @param log_sigma A numeric vector representing the variance log sigma
 #'
 #' @return The calculated log Gaussian density
 #' @export
 #' @examples
 #' x <- 1
 #' mu <- 0
-#' logsigma <- 1
-#' log_gaussian_density(x, mu, logsigma)
-log_gaussian_density <- function(x, mu, logsigma) {
-  sigma <- exp(logsigma)
-  return(-0.5 * log(2 * pi) - logsigma - 0.5 * (x - mu)^2 / sigma^2)
+#' log_sigma <- 1
+#' log_gaussian_density(x, mu, log_sigma)
+log_gaussian_density <- function(x, mu, log_sigma) {
+  sigma <- exp(log_sigma)
+  -0.5 * log(2 * pi) - log_sigma - 0.5 * (x - mu)^2 / sigma^2
 }
 
-#' @title Calculates  the log-posterior density for parameters (log_kappa,v, log_sigma_u, log_sigma_epsilon) 
+#' @title Calculates  the log-posterior density for parameters (log_kappa,v, log_sigma_u, log_sigma_epsilon)
 #' with a general prior on the anisotropy and PC priors on log(sigma_u) and log(sigma_epsilon).
 #'
 #' @description
@@ -424,7 +422,7 @@ log_gaussian_density <- function(x, mu, logsigma) {
 #' Only stationary parameters are accepted.
 #' Value is up to an additive constant depending only on y
 #'
-#' @param logprior_aniso A function that calculates the log prior of (kappa, v)
+#' @param log_prior_aniso A function that calculates the log prior of (kappa, v)
 #' @param mesh The mesh
 #' @param log_kappa Logarithm of inverse correlation range
 #' @param v 2D vector that controls anisotropy
@@ -439,7 +437,7 @@ log_gaussian_density <- function(x, mu, logsigma) {
 #'
 #' @return The calculated log-posterior density
 #' @export
-log_posterior_prior_on_aniso <- function(logprior_aniso, mesh, log_kappa, v, log_sigma_u = 0, log_sigma_epsilon, lambda_epsilon, lambda_u = 1, y, A, m_u) {
+log_posterior_prior_on_aniso <- function(log_prior_aniso, mesh, log_kappa, v, log_sigma_u = 0, log_sigma_epsilon, lambda_epsilon, lambda_u = 1, y, A, m_u) {
   kappa <- exp(log_kappa)
   sigma_epsilon <- exp(log_sigma_epsilon)
 
@@ -489,7 +487,7 @@ log_posterior_prior_on_aniso <- function(logprior_aniso, mesh, log_kappa, v, log
 #' Only stationary parameters are accepted.
 #' Value is up to an additive constant depending only on y
 #'
-#' @param logprior A function that calculates the log prior of theta = (log(kappa), v, log(sigma_u), log(sigma_epsilon))
+#' @param log_prior A function that calculates the log prior of theta = (log(kappa), v, log(sigma_u), log(sigma_epsilon))
 #' @param mesh The mesh
 #' @param log_kappa Logarithm of inverse correlation range
 #' @param v 2D vector that controls anisotropy
@@ -501,12 +499,12 @@ log_posterior_prior_on_aniso <- function(logprior_aniso, mesh, log_kappa, v, log
 
 #' @return The calculated log-posterior
 #' @export
-log_posterior_prior <- function(logprior, mesh, log_kappa, v, log_sigma_u = 0, log_sigma_epsilon, y, A, m_u) {
+log_posterior_prior <- function(log_prior, mesh, log_kappa, v, log_sigma_u = 0, log_sigma_epsilon, y, A, m_u) {
   kappa <- exp(log_kappa)
   sigma_epsilon <- exp(log_sigma_epsilon)
 
   # Calculates log-prior density
-  log_prior_value <- logprior(log_kappa, v, log_sigma_u, log_sigma_epsilon)
+  log_prior_value <- log_prior(log_kappa, v, log_sigma_u, log_sigma_epsilon)
 
   # Calculates anisotropy
   n <- nrow(mesh$loc)
@@ -534,28 +532,28 @@ log_posterior_prior <- function(logprior, mesh, log_kappa, v, log_sigma_u = 0, l
   logGdty_observation <- logGdensity(x = y, mu = A %*% u, Q = Q_epsilon)
 
   # Calculates  log-posterior density
- unname(log_prior_value + logGdty_prior + logGdty_observation - logGdty_posterior)
+  unname(log_prior_value + logGdty_prior + logGdty_observation - logGdty_posterior)
 }
 #' @title Calculates the MAP estimate for linear noisy observation of field with a general prior on theta = (log(kappa),v, log(sigma_u), log(sigma_epsilon)).
 #'
 #' @description
 #' Calculated by maximizing log posterior using optim. Only stationary parameters are accepted.
 #'
-#' @param logprior A function that calculates the log prior of (log(kappa), v, log(sigma_u), log(sigma_epsilon)).
+#' @param log_prior A function that calculates the log prior of (log(kappa), v, log(sigma_u), log(sigma_epsilon)).
 #' If not specified, it is assumed to be the function that returns 0.
 #' @param mesh The mesh
 #' @param y A vector with length equal to the number of basis elements n representing the observed data.
 #' @param A Matrix of size nxn representing the transformation A
 #' @param m_u A vector with length n representing the prior mean m_u
-#' @param maxiterations Maximum number of iterations for optim, by default 300
+#' @param max_iterations Maximum number of iterations for optim, by default 300
 #' @param log_sigma_epsilon Variance of noise, if NULL, it is estimated by the MAP
 #' @param theta0 Initial value for the parameters (log(kappa), v, log(sigma_u), log(sigma_epsilon)). By default, set to (log(0.5), 1, 2, 1, 1)
 #'
 #' @return The parameters (log_kappa, v, log_sigma_u, log_sigma_epsilon) that maximize the posterior
 #' @export
-MAP_prior <- function(logprior = function(log_kappa, v, log_sigma_u, log_sigma_epsilon) {
+MAP_prior <- function(log_prior = function(log_kappa, v, log_sigma_u, log_sigma_epsilon) {
                         return(0)
-                      }, mesh, y, A, m_u, log_sigma_epsilon = NULL, maxiterations = 300, theta0 = c(-0.5, c(0.1, 0.1), 0, -3)) {
+                      }, mesh, y, A, m_u, log_sigma_epsilon = NULL, max_iterations = 300, theta0 = c(-0.5, c(0.1, 0.1), 0, -3)) {
   if (missing(log_sigma_epsilon) || is.null(log_sigma_epsilon)) {
     # Maximizes the log-posterior density over (log_kappa, v, log_sigma_u, log_sigma_epsilon)
     # First uses Nelder-Mead to find a good starting point for the optimization
@@ -568,7 +566,7 @@ MAP_prior <- function(logprior = function(log_kappa, v, log_sigma_u, log_sigma_e
       tryCatch(
         {
           log_posterior_prior(
-            logprior = logprior,
+            log_prior = log_prior,
             mesh = mesh, log_kappa = log_kappa, v = v,
             log_sigma_u = log_sigma_u, log_sigma_epsilon = log_sigma_epsilon,
             y = y, A = A, m_u = m_u
@@ -579,8 +577,8 @@ MAP_prior <- function(logprior = function(log_kappa, v, log_sigma_u, log_sigma_e
         }
       )
     }
-    theta0 <- optim(par = theta0, fn = log_post, control = list(fnscale = -1, maxit = maxiterations / 2), hessian = TRUE)$par
-    return(optim(par = theta0, fn = log_post, control = list(fnscale = -1, maxit = maxiterations / 2), hessian = TRUE, method = "BFGS"))
+    theta0 <- optim(par = theta0, fn = log_post, control = list(fnscale = -1, maxit = max_iterations / 2), hessian = TRUE)$par
+    return(optim(par = theta0, fn = log_post, control = list(fnscale = -1, maxit = max_iterations / 2), hessian = TRUE, method = "BFGS"))
   } else {
     # Maximizes the log-posterior density over (log_kappa, v, log_sigma_u)
     log_post <- function(theta) {
@@ -590,7 +588,7 @@ MAP_prior <- function(logprior = function(log_kappa, v, log_sigma_u, log_sigma_e
       tryCatch(
         {
           log_posterior_prior(
-            logprior = logprior,
+            log_prior = log_prior,
             mesh = mesh, log_kappa = log_kappa, v = v,
             log_sigma_u = log_sigma_u, log_sigma_epsilon = log_sigma_epsilon,
             y = y, A = A, m_u = m_u
@@ -602,8 +600,8 @@ MAP_prior <- function(logprior = function(log_kappa, v, log_sigma_u, log_sigma_e
       )
     }
     theta0 <- theta0[1:4]
-    theta0 <- optim(par = theta0, fn = log_post, control = list(fnscale = -1, maxit = maxiterations / 2), hessian = TRUE)$par
-    return(optim(par = theta0, fn = log_post, control = list(fnscale = -1, maxit = maxiterations / 2), hessian = TRUE, method = "BFGS"))
+    theta0 <- optim(par = theta0, fn = log_post, control = list(fnscale = -1, maxit = max_iterations / 2), hessian = TRUE)$par
+    return(optim(par = theta0, fn = log_post, control = list(fnscale = -1, maxit = max_iterations / 2), hessian = TRUE, method = "BFGS"))
   }
 }
 
@@ -692,4 +690,118 @@ sim_theta_pc <- function(lambda, lambda1, lambda_u, lambda_epsilon, m = 1) {
     return(results[[1]])
   }
   return(results)
+}
+
+#' @title Normalized importance weights
+#' @description Given log unnormalized weights, calculates the normalized importance weights
+#' @param log_unnormalized_weights A vector of log unnormalized weights
+#' @return A vector of normalized importance weights
+#' @export
+#' @examples
+#' log_unnormalized_weights <- log(c(1, 2, 3))
+#' normalize_log_weights(log_unnormalized_weights)
+normalize_log_weights <- function(log_unnormalized_weights) {
+  max_log_unnormalized_weight <- max(log_unnormalized_weights)
+  # Subtract the max to avoid numerical issues as it shouldn't change the result
+  weights <- exp(log_unnormalized_weights - max_log_unnormalized_weight)
+  weights / sum(weights)
+}
+
+
+#' @title Calculate unnormalized log importance weights, mean, variance, and KL divergences
+#' @description Calculates the unnormalized log importance weights, mean, variance, and KL divergences between the importance approximation and the Laplace approximation
+#' @param log_posterior_density A function that calculates the unnormalized log posterior of theta
+#' @param mu_Laplace A 5D vector representing the mean of the Laplace approximation
+#' @param Q_Laplace A 5x5 matrix representing the precision matrix of the Laplace approximation
+#' @param n_weights Number of weights to be calculated
+#'
+#' @return A list with three elements: log_unnormalized_weights, log_unnormalized_weights_smoothed and the k-diagnostic for PSIS
+#'
+#' @export
+#' @examples
+#' # Defines the log prior density function of theta for PC and non-PC priors
+#' log_pc_prior <- log_pc_prior_quantile(
+#'   sigma_u0 = sigma_u0, sigma_epsilon0 = sigma_epsilon0,
+#'   a0 = a0, rho0 = rho0, alpha = alpha
+#' )
+#' # Defining the log posterior density as a function of the parameters using the log_pc_prior
+#' m_u <- 0
+#' log_posterior_pc <- function(theta) {
+#'   log_kappa <- theta[1]
+#'   v <- theta[2:3]
+#'   log_sigma_u <- theta[4]
+#'   log_sigma_epsilon <- theta[5]
+#'   log_posterior_prior(
+#'     log_prior = log_pc_prior,
+#'     mesh = mesh, log_kappa = log_kappa, v = v,
+#'     log_sigma_epsilon = log_sigma_epsilon, log_sigma_u = log_sigma_u,
+#'     y = y, A = A, m_u = m_u
+#'   )
+#' }
+#' # Calculates the importance weights, mean, variance, and KL divergences
+#' mu_Laplace <- c(0, 0, 0, 0, 0)
+#' Q_Laplace <- diag(5)
+#' log_unnormalized_importance_weights(log_posterior_pc, mu_Laplace, Q_Laplace, n_weights = 1000)
+log_unnormalized_importance_weights <- function(log_posterior_density, mu_Laplace, Q_Laplace, n_weights) {
+  # Calculate the importance weights
+  log_Laplace_density <- function(theta) {
+    logGdensity(
+      x = theta, mu = mu_Laplace, Q = Q_Laplace
+    )
+
+    log_ratio_function <- function(theta) {
+      log_posterior_density(theta) - log_Laplace_density(theta)
+    }
+
+    theta_sim_importance <- MASS::mvrnorm(n_weights, mu_Laplace, Q_Laplace)
+    # Subtract the max to avoid numerical issues as it shouldn't change the result
+    log_importance_ratios <- apply(theta_sim_importance, 1, log_ratio_function)
+    log_importance_ratios <- log_importance_ratios - max(log_importance_ratios)
+
+    psis_result <- psis(-log_importance_ratios, r_eff = NA)
+    log_weights_smoothed <- psis_result$log_weights
+    # Calculate the mean, variance and KL divergences
+    weights_normalized <- normalize_log_weights(log_importance_ratios)
+    mean_importance <- apply(theta_sim_importance, 2, weighted.mean, w = weights_normalized)
+    cov_importance <- stats::cov.wt(theta_sim_importance, wt = weights_normalized)$cov
+    marginal_variance_importance <- diag(cov_importance)
+
+    # Calculate mean and variance using smoothed weights
+    weights_smoothed_normalized <- normalize_log_weights(log_weights_smoothed)
+    mean_smoothed_importance <- apply(theta_sim_importance, 2, weighted.mean, w = weights_smoothed_normalized)
+    cov_smoothed_importance <- stats::cov.wt(theta_sim_importance, wt = weights_smoothed_normalized)$cov
+    marginal_variance_smoothed_importance <- diag(cov_smoothed_importance)
+
+    # A discrete distribution (importance approximation to posterior) is not absolutely continuous with respect to a continuous one (Laplace approximation to posterior) so the KL divergence is not defined. As a result, we replace the Laplace approximation with its importance approximation to calculate the KL divergence.
+    log_weights_Laplace <- apply(theta_sim_importance, 1, log_Laplace_density)
+    weights_Laplace_normalized <- normalize_log_weights(log_weights_Laplace)
+    KL_divergence_importance_Laplace <- sum(weights_normalized * (log(weights_normalized) - weights_Laplace_normalized))
+    KL_divergence_smoothed_importance_Laplace <- sum(weights_smoothed_normalized * (log(weights_smoothed_normalized) - weights_Laplace_normalized))
+
+
+    list(
+      log_unnormalized_weights = log_importance_ratios, log_unnormalized_weights_smoothed = log_weights_smoothed, k_diagnostic = psis_result$diagnostics$pareto_k,
+      mean_importance = mean_importance, marginal_variance_importance = marginal_variance_importance, mean_smoothed_importance = mean_smoothed_importance,
+      marginal_variance_smoothed_importance = marginal_variance_smoothed_importance, KL_divergence_importance_Laplace = KL_divergence_importance_Laplace,
+      KL_divergence_smoothed_importance_Laplace = KL_divergence_smoothed_importance_Laplace
+    )
+  }
+}
+
+#' @title KL discrete log unnormalized weights
+#' @description Calculates the KL divergence between two discrete distributions with the same support using the log unnormalized weights
+#' @param log_unnormalized_weights_1 A vector of log unnormalized weights for the first distribution
+#' @param log_unnormalized_weights_2 A vector of log unnormalized weights for the second distribution
+#'
+#' @return The KL divergence between the two distributions
+#'
+#' @export
+#' @examples
+#' log_unnormalized_weights_1 <- log(c(1, 2, 3))
+#' log_unnormalized_weights_2 <- log(c(3, 2, 1))
+#' KL_discrete_log_unnormalized_weights(log_unnormalized_weights_1, log_unnormalized_weights_2)
+KL_discrete_log_unnormalized_weights <- function(log_unnormalized_weights_1, log_unnormalized_weights_2) {
+  weights_1_normalized <- normalize_log_weights(log_unnormalized_weights_1)
+  weights_2_normalized <- normalize_log_weights(log_unnormalized_weights_2)
+  return(sum(weights_1_normalized * (log(weights_1_normalized) - log(weights_2_normalized))))
 }

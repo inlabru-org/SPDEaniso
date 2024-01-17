@@ -13,7 +13,7 @@ MAP_pc(
   y,
   A,
   m_u,
-  maxiterations = 300,
+  max_iterations = 300,
   log_sigma_epsilon = NULL,
   theta0 = c(-0.5, c(0.1, 0.1), 0, -3)
 )
@@ -33,7 +33,7 @@ MAP_pc(
 
 \item{m_u}{A vector with length n representing the prior mean m_u}
 
-\item{maxiterations}{Maximum number of iterations for optim, by default 300}
+\item{max_iterations}{Maximum number of iterations for optim, by default 300}
 
 \item{log_sigma_epsilon}{Variance of noise, if NULL, it is estimated by the MAP}
 }

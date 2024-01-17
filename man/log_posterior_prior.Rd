@@ -5,7 +5,7 @@
 \title{Calculates  the log-posterior density for parameters (log_kappa,v, log_sigma_u, log_sigma_epsilon) with a general prior.}
 \usage{
 log_posterior_prior(
-  logprior,
+  log_prior,
   mesh,
   log_kappa,
   v,
@@ -17,7 +17,7 @@ log_posterior_prior(
 )
 }
 \arguments{
-\item{logprior}{A function that calculates the log prior of theta = (log(kappa), v, log(sigma_u), log(sigma_epsilon))}
+\item{log_prior}{A function that calculates the log prior of theta = (log(kappa), v, log(sigma_u), log(sigma_epsilon))}
 
 \item{mesh}{The mesh}
 

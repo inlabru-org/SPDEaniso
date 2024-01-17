@@ -5,8 +5,8 @@
 \title{Simulation of theta given quantiles of the PC prior}
 \usage{
 sim_theta_pc_quantile(
-  sigmau0,
-  sigmaepsilon0,
+  sigma_u0,
+  sigma_epsilon0,
   a0,
   rho0,
   alpha = 0.01,
@@ -18,9 +18,9 @@ sim_theta_pc_quantile(
 )
 }
 \arguments{
-\item{sigmau0}{A surprisingly high variance of field, in (0,infinity)}
+\item{sigma_u0}{A surprisingly high variance of field, in (0,infinity)}
 
-\item{sigmaepsilon0}{A surprisingly high variance of noise, in (0,infinity)}
+\item{sigma_epsilon0}{A surprisingly high variance of noise, in (0,infinity)}
 
 \item{a0}{A surprisingly high ratio of anisotropy, in (1,infinity)}
 
@@ -46,10 +46,10 @@ Simulates theta = (log(kappa), v, log(sigma_u), log(sigma_epsilon)) from the PC 
 }
 \examples{
 alpha <- 0.05
-sigmau0 <- 10
-sigmaepsilon0 <- 1
+sigma_u0 <- 10
+sigma_epsilon0 <- 1
 a0 <- 10
 rho0 <- 0.1
 m <- 10
-result <- sim_theta_pc_quantile(alpha = alpha, sigmau0 = sigmau0, sigmaepsilon0 = sigmaepsilon0, a0 = a0, rho0 = rho0, m = m)
+result <- sim_theta_pc_quantile(alpha = alpha, sigma_u0 = sigma_u0, sigma_epsilon0 = sigma_epsilon0, a0 = a0, rho0 = rho0, m = m)
 }

@@ -25,16 +25,16 @@ plot(mesh)
 # Defines the upper bounds for the quantiles
 rho0 <- 1 # Controls the size of kappa in PC and non PC priors
 a0 <- 2 # Controls the size of v in PC and non PC priors
-sigmau0 <- 2 # controls standard deviation of field
-sigmaepsilon0 <- 0.1 # control standard deviation of noise
+sigma_u0 <- 2 # controls standard deviation of field
+sigma_epsilon0 <- 0.1 # control standard deviation of noise
 sigma0 <- 1.5 # Controls the size of v in non PC priors
 # Defines the quantile
 alpha <- 0.01
 
 # Simulates the "true parameters" from the pc_prior.
 true_params <- sim_theta_pc_quantile(
-    alpha = alpha, sigmau0 = sigmau0,
-    sigmaepsilon0 = sigmaepsilon0, a0 = a0, rho0 = rho0, m = 1
+    alpha = alpha, sigma_u0 = sigma_u0,
+    sigma_epsilon0 = sigma_epsilon0, a0 = a0, rho0 = rho0, m = 1
 )
 
 log_kappa <- true_params$log_kappa
@@ -52,7 +52,7 @@ y <- A %*% x + exp(log_sigma_epsilon) * stats::rnorm(n)
 
 # Defines the log prior density function of theta for PC and non-PC priors
 log_pc_prior <- log_pc_prior_quantile(
-    sigmau0 = sigmau0, sigmaepsilon0 = sigmaepsilon0,
+    sigma_u0 = sigma_u0, sigma_epsilon0 = sigma_epsilon0,
     a0 = a0, rho0 = rho0, alpha = alpha
 )
 # Defining the log posterior density as a function of the parameters using the log_pc_prior
@@ -63,7 +63,7 @@ log_posterior_pc <- function(theta) {
     log_sigma_u <- theta[4]
     log_sigma_epsilon <- theta[5]
     log_posterior_prior(
-        logprior = log_pc_prior,
+        log_prior = log_pc_prior,
         mesh = mesh, log_kappa = log_kappa, v = v,
         log_sigma_epsilon = log_sigma_epsilon, log_sigma_u = log_sigma_u,
         y = y, A = A, m_u = m_u
@@ -75,8 +75,8 @@ maxit <- 600
 tryCatch({
     # Calculating the MAP under each prior knowing simulated data
     map_pc <- MAP_prior(
-        logprior = log_pc_prior, mesh = mesh,
-        y = y, A = A, m_u = m_u, maxiterations = maxit,
+        log_prior = log_pc_prior, mesh = mesh,
+        y = y, A = A, m_u = m_u, max_iterations = maxit,
         theta0 = unlist(true_params)
         # ,log_sigma_epsilon = log_sigma_epsilon
     )
@@ -94,11 +94,12 @@ log_laplace <- function(theta) {
 }
 # ---------------------- IMPORTANCE SAMPLING ----------------------
 # Simulate from Laplace approximation
-n_sim <- 100
+n_sim <- 2000
 theta_sim <- MASS::mvrnorm(n_sim, map_pc$par, sigma)
 log_ratio_function <- function(theta) {
-    log_posterior_pc(theta)  - log_laplace(theta)
+    log_posterior_pc(theta) - log_laplace(theta)
 }
+
 
 # Calculate the importance weights
 log_importance_ratios <- apply(theta_sim, 1, log_ratio_function)
@@ -112,7 +113,7 @@ weights_smoothed_normalized <- weights_smoothed / sum(weights_smoothed)
 print(paste("The value of k is:", psis_result$diagnostics$pareto_k))
 print(paste("The variance of the importance weights is:", var(weights_smoothed)))
 
-#Compare the mean and covariance of the importance weights with the MAP and -hessian^{-1}
+# Compare the mean and covariance of the importance weights with the MAP and -hessian^{-1}
 mean_importance_smoothed <- apply(theta_sim, 2, weighted.mean, w = weights_smoothed_normalized)
 print(mean_importance_smoothed)
 apply(theta_sim, 2, weighted.mean, w = weights_smoothed_normalized)
@@ -120,7 +121,7 @@ apply(theta_sim, 2, weighted.mean, w = weights_smoothed_normalized)
 cov_importance_smoothed <- stats::cov.wt(theta_sim, wt = as.vector(weights_smoothed))$cov
 sweep(cov_importance_smoothed - sigma, 2, diag(cov_importance_smoothed), "/")
 
-#No smoothing
+# No smoothing
 weights <- exp(log_importance_ratios_2)
 weights_normalized <- weights / sum(weights)
 print(paste("The variance of the importance weights is:", var(weights)))
@@ -140,7 +141,7 @@ log_posterior_pc_log_kappa <- function(log_kappa) {
     log_posterior_pc(c(log_kappa, map_pc$par[2:5]))
 }
 log_ratio_function_log_kappa <- function(log_kappa) {
-    log_posterior_pc_log_kappa(log_kappa)  - log_laplace_log_kappa(log_kappa)
+    log_posterior_pc_log_kappa(log_kappa) - log_laplace_log_kappa(log_kappa)
 }
 
 # Simulate from Laplace approximation
@@ -157,7 +158,7 @@ weights_smoothed_normalized_log_kappa <- weights_smoothed_log_kappa / sum(weight
 print(paste("The value of k is:", psis_result_log_kappa$diagnostics$pareto_k))
 print(paste("The variance of the importance weights is:", var(weights_smoothed_log_kappa)))
 
-##We repeat the same but now only let v vary
+## We repeat the same but now only let v vary
 log_laplace_v <- function(v) {
     log_laplace(c(map_pc$par[1], v, map_pc$par[4:5]))
 }
@@ -165,7 +166,7 @@ log_posterior_pc_v <- function(v) {
     log_posterior_pc(c(map_pc$par[1], v, map_pc$par[4:5]))
 }
 log_ratio_function_v <- function(v) {
-    log_posterior_pc_v(v)  - log_laplace_v(v)
+    log_posterior_pc_v(v) - log_laplace_v(v)
 }
 
 # Simulate from Laplace approximation
@@ -182,7 +183,7 @@ weights_smoothed_normalized_v <- weights_smoothed_v / sum(weights_smoothed_v)
 print(paste("The value of k is:", psis_result_v$diagnostics$pareto_k))
 print(paste("The variance of the importance weights is:", var(weights_smoothed_v)))
 
-##We repeat the same but now only let log_sigma_u vary
+## We repeat the same but now only let log_sigma_u vary
 log_laplace_log_sigma_u <- function(log_sigma_u) {
     log_laplace(c(map_pc$par[1:3], log_sigma_u, map_pc$par[5]))
 }
@@ -190,7 +191,7 @@ log_posterior_pc_log_sigma_u <- function(log_sigma_u) {
     log_posterior_pc(c(map_pc$par[1:3], log_sigma_u, map_pc$par[5]))
 }
 log_ratio_function_log_sigma_u <- function(log_sigma_u) {
-    log_posterior_pc_log_sigma_u(log_sigma_u)  - log_laplace_log_sigma_u(log_sigma_u)
+    log_posterior_pc_log_sigma_u(log_sigma_u) - log_laplace_log_sigma_u(log_sigma_u)
 }
 
 # Simulate from Laplace approximation
@@ -207,7 +208,7 @@ weights_smoothed_normalized_log_sigma_u <- weights_smoothed_log_sigma_u / sum(we
 print(paste("The value of k is:", psis_result_log_sigma_u$diagnostics$pareto_k))
 print(paste("The variance of the importance weights is:", var(weights_smoothed_log_sigma_u)))
 
-##We repeat the same but now only let log_sigma_epsilon vary
+## We repeat the same but now only let log_sigma_epsilon vary
 log_laplace_log_sigma_epsilon <- function(log_sigma_epsilon) {
     log_laplace(c(map_pc$par[1:4], log_sigma_epsilon))
 }
@@ -215,7 +216,7 @@ log_posterior_pc_log_sigma_epsilon <- function(log_sigma_epsilon) {
     log_posterior_pc(c(map_pc$par[1:4], log_sigma_epsilon))
 }
 log_ratio_function_log_sigma_epsilon <- function(log_sigma_epsilon) {
-    log_posterior_pc_log_sigma_epsilon(log_sigma_epsilon)  - log_laplace_log_sigma_epsilon(log_sigma_epsilon)
+    log_posterior_pc_log_sigma_epsilon(log_sigma_epsilon) - log_laplace_log_sigma_epsilon(log_sigma_epsilon)
 }
 
 # Simulate from Laplace approximation
@@ -233,7 +234,7 @@ print(paste("The value of k is:", psis_result_log_sigma_epsilon$diagnostics$pare
 print(paste("The variance of the importance weights is:", var(weights_smoothed_log_sigma_epsilon)))
 
 
-#now we repeat the same but let all the parameters vary except one, we define a general function for this
+# now we repeat the same but let all the parameters vary except one, we define a general function for this
 pareto_smoothing <- function(i) {
     # Simulate from Laplace approximation in four variables and keep i fixes
     n_sim <- 500
@@ -241,12 +242,12 @@ pareto_smoothing <- function(i) {
     non_fixed_params <- MASS::mvrnorm(n_sim, map_pc$par[-i], sigma)
     if (i == 1) {
         theta_sim <- cbind(rep(map_pc$par[i], n_sim), non_fixed_params)
-    } else if(i == 5) {
+    } else if (i == 5) {
         theta_sim <- cbind(non_fixed_params, rep(map_pc$par[i], n_sim))
     } else {
         theta_sim <- cbind(non_fixed_params[, 1:(i - 1)], rep(map_pc$par[i], n_sim), non_fixed_params[, i:4])
     }
- log_importance_ratios <- apply(theta_sim, 1, log_ratio_function)
+    log_importance_ratios <- apply(theta_sim, 1, log_ratio_function)
 
     # Subtract the mean to avoid numerical issues as it shouldn't change the result
     log_importance_ratios_2 <- log_importance_ratios - mean(log_importance_ratios)
@@ -259,4 +260,3 @@ pareto_smoothing <- function(i) {
     # return(weights_smoothed_normalized)
 }
 pareto_smoothing(1)
-

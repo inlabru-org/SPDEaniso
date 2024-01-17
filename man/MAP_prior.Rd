@@ -5,7 +5,7 @@
 \title{Calculates the MAP estimate for linear noisy observation of field with a general prior on theta = (log(kappa),v, log(sigma_u), log(sigma_epsilon)).}
 \usage{
 MAP_prior(
-  logprior = function(log_kappa, v, log_sigma_u, log_sigma_epsilon) {
+  log_prior = function(log_kappa, v, log_sigma_u, log_sigma_epsilon) {
      return(0)
  },
   mesh,
@@ -13,12 +13,12 @@ MAP_prior(
   A,
   m_u,
   log_sigma_epsilon = NULL,
-  maxiterations = 300,
+  max_iterations = 300,
   theta0 = c(-0.5, c(0.1, 0.1), 0, -3)
 )
 }
 \arguments{
-\item{logprior}{A function that calculates the log prior of (log(kappa), v, log(sigma_u), log(sigma_epsilon)).
+\item{log_prior}{A function that calculates the log prior of (log(kappa), v, log(sigma_u), log(sigma_epsilon)).
 If not specified, it is assumed to be the function that returns 0.}
 
 \item{mesh}{The mesh}
@@ -31,7 +31,7 @@ If not specified, it is assumed to be the function that returns 0.}
 
 \item{log_sigma_epsilon}{Variance of noise, if NULL, it is estimated by the MAP}
 
-\item{maxiterations}{Maximum number of iterations for optim, by default 300}
+\item{max_iterations}{Maximum number of iterations for optim, by default 300}
 
 \item{theta0}{Initial value for the parameters (log(kappa), v, log(sigma_u), log(sigma_epsilon)). By default, set to (log(0.5), 1, 2, 1, 1)}
 }

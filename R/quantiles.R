@@ -129,8 +129,8 @@ lambda_quantile_kappa <- function(rho0, alpha_k = 0.01) {
 #' @param alpha_epsilon A quantile in (0,1) for the variance of the noise. If NULL, alpha_epsilon=alpha
 #' @param alpha_k A quantile in (0,1) for kappa. If NULL, alpha_k=alpha
 #' @param alpha_v A quantile in (0,1) for anisotropy |v|. If NULL, alpha_v=alpha
-#' @param sigmau0 A surprisingly high variance of field, in (0,infinity)
-#' @param sigmaepsilon0 A surprisingly high variance of noise, in (0,infinity)
+#' @param sigma_u0 A surprisingly high variance of field, in (0,infinity)
+#' @param sigma_epsilon0 A surprisingly high variance of noise, in (0,infinity)
 #' @param a0 A surprisingly high ratio of anisotropy, in (1,infinity)
 #' @param rho0 A surprisingly small correlation range, in (0,infinity)
 #'
@@ -141,12 +141,12 @@ lambda_quantile_kappa <- function(rho0, alpha_k = 0.01) {
 #' alpha_epsilon <- 0.01
 #' alpha_k <- 0.01
 #' alpha_v <- 0.01
-#' sigmau0 <- 10
-#' sigmaepsilon0 <- 1
+#' sigma_u0 <- 10
+#' sigma_epsilon0 <- 1
 #' a0 <- 10
 #' rho0 <- 0.1
-#' log_prior_gaussian <- log_gaussian_prior_quantile(alpha_u = alpha_u, alpha_epsilon = alpha_epsilon, alpha_k = alpha_k, alpha_v = alpha_v, sigmau0 = sigmau0, sigmaepsilon0 = sigmaepsilon0, a0 = a0, rho0 = rho0)
-log_gaussian_prior_quantile <- function(sigmau0, sigmaepsilon0, a0, rho0, alpha = 0.01, alpha_u = NULL, alpha_epsilon = NULL, alpha_k = NULL, alpha_v = NULL) {
+#' log_prior_gaussian <- log_gaussian_prior_quantile(alpha_u = alpha_u, alpha_epsilon = alpha_epsilon, alpha_k = alpha_k, alpha_v = alpha_v, sigma_u0 = sigma_u0, sigma_epsilon0 = sigma_epsilon0, a0 = a0, rho0 = rho0)
+log_gaussian_prior_quantile <- function(sigma_u0, sigma_epsilon0, a0, rho0, alpha = 0.01, alpha_u = NULL, alpha_epsilon = NULL, alpha_k = NULL, alpha_v = NULL) {
   # This sets the NULL values to alpha
   if (is.null(alpha_u)) {
     alpha_u <- alpha
@@ -184,20 +184,20 @@ log_gaussian_prior_quantile <- function(sigmau0, sigmaepsilon0, a0, rho0, alpha 
   if (rho0 < 0) {
     warning("rho0 should be greater than 0")
   }
-  # This warns the user if sigmau0 is not greater than 0
-  if (sigmau0 <= 0) {
-    warning("sigmau0 should be greater than 0")
+  # This warns the user if sigma_u0 is not greater than 0
+  if (sigma_u0 <= 0) {
+    warning("sigma_u0 should be greater than 0")
   }
-  # This warns the user if sigmaepsilon0 is not greater than 0
-  if (sigmaepsilon0 <= 0) {
-    warning("sigmaepsilon0 should be greater than 0")
+  # This warns the user if sigma_epsilon0 is not greater than 0
+  if (sigma_epsilon0 <= 0) {
+    warning("sigma_epsilon0 should be greater than 0")
   }
 
   # Calulate the hyperparameters of the priors
   sigma2_v <- sigma2_quantile_v(alpha_v = alpha_v, a0 = a0)
   lambda_k <- lambda_quantile_kappa(alpha_k = alpha_k, rho0 = rho0)
-  lambda_u <- lambda_variance_quantile(alpha_sigma = alpha_u, sigma0 = sigmau0)
-  lambda_epsilon <- lambda_variance_quantile(alpha_sigma = alpha_epsilon, sigma0 = sigmaepsilon0)
+  lambda_u <- lambda_variance_quantile(alpha_sigma = alpha_u, sigma0 = sigma_u0)
+  lambda_epsilon <- lambda_variance_quantile(alpha_sigma = alpha_epsilon, sigma0 = sigma_epsilon0)
 
   # Defines the log prior
   log_prior <- function(log_kappa, v, log_sigma_u, log_sigma_epsilon) {
@@ -218,8 +218,8 @@ log_gaussian_prior_quantile <- function(sigmau0, sigmaepsilon0, a0, rho0, alpha 
 #' @param alpha_epsilon A quantile in (0,1) for the variance of the noise
 #' @param alpha_k A quantile in (0,1) for kappa
 #' @param alpha_v A quantile in (0,1) for anisotropy |v|
-#' @param sigmau0 A surprisingly high variance of field, in (0,infinity)
-#' @param sigmaepsilon0 A surprisingly high variance of noise, in (0,infinity)
+#' @param sigma_u0 A surprisingly high variance of field, in (0,infinity)
+#' @param sigma_epsilon0 A surprisingly high variance of noise, in (0,infinity)
 #' @param a0 A surprisingly high ratio of anisotropy, in (1,infinity)
 #' @param rho0 A surprisingly small correlation range, in (0,infinity)
 #'
@@ -227,12 +227,12 @@ log_gaussian_prior_quantile <- function(sigmau0, sigmaepsilon0, a0, rho0, alpha 
 #' @export
 #' @examples
 #' alpha <- 0.05
-#' sigmau0 <- 10
-#' sigmaepsilon0 <- 1
+#' sigma_u0 <- 10
+#' sigma_epsilon0 <- 1
 #' a0 <- 10
 #' rho0 <- 0.1
-#' log_pc_prior <- log_pc_prior_quantile(sigmau0 = sigmau0, sigmaepsilon0 = sigmaepsilon0, a0 = a0, rho0 = rho0, alpha = alpha)
-log_pc_prior_quantile <- function(sigmau0, sigmaepsilon0, a0, rho0, alpha = 0.01, alpha_u = NULL, alpha_epsilon = NULL, alpha_k = NULL, alpha_v = NULL) {
+#' log_pc_prior <- log_pc_prior_quantile(sigma_u0 = sigma_u0, sigma_epsilon0 = sigma_epsilon0, a0 = a0, rho0 = rho0, alpha = alpha)
+log_pc_prior_quantile <- function(sigma_u0, sigma_epsilon0, a0, rho0, alpha = 0.01, alpha_u = NULL, alpha_epsilon = NULL, alpha_k = NULL, alpha_v = NULL) {
   # This warns the user if alpha is not in (0,1)
   if (alpha <= 0 || alpha >= 1) {
     warning("alpha should be in (0,1)")
@@ -271,21 +271,21 @@ log_pc_prior_quantile <- function(sigmau0, sigmaepsilon0, a0, rho0, alpha = 0.01
   if (rho0 < 0) {
     warning("rho0 should be greater than 0")
   }
-  # This warns the user if sigmau0 is not greater than 0
-  if (sigmau0 <= 0) {
-    warning("sigmau0 should be greater than 0")
+  # This warns the user if sigma_u0 is not greater than 0
+  if (sigma_u0 <= 0) {
+    warning("sigma_u0 should be greater than 0")
   }
-  # This warns the user if sigmaepsilon0 is not greater than 0
-  if (sigmaepsilon0 <= 0) {
-    warning("sigmaepsilon0 should be greater than 0")
+  # This warns the user if sigma_epsilon0 is not greater than 0
+  if (sigma_epsilon0 <= 0) {
+    warning("sigma_epsilon0 should be greater than 0")
   }
 
   # Calulate the hyperparameters of the PC priors for anisotropy
   lambda1 <- lambda1_quantile(a0 = a0, alpha_a = alpha_v)
   lambda <- lambda_quantile(rho0 = rho0, lambda1 = lambda1, alpha = alpha_k)
   # Calulate the hyperparameters of the PC priors for variances
-  lambda_u <- lambda_variance_quantile(alpha_sigma = alpha_u, sigma0 = sigmau0)
-  lambda_epsilon <- lambda_variance_quantile(alpha_sigma = alpha_epsilon, sigma0 = sigmaepsilon0)
+  lambda_u <- lambda_variance_quantile(alpha_sigma = alpha_u, sigma0 = sigma_u0)
+  lambda_epsilon <- lambda_variance_quantile(alpha_sigma = alpha_epsilon, sigma0 = sigma_epsilon0)
 
   # Defines the log prior
   log_pc_prior <- function(log_kappa, v, log_sigma_u, log_sigma_epsilon) {
@@ -306,8 +306,8 @@ log_pc_prior_quantile <- function(sigmau0, sigmaepsilon0, a0, rho0, alpha = 0.01
 #' @param alpha_epsilon A quantile in (0,1) for the variance of the noise
 #' @param alpha_k A quantile in (0,1) for kappa
 #' @param alpha_v A quantile in (0,1) for anisotropy |v|
-#' @param sigmau0 A surprisingly high variance of field, in (0,infinity)
-#' @param sigmaepsilon0 A surprisingly high variance of noise, in (0,infinity)
+#' @param sigma_u0 A surprisingly high variance of field, in (0,infinity)
+#' @param sigma_epsilon0 A surprisingly high variance of noise, in (0,infinity)
 #' @param a0 A surprisingly high ratio of anisotropy, in (1,infinity)
 #' @param rho0 A surprisingly small correlation range, in (0,infinity)
 #' @param m Number of samples, by default 1.
@@ -316,13 +316,13 @@ log_pc_prior_quantile <- function(sigmau0, sigmaepsilon0, a0, rho0, alpha = 0.01
 #' @export
 #' @examples
 #' alpha <- 0.05
-#' sigmau0 <- 10
-#' sigmaepsilon0 <- 1
+#' sigma_u0 <- 10
+#' sigma_epsilon0 <- 1
 #' a0 <- 10
 #' rho0 <- 0.1
 #' m <- 10
-#' result <- sim_theta_pc_quantile(alpha = alpha, sigmau0 = sigmau0, sigmaepsilon0 = sigmaepsilon0, a0 = a0, rho0 = rho0, m = m)
-sim_theta_pc_quantile <- function(sigmau0, sigmaepsilon0, a0, rho0, alpha = 0.01, alpha_u = NULL, alpha_epsilon = NULL, alpha_k = NULL, alpha_v = NULL, m = 1) {
+#' result <- sim_theta_pc_quantile(alpha = alpha, sigma_u0 = sigma_u0, sigma_epsilon0 = sigma_epsilon0, a0 = a0, rho0 = rho0, m = m)
+sim_theta_pc_quantile <- function(sigma_u0, sigma_epsilon0, a0, rho0, alpha = 0.01, alpha_u = NULL, alpha_epsilon = NULL, alpha_k = NULL, alpha_v = NULL, m = 1) {
   # This sets the NULL values to alpha
   if (is.null(alpha_u)) {
     alpha_u <- alpha
@@ -361,20 +361,20 @@ sim_theta_pc_quantile <- function(sigmau0, sigmaepsilon0, a0, rho0, alpha = 0.01
   if (rho0 < 0) {
     warning("rho0 should be greater than 0")
   }
-  # This warns the user if sigmau0 is not greater than 0
-  if (sigmau0 <= 0) {
-    warning("sigmau0 should be greater than 0")
+  # This warns the user if sigma_u0 is not greater than 0
+  if (sigma_u0 <= 0) {
+    warning("sigma_u0 should be greater than 0")
   }
-  # This warns the user if sigmaepsilon0 is not greater than 0
-  if (sigmaepsilon0 <= 0) {
-    warning("sigmaepsilon0 should be greater than 0")
+  # This warns the user if sigma_epsilon0 is not greater than 0
+  if (sigma_epsilon0 <= 0) {
+    warning("sigma_epsilon0 should be greater than 0")
   }
 
   # Calulate the hyperparameters of the PC priors for anisotropy
   lambda1 <- lambda1_quantile(a0 = a0, alpha_a = alpha_v)
   lambda <- lambda_quantile(rho0 = rho0, lambda1 = lambda1, alpha = alpha_k)
   # Calulate the hyperparameters of the PC priors for variances
-  lambda_u <- lambda_variance_quantile(alpha_sigma = alpha_u, sigma0 = sigmau0)
-  lambda_epsilon <- lambda_variance_quantile(alpha_sigma = alpha_epsilon, sigma0 = sigmaepsilon0)
+  lambda_u <- lambda_variance_quantile(alpha_sigma = alpha_u, sigma0 = sigma_u0)
+  lambda_epsilon <- lambda_variance_quantile(alpha_sigma = alpha_epsilon, sigma0 = sigma_epsilon0)
   return(sim_theta_pc(lambda = lambda, lambda1 = lambda1, lambda_u = lambda_u, lambda_epsilon = lambda_epsilon, m = m))
 }

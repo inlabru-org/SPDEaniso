@@ -6,8 +6,8 @@
 and with PC priors on noise and variance of field, given certain quantiles.}
 \usage{
 log_gaussian_prior_quantile(
-  sigmau0,
-  sigmaepsilon0,
+  sigma_u0,
+  sigma_epsilon0,
   a0,
   rho0,
   alpha = 0.01,
@@ -18,9 +18,9 @@ log_gaussian_prior_quantile(
 )
 }
 \arguments{
-\item{sigmau0}{A surprisingly high variance of field, in (0,infinity)}
+\item{sigma_u0}{A surprisingly high variance of field, in (0,infinity)}
 
-\item{sigmaepsilon0}{A surprisingly high variance of noise, in (0,infinity)}
+\item{sigma_epsilon0}{A surprisingly high variance of noise, in (0,infinity)}
 
 \item{a0}{A surprisingly high ratio of anisotropy, in (1,infinity)}
 
@@ -50,9 +50,9 @@ alpha_u <- 0.01
 alpha_epsilon <- 0.01
 alpha_k <- 0.01
 alpha_v <- 0.01
-sigmau0 <- 10
-sigmaepsilon0 <- 1
+sigma_u0 <- 10
+sigma_epsilon0 <- 1
 a0 <- 10
 rho0 <- 0.1
-log_prior_gaussian <- log_gaussian_prior_quantile(alpha_u = alpha_u, alpha_epsilon = alpha_epsilon, alpha_k = alpha_k, alpha_v = alpha_v, sigmau0 = sigmau0, sigmaepsilon0 = sigmaepsilon0, a0 = a0, rho0 = rho0)
+log_prior_gaussian <- log_gaussian_prior_quantile(alpha_u = alpha_u, alpha_epsilon = alpha_epsilon, alpha_k = alpha_k, alpha_v = alpha_v, sigma_u0 = sigma_u0, sigma_epsilon0 = sigma_epsilon0, a0 = a0, rho0 = rho0)
 }
