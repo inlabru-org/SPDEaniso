@@ -704,7 +704,7 @@ normalize_log_weights <- function(log_unnormalized_weights) {
   max_log_unnormalized_weight <- max(log_unnormalized_weights)
   # Subtract the max to avoid numerical issues as it shouldn't change the result
   weights <- exp(log_unnormalized_weights - max_log_unnormalized_weight)
-  weights / sum(weights)
+  as.vector(weights / sum(weights))
 }
 
 
@@ -741,51 +741,56 @@ normalize_log_weights <- function(log_unnormalized_weights) {
 #' # Calculates the importance weights, mean, variance, and KL divergences
 #' mu_Laplace <- c(0, 0, 0, 0, 0)
 #' Q_Laplace <- diag(5)
-#' log_unnormalized_importance_weights(log_posterior_pc, mu_Laplace, Q_Laplace, n_weights = 1000)
-log_unnormalized_importance_weights <- function(log_posterior_density, mu_Laplace, Q_Laplace, n_weights) {
+#' log_unnormalized_importance_weights_and_integrals(log_posterior_pc, mu_Laplace, Q_Laplace, n_weights = 1000)
+log_unnormalized_importance_weights_and_integrals <- function(log_posterior_density, mu_Laplace, Q_Laplace, n_weights) {
   # Calculate the importance weights
   log_Laplace_density <- function(theta) {
     logGdensity(
       x = theta, mu = mu_Laplace, Q = Q_Laplace
     )
-
-    log_ratio_function <- function(theta) {
-      log_posterior_density(theta) - log_Laplace_density(theta)
-    }
-
-    theta_sim_importance <- MASS::mvrnorm(n_weights, mu_Laplace, Q_Laplace)
-    # Subtract the max to avoid numerical issues as it shouldn't change the result
-    log_importance_ratios <- apply(theta_sim_importance, 1, log_ratio_function)
-    log_importance_ratios <- log_importance_ratios - max(log_importance_ratios)
-
-    psis_result <- psis(-log_importance_ratios, r_eff = NA)
-    log_weights_smoothed <- psis_result$log_weights
-    # Calculate the mean, variance and KL divergences
-    weights_normalized <- normalize_log_weights(log_importance_ratios)
-    mean_importance <- apply(theta_sim_importance, 2, weighted.mean, w = weights_normalized)
-    cov_importance <- stats::cov.wt(theta_sim_importance, wt = weights_normalized)$cov
-    marginal_variance_importance <- diag(cov_importance)
-
-    # Calculate mean and variance using smoothed weights
-    weights_smoothed_normalized <- normalize_log_weights(log_weights_smoothed)
-    mean_smoothed_importance <- apply(theta_sim_importance, 2, weighted.mean, w = weights_smoothed_normalized)
-    cov_smoothed_importance <- stats::cov.wt(theta_sim_importance, wt = weights_smoothed_normalized)$cov
-    marginal_variance_smoothed_importance <- diag(cov_smoothed_importance)
-
-    # A discrete distribution (importance approximation to posterior) is not absolutely continuous with respect to a continuous one (Laplace approximation to posterior) so the KL divergence is not defined. As a result, we replace the Laplace approximation with its importance approximation to calculate the KL divergence.
-    log_weights_Laplace <- apply(theta_sim_importance, 1, log_Laplace_density)
-    weights_Laplace_normalized <- normalize_log_weights(log_weights_Laplace)
-    KL_divergence_importance_Laplace <- sum(weights_normalized * (log(weights_normalized) - weights_Laplace_normalized))
-    KL_divergence_smoothed_importance_Laplace <- sum(weights_smoothed_normalized * (log(weights_smoothed_normalized) - weights_Laplace_normalized))
-
-
-    list(
-      log_unnormalized_weights = log_importance_ratios, log_unnormalized_weights_smoothed = log_weights_smoothed, k_diagnostic = psis_result$diagnostics$pareto_k,
-      mean_importance = mean_importance, marginal_variance_importance = marginal_variance_importance, mean_smoothed_importance = mean_smoothed_importance,
-      marginal_variance_smoothed_importance = marginal_variance_smoothed_importance, KL_divergence_importance_Laplace = KL_divergence_importance_Laplace,
-      KL_divergence_smoothed_importance_Laplace = KL_divergence_smoothed_importance_Laplace
-    )
   }
+
+  log_ratio_function <- function(theta) {
+    log_posterior_density(theta) - log_Laplace_density(theta)
+  }
+
+  theta_sim_importance <- MASS::mvrnorm(n_weights, mu_Laplace, Q_Laplace)
+  # Subtract the max to avoid numerical issues as it shouldn't change the result
+  log_importance_ratios <- apply(theta_sim_importance, 1, log_ratio_function)
+  log_importance_ratios <- log_importance_ratios - max(log_importance_ratios)
+
+  psis_result <- psis(-log_importance_ratios, r_eff = NA)
+  log_weights_smoothed <- psis_result$log_weights
+  # Calculate the mean, variance and KL divergences
+  weights_normalized <- normalize_log_weights(log_importance_ratios)
+  mean_importance <- apply(theta_sim_importance, 2, weighted.mean, w = weights_normalized)
+  cov_importance <- stats::cov.wt(theta_sim_importance, wt = weights_normalized)$cov
+  marginal_variance_importance <- diag(cov_importance)
+
+  # Calculate mean and variance using smoothed weights
+  weights_smoothed_normalized <- normalize_log_weights(log_weights_smoothed)
+  mean_smoothed_importance <- apply(theta_sim_importance, 2, weighted.mean, w = weights_smoothed_normalized)
+  cov_smoothed_importance <- stats::cov.wt(theta_sim_importance, wt = weights_smoothed_normalized)$cov
+  marginal_variance_smoothed_importance <- diag(cov_smoothed_importance)
+
+  # A discrete distribution (importance approximation to posterior) is not absolutely continuous with respect to a continuous one (Laplace approximation to posterior) so the KL divergence is not defined. As a result, we replace the Laplace approximation with its importance approximation to calculate the KL divergence.
+  log_weights_Laplace <- apply(theta_sim_importance, 1, log_Laplace_density)
+  weights_Laplace_normalized <- normalize_log_weights(log_weights_Laplace)
+  KL_divergence_importance_Laplace <- sum(weights_normalized * (log(weights_normalized) - log(weights_Laplace_normalized)))
+  KL_divergence_smoothed_importance_Laplace <- sum(weights_smoothed_normalized * (log(weights_smoothed_normalized) - log(weights_Laplace_normalized)))
+
+
+  list(
+    log_unnormalized_weights = log_importance_ratios,
+    log_unnormalized_weights_smoothed = log_weights_smoothed,
+    k_diagnostic = psis_result$k,
+    mean_importance = mean_importance,
+    marginal_variance_importance = marginal_variance_importance,
+    mean_smoothed_importance = mean_smoothed_importance,
+    marginal_variance_smoothed_importance = marginal_variance_smoothed_importance,
+    KL_divergence_importance_Laplace = KL_divergence_importance_Laplace,
+    KL_divergence_smoothed_importance_Laplace = KL_divergence_smoothed_importance_Laplace
+  )
 }
 
 #' @title KL discrete log unnormalized weights

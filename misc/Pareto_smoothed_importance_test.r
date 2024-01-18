@@ -55,6 +55,7 @@ log_pc_prior <- log_pc_prior_quantile(
     sigma_u0 = sigma_u0, sigma_epsilon0 = sigma_epsilon0,
     a0 = a0, rho0 = rho0, alpha = alpha
 )
+# testing
 # Defining the log posterior density as a function of the parameters using the log_pc_prior
 m_u <- 0
 log_posterior_pc <- function(theta) {
@@ -84,18 +85,19 @@ tryCatch({
     error <- function(e) {}
 })
 
-hessian <- map_pc$hessian
-sigma <- -solve(hessian)
+Q_Laplace <- map_pc$hessian
+covariance_Laplace <- -solve(Q_Laplace)
+
 
 log_laplace <- function(theta) {
     logGdensity(
-        x = theta, mu = map_pc$par, Q = -hessian
+        x = theta, mu = map_pc$par, Q = -Q_Laplace
     )
 }
 # ---------------------- IMPORTANCE SAMPLING ----------------------
 # Simulate from Laplace approximation
 n_sim <- 2000
-theta_sim <- MASS::mvrnorm(n_sim, map_pc$par, sigma)
+theta_sim <- MASS::mvrnorm(n_sim, map_pc$par, covariance_Laplace)
 log_ratio_function <- function(theta) {
     log_posterior_pc(theta) - log_laplace(theta)
 }
@@ -119,7 +121,7 @@ print(mean_importance_smoothed)
 apply(theta_sim, 2, weighted.mean, w = weights_smoothed_normalized)
 (mean_importance_smoothed - map_pc$par) / map_pc$par
 cov_importance_smoothed <- stats::cov.wt(theta_sim, wt = as.vector(weights_smoothed))$cov
-sweep(cov_importance_smoothed - sigma, 2, diag(cov_importance_smoothed), "/")
+sweep(cov_importance_smoothed - covariance_Laplace, 2, diag(cov_importance_smoothed), "/")
 
 # No smoothing
 weights <- exp(log_importance_ratios_2)
@@ -130,7 +132,7 @@ print(mean_importance)
 (mean_importance - map_pc$par) / map_pc$par
 
 cov_importance <- stats::cov.wt(theta_sim, wt = weights)$cov
-sweep(cov_importance - sigma, 2, diag(cov_importance), "/")
+sweep(cov_importance - covariance_Laplace, 2, diag(cov_importance), "/")
 
 
 ## We repeat the same but now only let log_kappa vary
@@ -146,7 +148,7 @@ log_ratio_function_log_kappa <- function(log_kappa) {
 
 # Simulate from Laplace approximation
 n_sim <- 1000
-log_kappa_sim <- rnorm(n_sim, map_pc$par[1], sqrt(sigma[1, 1]))
+log_kappa_sim <- rnorm(n_sim, map_pc$par[1], sqrt(covariance_Laplace[1, 1]))
 log_importance_ratios_log_kappa <- sapply(log_kappa_sim, log_ratio_function_log_kappa)
 
 # Subtract the mean to avoid numerical issues as it shouldn't change the result
@@ -171,7 +173,7 @@ log_ratio_function_v <- function(v) {
 
 # Simulate from Laplace approximation
 n_sim <- 1000
-v_sim <- MASS::mvrnorm(n_sim, map_pc$par[2:3], sigma[2:3, 2:3])
+v_sim <- MASS::mvrnorm(n_sim, map_pc$par[2:3], covariance_Laplace[2:3, 2:3])
 log_importance_ratios_v <- apply(v_sim, 1, log_ratio_function_v)
 
 # Subtract the mean to avoid numerical issues as it shouldn't change the result
@@ -196,7 +198,7 @@ log_ratio_function_log_sigma_u <- function(log_sigma_u) {
 
 # Simulate from Laplace approximation
 n_sim <- 1000
-log_sigma_u_sim <- rnorm(n_sim, map_pc$par[4], sqrt(sigma[4, 4]))
+log_sigma_u_sim <- rnorm(n_sim, map_pc$par[4], sqrt(covariance_Laplace[4, 4]))
 log_importance_ratios_log_sigma_u <- sapply(log_sigma_u_sim, log_ratio_function_log_sigma_u)
 
 # Subtract the mean to avoid numerical issues as it shouldn't change the result
@@ -221,7 +223,7 @@ log_ratio_function_log_sigma_epsilon <- function(log_sigma_epsilon) {
 
 # Simulate from Laplace approximation
 n_sim <- 1000
-log_sigma_epsilon_sim <- rnorm(n_sim, map_pc$par[5], sqrt(sigma[5, 5]))
+log_sigma_epsilon_sim <- rnorm(n_sim, map_pc$par[5], sqrt(covariance_Laplace[5, 5]))
 log_importance_ratios_log_sigma_epsilon <- sapply(log_sigma_epsilon_sim, log_ratio_function_log_sigma_epsilon)
 
 # Subtract the mean to avoid numerical issues as it shouldn't change the result
@@ -238,7 +240,7 @@ print(paste("The variance of the importance weights is:", var(weights_smoothed_l
 pareto_smoothing <- function(i) {
     # Simulate from Laplace approximation in four variables and keep i fixes
     n_sim <- 500
-    sigma <- sigma[-i, -i]
+    sigma <- covariance_Laplace[-i, -i]
     non_fixed_params <- MASS::mvrnorm(n_sim, map_pc$par[-i], sigma)
     if (i == 1) {
         theta_sim <- cbind(rep(map_pc$par[i], n_sim), non_fixed_params)

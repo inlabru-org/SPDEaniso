@@ -20,5 +20,5 @@ Calculates the parameter sigma^2 such that if v1,v2 are iid N(0, sigma^2), then 
 \examples{
 alpha_v <- 0.01
 a0 <- 10
-sigma2_v <- sigm2_quantile_v(alpha_v = alpha_v, a0 = a0)
+sigma2_v <- sigma2_quantile_v(alpha_v = alpha_v, a0 = a0)
 }

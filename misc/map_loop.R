@@ -48,7 +48,7 @@ plot(mesh)
 
 number_of_loops <- 1 # number of iterations
 maxit_MAP <- 600
-number_of_weights <- 1000
+number_of_weights <- 100
 results <- vector("list", number_of_loops) # Pre-allocates a list for m iterations
 start_time <- Sys.time()
 for (i in 1:number_of_loops) {
@@ -86,6 +86,50 @@ for (i in 1:number_of_loops) {
         theta0 = unlist(true_params)
       )
 
+      # Importance sampling
+      mu_Laplace_pc <- map_pc$par
+      mu_Laplace_not_pc <- map_not_pc$par
+      Q_Laplace_pc <- solve(-map_pc$hessian)
+      Q_Laplace_not_pc <- solve(-map_not_pc$hessian)
+      m_u <- 0
+      log_posterior_pc <- function(theta) {
+        log_kappa <- theta[1]
+        v <- theta[2:3]
+        log_sigma_u <- theta[4]
+        log_sigma_epsilon <- theta[5]
+        log_posterior_prior(
+          log_prior = log_pc_prior,
+          mesh = mesh, log_kappa = log_kappa, v = v,
+          log_sigma_epsilon = log_sigma_epsilon, log_sigma_u = log_sigma_u,
+          y = y, A = A, m_u = m_u
+        )
+      }
+      log_posterior_not_pc <- function(theta) {
+        log_kappa <- theta[1]
+        v <- theta[2:3]
+        log_sigma_u <- theta[4]
+        log_sigma_epsilon <- theta[5]
+        log_posterior_prior(
+          log_prior = log_not_pc_prior,
+          mesh = mesh, log_kappa = log_kappa, v = v,
+          log_sigma_epsilon = log_sigma_epsilon, log_sigma_u = log_sigma_u,
+          y = y, A = A, m_u = m_u
+        )
+      }
+      # log_unnormalized_importance_weights_and_integrals <- function(log_posterior_density, mu_Laplace, Q_Laplace, n_weights) {
+      importance_pc <- log_unnormalized_importance_weights_and_integrals(
+        log_posterior_density = log_posterior_pc,
+        mu_Laplace = mu_Laplace_pc, Q_Laplace = Q_Laplace_pc,
+        n_weights = number_of_weights
+      )
+      importance_not_pc <- log_unnormalized_importance_weights_and_integrals(
+        log_posterior_density = log_posterior_not_pc,
+        mu_Laplace = mu_Laplace_not_pc, Q_Laplace = Q_Laplace_not_pc,
+        n_weights = number_of_weights
+      )
+
+
+
 
 
 
@@ -95,11 +139,11 @@ for (i in 1:number_of_loops) {
         MAP_value = map_pc$value,
         convergence = map_pc$convergence, # convergence = 0 no convergence =1
         distance_vector = abs(map_pc$par - unlist(true_params)), # a 5d vector
-        covariance_estimate = solve(-map_pc$hessian), # a 5x5 matrix
-        std_dev_estimates = sqrt(diag(solve(-map_pc$hessian))), # a 5d vector
+        covariance_estimate = Q_Laplace_pc, # a 5x5 matrix
+        std_dev_estimates = sqrt(diag(Q_Laplace_pc)), # a 5d vector
         within_c_interval = c(1, 1, 1, 1, 1) * (abs(map_pc$par - unlist(true_params))
-        < 1.96 * sqrt(diag(solve(-map_pc$hessian)))) # a 5d vector
-        # prob_MAP_greater = pc_prob_map                                      # a 5d vector
+        < 1.96 * sqrt(diag(Q_Laplace_pc))), # a 5d vector
+        # prob_MAP_greater = pc_prob_map,                                     # a 5d vector
       )
       # Not-PC results
       not_pc_results <- list(
@@ -107,10 +151,10 @@ for (i in 1:number_of_loops) {
         MAP_value = map_not_pc$value,
         convergence = map_not_pc$convergence, # convergence = 0 no convergence =1
         distance_vector = abs(map_not_pc$par - unlist(true_params)), # a 5d vector
-        covariance_estimate = solve(-map_not_pc$hessian), # a 5x5 matrix
-        std_dev_estimates = sqrt(diag(solve(-map_pc$hessian))), # a 5d vector
+        covariance_estimate = Q_Laplace_not_pc, # a 5x5 matrix
+        std_dev_estimates = sqrt(diag(Q_Laplace_pc)), # a 5d vector
         within_c_interval = c(1, 1, 1, 1, 1) * (abs(map_not_pc$par - unlist(true_params))
-        < 1.96 * sqrt(diag(solve(-map_not_pc$hessian)))) # a 5d vector
+        < 1.96 * sqrt(diag(Q_Laplace_not_pc))) # a 5d vector
         # prob_MAP_greater = not_pc_prob_map                                      # a 5d vector
       )
 
