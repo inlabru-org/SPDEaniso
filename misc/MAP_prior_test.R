@@ -78,6 +78,7 @@ log_not_pc_prior <- log_gaussian_prior_quantile(
   a0 = a0, rho0 = rho0, alpha = alpha
 )
 
+
 ### Testing value of priors ###
 print("Testing that log_pc_prior is the same when using quantiles and hyper_parameters calculated by hand.")
 abs(log_pc_prior(
@@ -107,7 +108,7 @@ log_pc_prior_theta(
 library(sf)
 boundary_sf <- st_sfc(st_polygon(list(rbind(c(0, 0.01), c(10, 0.01), c(10, 10), c(0, 10), c(0, 0.01)))))
 boundary <- fm_as_segm(boundary_sf)
-mesh <- fm_mesh_2d_inla(boundary = boundary, max.edge = c(0.5, 0.5))
+mesh <- fm_mesh_2d_inla(boundary = boundary, max.edge = c(1, 1))
 nodes <- mesh$loc
 n <- mesh$n
 plot(mesh)

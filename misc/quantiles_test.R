@@ -21,7 +21,7 @@ log_sigma_u <- 0.1
 # Finds the hyperparameters for the PC priors on the anisotropy given the quantiles
 lambda1 <- lambda1_quantile(a0 = a0, alpha_a = alpha)
 lambda <- lambda_quantile(alpha = alpha, rho0 = rho0, lambda1 = lambda1)
-# Calulate the hyperparameters of the PC priors for variances
+# Calculate the hyperparameters of the PC priors for variances
 lambda_u <- lambda_variance_quantile(alpha_sigma = alpha, sigma0 = sigma_u0)
 lambda_epsilon <- lambda_variance_quantile(alpha_sigma = alpha, sigma0 = sigma_epsilon0)
 

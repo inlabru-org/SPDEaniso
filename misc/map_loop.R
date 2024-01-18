@@ -15,12 +15,11 @@ plan(multisession)
 set.seed(123)
 
 # Defines the upper bounds for the quantiles
+rho0 <- 1 # Controls the size of kappa
 a0 <- 2 # Controls the size of v
-rho0 <- 0.1 # Controls the size of kappa
-sigma0 <- 1.5 # Controls the size of v in non PC priors
 sigma_u0 <- 2 # controls standard deviation of field
 sigma_epsilon0 <- 0.1 # control standard deviation of noise
-
+sigma0 <- 1.5 # Controls the size of v in non PC priors
 # Defines the quantile
 alpha <- 0.01
 

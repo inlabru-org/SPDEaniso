@@ -78,7 +78,7 @@ lambda_variance_quantile <- function(sigma0, alpha_sigma = 0.01) {
 #' @examples
 #' alpha_v <- 0.01
 #' a0 <- 10
-#' sigma2_v <- sigm2_quantile_v(alpha_v = alpha_v, a0 = a0)
+#' sigma2_v <- sigma2_quantile_v(alpha_v = alpha_v, a0 = a0)
 sigma2_quantile_v <- function(a0, alpha_v = 0.01) {
   if (alpha_v <= 0 || alpha_v >= 1) {
     warning("alpha_v should be in (0,1)")
@@ -193,7 +193,7 @@ log_gaussian_prior_quantile <- function(sigma_u0, sigma_epsilon0, a0, rho0, alph
     warning("sigma_epsilon0 should be greater than 0")
   }
 
-  # Calulate the hyperparameters of the priors
+  # Calculate the hyperparameters of the priors
   sigma2_v <- sigma2_quantile_v(alpha_v = alpha_v, a0 = a0)
   lambda_k <- lambda_quantile_kappa(alpha_k = alpha_k, rho0 = rho0)
   lambda_u <- lambda_variance_quantile(alpha_sigma = alpha_u, sigma0 = sigma_u0)
@@ -203,7 +203,7 @@ log_gaussian_prior_quantile <- function(sigma_u0, sigma_epsilon0, a0, rho0, alph
   log_prior <- function(log_kappa, v, log_sigma_u, log_sigma_epsilon) {
     # Logarithm of log exponential prior on kappa
     log_kappa_term <- log(lambda_k) - lambda_k * exp(log_kappa) + log_kappa
-    v_term <- log_gaussian_density(x = v[1], mu = 0, logsigma = log(sigma2_v) / 2) + log_gaussian_density(x = v[2], mu = 0, logsigma = log(sigma2_v) / 2)
+    v_term <- log_gaussian_density(x = v[1], mu = 0, log_sigma = log(sigma2_v) / 2) + log_gaussian_density(x = v[2], mu = 0, log_sigma = log(sigma2_v) / 2)
     variance_term <- log_pc_prior_noise_variance(lambda_epsilon = lambda_epsilon, log_sigma_epsilon = log_sigma_epsilon)
     +log_pc_prior_noise_variance(lambda_epsilon = lambda_u, log_sigma_epsilon = log_sigma_u)
     return(log_kappa_term + v_term + variance_term)
@@ -280,10 +280,10 @@ log_pc_prior_quantile <- function(sigma_u0, sigma_epsilon0, a0, rho0, alpha = 0.
     warning("sigma_epsilon0 should be greater than 0")
   }
 
-  # Calulate the hyperparameters of the PC priors for anisotropy
+  # Calculate the hyperparameters of the PC priors for anisotropy
   lambda1 <- lambda1_quantile(a0 = a0, alpha_a = alpha_v)
   lambda <- lambda_quantile(rho0 = rho0, lambda1 = lambda1, alpha = alpha_k)
-  # Calulate the hyperparameters of the PC priors for variances
+  # Calculate the hyperparameters of the PC priors for variances
   lambda_u <- lambda_variance_quantile(alpha_sigma = alpha_u, sigma0 = sigma_u0)
   lambda_epsilon <- lambda_variance_quantile(alpha_sigma = alpha_epsilon, sigma0 = sigma_epsilon0)
 
@@ -370,10 +370,10 @@ sim_theta_pc_quantile <- function(sigma_u0, sigma_epsilon0, a0, rho0, alpha = 0.
     warning("sigma_epsilon0 should be greater than 0")
   }
 
-  # Calulate the hyperparameters of the PC priors for anisotropy
+  # Calculate the hyperparameters of the PC priors for anisotropy
   lambda1 <- lambda1_quantile(a0 = a0, alpha_a = alpha_v)
   lambda <- lambda_quantile(rho0 = rho0, lambda1 = lambda1, alpha = alpha_k)
-  # Calulate the hyperparameters of the PC priors for variances
+  # Calculate the hyperparameters of the PC priors for variances
   lambda_u <- lambda_variance_quantile(alpha_sigma = alpha_u, sigma0 = sigma_u0)
   lambda_epsilon <- lambda_variance_quantile(alpha_sigma = alpha_epsilon, sigma0 = sigma_epsilon0)
   return(sim_theta_pc(lambda = lambda, lambda1 = lambda1, lambda_u = lambda_u, lambda_epsilon = lambda_epsilon, m = m))
