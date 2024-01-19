@@ -11,7 +11,7 @@ calculate_confidence_intervals_importance(theta, w, q)
 
 \item{w}{A vector of length n representing the weights of the unnormalized weighted sample.}
 
-\item{q}{The confidence level}
+\item{q}{The significance level}
 }
 \value{
 A matrix of size d x 2 representing the confidence intervals for each entry of the weighted sample

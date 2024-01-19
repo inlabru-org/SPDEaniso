@@ -11,7 +11,7 @@ calculate_confidence_intervals_gaussian(mu, standard_deviation, q)
 
 \item{standard_deviation}{A vector of length d representing the standard deviation of the Gaussian distribution}
 
-\item{q}{The confidence level}
+\item{q}{The significance level}
 }
 \value{
 A matrix of size d x 2 representing the confidence intervals for each entry of the Gaussian distribution

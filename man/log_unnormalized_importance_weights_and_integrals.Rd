@@ -21,7 +21,7 @@ log_unnormalized_importance_weights_and_integrals(
 
 \item{n_weights}{Number of weights to be calculated}
 
-\item{q}{The confidence level. By default, set to 0.05.}
+\item{q}{The significance level. By default, set to 0.05.}
 }
 \value{
 A list with three elements: log_unnormalized_weights, log_unnormalized_weights_smoothed and the k-diagnostic for PSIS
