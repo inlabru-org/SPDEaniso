@@ -707,6 +707,73 @@ normalize_log_weights <- function(log_unnormalized_weights) {
   as.vector(weights / sum(weights))
 }
 
+#' @title Calculate confidence intervals for each entry of a weighted sample
+#' @description Calculates the confidence intervals for each entry of a weighted sample.
+#' @param theta A matrix of size n x d representing the weighted sample
+#' @param w A vector of length n representing the weights of the unnormalized weighted sample.
+#' @param q The significance level
+#' @return A matrix of size d x 2 representing the confidence intervals for each entry of the weighted sample
+#' @export
+calculate_confidence_intervals_importance <- function(theta, w, q) {
+  # Normalize the weights
+  w <- w / sum(w)
+
+  # Function to calculate the confidence interval for one dimension
+  confidence_interval <- function(theta, w, q) {
+    df <- data.frame(theta = theta, w = w)
+
+    # Calculate cumulative weights
+    df <- df %>%
+      arrange(theta) %>%
+      mutate(cum_w = cumsum(w))
+
+    # Find lower and upper bounds
+    lower_bound <- df$theta[which(df$cum_w >= q / 2)[1]]
+    upper_bound <- df$theta[which(df$cum_w >= 1 - q / 2)[1]]
+
+    return(c(lower_bound, upper_bound))
+  }
+
+  # Apply the function to each dimension of theta
+  t(apply(theta, 2, confidence_interval, w, q))
+}
+#' @title Calculate confidence intervals for Gaussian
+#' @description Calculates the confidence intervals for a Gaussian distribution.
+#' @param mu A vector of length d representing the mean of the Gaussian distribution
+#' @param standard_deviation A vector of length d representing the standard deviation of the Gaussian distribution
+#' @param q The significance level
+#' @return A matrix of size d x 2 representing the confidence intervals for each entry of the Gaussian distribution
+#' @export
+#' @examples
+#' mu <- c(0, 0)
+#' standard_deviation <- c(1, 1)
+#' q <- 0.05
+#' calculate_confidence_intervals_gaussian(mu, standard_deviation, q)
+calculate_confidence_intervals_gaussian <- function(mu, standard_deviation, q) {
+  # Calculate the confidence intervals for each dimension
+  ci <- cbind(mu - qnorm(1 - q / 2) * standard_deviation, mu + qnorm(1 - q / 2) * standard_deviation)
+  return(ci)
+}
+#' @title Parameter within confidence intervals
+#' @description Checks if the parameter is within the confidence intervals
+#' @param parameter A vector of length d representing the parameter
+#' @param confidence_intervals A matrix of size d x 2 representing the confidence intervals
+#' @return A vector of length d representing whether the parameter is within the confidence intervals
+#' @export
+#' @examples
+#' mu <- c(0, 0)
+#' standard_deviation <- c(1, 1)
+#' q <- 0.05
+#' confidence_intervals <- calculate_confidence_intervals_gaussian(mu, standard_deviation, q)
+#' theta <- c(0.5, 0.5)
+#' parameter_within_confidence_intervals(theta, confidence_intervals)
+#'
+parameter_within_confidence_intervals <- function(parameter, confidence_intervals) {
+  # Check if the parameter is within the confidence intervals
+  parameter <- unlist(parameter)
+  parameter_within_confidence_intervals <- (parameter >= confidence_intervals[, 1]) & (parameter <= confidence_intervals[, 2])
+  return(parameter_within_confidence_intervals)
+}
 
 #' @title Calculate unnormalized log importance weights, mean, variance, and KL divergences
 #' @description Calculates the unnormalized log importance weights, mean, variance, and KL divergences between the importance approximation and the Laplace approximation
@@ -714,6 +781,7 @@ normalize_log_weights <- function(log_unnormalized_weights) {
 #' @param mu_Laplace A 5D vector representing the mean of the Laplace approximation
 #' @param Q_Laplace A 5x5 matrix representing the precision matrix of the Laplace approximation
 #' @param n_weights Number of weights to be calculated
+#' @param q The significance level. By default, set to 0.05.
 #'
 #' @return A list with three elements: log_unnormalized_weights, log_unnormalized_weights_smoothed and the k-diagnostic for PSIS
 #'
@@ -742,7 +810,7 @@ normalize_log_weights <- function(log_unnormalized_weights) {
 #' mu_Laplace <- c(0, 0, 0, 0, 0)
 #' Q_Laplace <- diag(5)
 #' log_unnormalized_importance_weights_and_integrals(log_posterior_pc, mu_Laplace, Q_Laplace, n_weights = 1000)
-log_unnormalized_importance_weights_and_integrals <- function(log_posterior_density, mu_Laplace, Q_Laplace, n_weights) {
+log_unnormalized_importance_weights_and_integrals <- function(log_posterior_density, mu_Laplace, Q_Laplace, n_weights, q = 0.05) {
   # Calculate the importance weights
   log_Laplace_density <- function(theta) {
     logGdensity(
@@ -753,15 +821,16 @@ log_unnormalized_importance_weights_and_integrals <- function(log_posterior_dens
   log_ratio_function <- function(theta) {
     log_posterior_density(theta) - log_Laplace_density(theta)
   }
-
-  theta_sim_importance <- MASS::mvrnorm(n_weights, mu_Laplace, Q_Laplace)
+  covariance_Laplace <- solve(Q_Laplace)
+  theta_sim_importance <- MASS::mvrnorm(n_weights, mu_Laplace, covariance_Laplace)
   # Subtract the max to avoid numerical issues as it shouldn't change the result
   log_importance_ratios <- apply(theta_sim_importance, 1, log_ratio_function)
   log_importance_ratios <- log_importance_ratios - max(log_importance_ratios)
 
   psis_result <- psis(-log_importance_ratios, r_eff = NA)
   log_weights_smoothed <- psis_result$log_weights
-  # Calculate the mean, variance and KL divergences
+
+  # Calculate the mean, variance and KL divergences with unsmoothed weights
   weights_normalized <- normalize_log_weights(log_importance_ratios)
   mean_importance <- apply(theta_sim_importance, 2, weighted.mean, w = weights_normalized)
   cov_importance <- stats::cov.wt(theta_sim_importance, wt = weights_normalized)$cov
@@ -772,6 +841,12 @@ log_unnormalized_importance_weights_and_integrals <- function(log_posterior_dens
   mean_smoothed_importance <- apply(theta_sim_importance, 2, weighted.mean, w = weights_smoothed_normalized)
   cov_smoothed_importance <- stats::cov.wt(theta_sim_importance, wt = weights_smoothed_normalized)$cov
   marginal_variance_smoothed_importance <- diag(cov_smoothed_importance)
+
+  # Calculate a 95% confidence interval for each component of the parameters around its mean
+  std_dev_Laplace <- sqrt(diag(covariance_Laplace))
+  confidence_intervals_Laplace <- calculate_confidence_intervals_gaussian(mu_Laplace, std_dev_Laplace, q)
+  confidence_intervals_importance <- calculate_confidence_intervals_importance(theta_sim_importance, weights_normalized, q)
+  confidence_intervals_importance_smoothed <- calculate_confidence_intervals_importance(theta_sim_importance, weights_smoothed_normalized, q)
 
   # A discrete distribution (importance approximation to posterior) is not absolutely continuous with respect to a continuous one (Laplace approximation to posterior) so the KL divergence is not defined. As a result, we replace the Laplace approximation with its importance approximation to calculate the KL divergence.
   log_weights_Laplace <- apply(theta_sim_importance, 1, log_Laplace_density)
@@ -788,6 +863,9 @@ log_unnormalized_importance_weights_and_integrals <- function(log_posterior_dens
     marginal_variance_importance = marginal_variance_importance,
     mean_smoothed_importance = mean_smoothed_importance,
     marginal_variance_smoothed_importance = marginal_variance_smoothed_importance,
+    confidence_intervals_Laplace = confidence_intervals_Laplace,
+    confidence_intervals_importance = confidence_intervals_importance,
+    confidence_intervals_importance_smoothed = confidence_intervals_importance_smoothed,
     KL_divergence_importance_Laplace = KL_divergence_importance_Laplace,
     KL_divergence_smoothed_importance_Laplace = KL_divergence_smoothed_importance_Laplace
   )

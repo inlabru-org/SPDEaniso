@@ -7,6 +7,8 @@ library(INLA)
 library(inlabru)
 library(future)
 library(future.apply)
+library(loo)
+library(dplyr)
 document()
 
 # Set the parallel plan to use all local cores (currently not used as future package doesn't recognize functions in prior.R)
@@ -49,6 +51,7 @@ plot(mesh)
 number_of_loops <- 1 # number of iterations
 maxit_MAP <- 600
 number_of_weights <- 100
+confidence_level <- 0.001
 results <- vector("list", number_of_loops) # Pre-allocates a list for m iterations
 start_time <- Sys.time()
 for (i in 1:number_of_loops) {
@@ -74,6 +77,7 @@ for (i in 1:number_of_loops) {
       y <- A %*% x + exp(log_sigma_epsilon) * stats::rnorm(n)
 
       # Calculating the MAP under each prior knowing simulated data
+      # Takes around 20s with mesh size 1
       map_pc <- MAP_prior(
         log_prior = log_pc_prior, mesh = mesh,
         y = y, A = A, m_u = m_u, max_iterations = maxit_MAP,
@@ -86,11 +90,15 @@ for (i in 1:number_of_loops) {
         theta0 = unlist(true_params)
       )
 
-      # Importance sampling
+      # Laplace approximation
       mu_Laplace_pc <- map_pc$par
       mu_Laplace_not_pc <- map_not_pc$par
-      Q_Laplace_pc <- solve(-map_pc$hessian)
-      Q_Laplace_not_pc <- solve(-map_not_pc$hessian)
+      Q_Laplace_pc <- -map_pc$hessian
+      Q_Laplace_not_pc <- -map_not_pc$hessian
+      Covariance_Laplace_pc <- solve(Q_Laplace_pc)
+      Covariance_Laplace_not_pc <- solve(Q_Laplace_not_pc)
+      std_dev_estimates_Laplace_pc <- sqrt(diag(Covariance_Laplace_pc))
+      std_dev_estimates_Laplace_not_pc <- sqrt(diag(Covariance_Laplace_not_pc))
       m_u <- 0
       log_posterior_pc <- function(theta) {
         log_kappa <- theta[1]
@@ -116,34 +124,66 @@ for (i in 1:number_of_loops) {
           y = y, A = A, m_u = m_u
         )
       }
-      # log_unnormalized_importance_weights_and_integrals <- function(log_posterior_density, mu_Laplace, Q_Laplace, n_weights) {
+      # Takes about 4s each with mesh size (1,1) and with 100 weights. Scales linearly in number of weights
       importance_pc <- log_unnormalized_importance_weights_and_integrals(
         log_posterior_density = log_posterior_pc,
         mu_Laplace = mu_Laplace_pc, Q_Laplace = Q_Laplace_pc,
-        n_weights = number_of_weights
+        n_weights = number_of_weights, q = confidence_level
       )
       importance_not_pc <- log_unnormalized_importance_weights_and_integrals(
         log_posterior_density = log_posterior_not_pc,
         mu_Laplace = mu_Laplace_not_pc, Q_Laplace = Q_Laplace_not_pc,
-        n_weights = number_of_weights
+        n_weights = number_of_weights, q = confidence_level
+      )
+      KL <- data.frame(
+        KL_unsmoothed_pc_not_pc = KL_discrete_log_unnormalized_weights(
+          importance_pc$log_unnormalized_weights,
+          importance_not_pc$log_unnormalized_weights
+        ),
+        KL_smoothed_pc_not_pc = KL_discrete_log_unnormalized_weights(
+          importance_pc$log_unnormalized_weights_smoothed,
+          importance_not_pc$log_unnormalized_weights_smoothed
+        ),
+        KL_unsmoothed_pc_smoothed_pc = KL_discrete_log_unnormalized_weights(
+          importance_pc$log_unnormalized_weights,
+          importance_pc$log_unnormalized_weights_smoothed
+        ),
+        KL_unsmoothed_not_pc_smoothed_not_pc = KL_discrete_log_unnormalized_weights(
+          importance_not_pc$log_unnormalized_weights,
+          importance_not_pc$log_unnormalized_weights_smoothed
+        )
       )
 
+      # Confidence intervals
+      confidence_intervals_Laplace_pc <- importance_pc$confidence_intervals_Laplace
+      confidences_intervals_importance_pc <- importance_pc$confidence_intervals_importance
+      confidence_intervals_importance_smoothed_pc <- importance_pc$confidence_intervals_importance_smoothed
+      confidence_intervals_Laplace_not_pc <- importance_not_pc$confidence_intervals_Laplace
+      confidences_intervals_importance_not_pc <- importance_not_pc$confidence_intervals_importance
+      confidence_intervals_importance_smoothed_not_pc <- importance_not_pc$confidence_intervals_importance_smoothed
+      parameter_within_confidence_intervals_Laplace_pc <- parameter_within_confidence_intervals(true_params, confidence_intervals_Laplace_pc)
+      parameter_within_confidence_intervals_importance_pc <- parameter_within_confidence_intervals(true_params, confidences_intervals_importance_pc)
+      parameter_within_confidence_intervals_importance_smoothed_pc <- parameter_within_confidence_intervals(true_params, confidence_intervals_importance_smoothed_pc)
+      parameter_within_confidence_intervals_Laplace_not_pc <- parameter_within_confidence_intervals(true_params, confidence_intervals_Laplace_not_pc)
+      parameter_within_confidence_intervals_importance_not_pc <- parameter_within_confidence_intervals(true_params, confidences_intervals_importance_not_pc)
+      parameter_within_confidence_intervals_importance_smoothed_not_pc <- parameter_within_confidence_intervals(true_params, confidence_intervals_importance_smoothed_not_pc)
 
 
-
-
-
-      # PC results
+      # Accumulate results
       pc_results <- list(
         MAP_estimate = map_pc$par, # a 5d vector
         MAP_value = map_pc$value,
         convergence = map_pc$convergence, # convergence = 0 no convergence =1
         distance_vector = abs(map_pc$par - unlist(true_params)), # a 5d vector
-        covariance_estimate = Q_Laplace_pc, # a 5x5 matrix
-        std_dev_estimates = sqrt(diag(Q_Laplace_pc)), # a 5d vector
-        within_c_interval = c(1, 1, 1, 1, 1) * (abs(map_pc$par - unlist(true_params))
-        < 1.96 * sqrt(diag(Q_Laplace_pc))), # a 5d vector
-        # prob_MAP_greater = pc_prob_map,                                     # a 5d vector
+        covariance_estimate = Covariance_Laplace_pc, # a 5x5 matrix
+        std_dev_estimates_Laplace = std_dev_estimates_Laplace_pc, # a 5d vector
+        confidence_intervals_Laplace = confidence_intervals_Laplace_pc,
+        confidences_intervals_importance = confidences_intervals_importance_pc,
+        confidence_intervals_importance_smoothed = confidence_intervals_importance_smoothed_pc,
+        true_parameter_within_c_interval_Laplace = parameter_within_confidence_intervals_Laplace_pc, # a 5d vector
+        true_parameter_within_c_interval_importance = parameter_within_confidence_intervals_importance_pc,
+        true_parameter_within_c_interval_importance_smoothed = parameter_within_confidence_intervals_importance_smoothed_pc,
+        importance_pc = importance_pc
       )
       # Not-PC results
       not_pc_results <- list(
@@ -152,9 +192,9 @@ for (i in 1:number_of_loops) {
         convergence = map_not_pc$convergence, # convergence = 0 no convergence =1
         distance_vector = abs(map_not_pc$par - unlist(true_params)), # a 5d vector
         covariance_estimate = Q_Laplace_not_pc, # a 5x5 matrix
-        std_dev_estimates = sqrt(diag(Q_Laplace_pc)), # a 5d vector
-        within_c_interval = c(1, 1, 1, 1, 1) * (abs(map_not_pc$par - unlist(true_params))
-        < 1.96 * sqrt(diag(Q_Laplace_not_pc))) # a 5d vector
+        std_dev_estimates_Laplace = sqrt(diag(Q_Laplace_pc)), # a 5d vector
+        true_parameter_within_c_interval_Laplace = parameter_within_confidence_intervals_Laplace_not_pc, # a 5d vector
+        importance_not_pc = importance_not_pc
         # prob_MAP_greater = not_pc_prob_map                                      # a 5d vector
       )
 
@@ -162,14 +202,16 @@ for (i in 1:number_of_loops) {
       results[[i]] <- list(
         true_params = true_params,
         pc = pc_results,
-        not_pc = not_pc_results
+        not_pc = not_pc_results,
+        KL = KL
       )
     },
-    error = function(e) {}
+    error = function(e) {
+      e
+    }
   )
 }
 
-# sapply(results, function(x) x$pc$std_dev_estimates)
 results
 
 
@@ -180,7 +222,7 @@ results
 # distance_vectors
 #
 #
-# intervals <- sapply(results, function(x) x$pc$within_c_interval)
+# intervals <- sapply(results, function(x) x$pc$true_parameter_within_c_interval_Laplace)
 # intervals
 
 # results <- future_lapply(1:m, function(i) {
@@ -215,7 +257,7 @@ results
 #     convergence = map_pc$convergence,
 #     distance_vector = abs(map_pc$par - unlist(true_params)),
 #     covariance_estimate = solve(-map_pc$hessian),
-#     std_dev_estimates = sqrt(diag(solve(-map_pc$hessian)))
+#     std_dev_estimates_Laplace = sqrt(diag(solve(-map_pc$hessian)))
 #   )
 #
 #   # Not-PC results
@@ -224,7 +266,7 @@ results
 #     convergence = map_not_pc$convergence,
 #     distance_vector = abs(map_not_pc$par - unlist(true_params)),
 #     covariance_estimate = solve(-map_not_pc$hessian),
-#     std_dev_estimates = sqrt(diag(solve(-map_not_pc$hessian)))
+#     std_dev_estimates_Laplace = sqrt(diag(solve(-map_not_pc$hessian)))
 #   )
 #
 #   # Return the results for this iteration

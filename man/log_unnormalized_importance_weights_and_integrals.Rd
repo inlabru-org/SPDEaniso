@@ -8,7 +8,8 @@ log_unnormalized_importance_weights_and_integrals(
   log_posterior_density,
   mu_Laplace,
   Q_Laplace,
-  n_weights
+  n_weights,
+  q = 0.05
 )
 }
 \arguments{
@@ -19,6 +20,8 @@ log_unnormalized_importance_weights_and_integrals(
 \item{Q_Laplace}{A 5x5 matrix representing the precision matrix of the Laplace approximation}
 
 \item{n_weights}{Number of weights to be calculated}
+
+\item{q}{The confidence level. By default, set to 0.05.}
 }
 \value{
 A list with three elements: log_unnormalized_weights, log_unnormalized_weights_smoothed and the k-diagnostic for PSIS
