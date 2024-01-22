@@ -48,12 +48,18 @@ nodes <- mesh$loc
 n <- mesh$n
 plot(mesh)
 
-number_of_loops <- 100 # number of iterations
+number_of_loops <- 400 # number of iterations
 maxit_MAP <- 600
-number_of_weights <- 500
+number_of_weights <- 10000
 confidence_level <- 0.05
 results <- vector("list", number_of_loops) # Pre-allocates a list for m iterations
 start_time <- Sys.time()
+time_calculator <- function(mesh, number_of_weights, number_of_loops) { # estimates the time the loop will take
+  time_per_loop <- mesh$n * (20 + number_of_weights * 4 / 500) / 554 * 2*1.2
+  time_per_loop * number_of_loops / 60
+}
+print(paste("Estimated time:", time_calculator(mesh,number_of_weights, number_of_loops ), "minutes"))
+
 for (i in 1:number_of_loops) {
   tryCatch(
     {
@@ -408,8 +414,7 @@ print(execution_time)
 k_diagnostics <- sapply(results, function(x) x$pc$importance_pc$k_diagnostic)
 hist(k_diagnostics, main = "Histogram of k diagnostics", xlab = "k diagnostic")
 mean(k_diagnostics)
-par(mfrow = c(1,1))
-j=3
+par(mfrow = c(1, 1))
+j <- 3
 hist(results[[j]]$pc$importance_pc$log_unnormalized_weights_smoothed)
 hist(results[[j]]$pc$importance_pc$log_unnormalized_weights)
-hist(normalize_log_weights(results[[j]]$pc$importance_pc$log_unnormalized_weights_smoothed))
