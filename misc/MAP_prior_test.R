@@ -108,7 +108,7 @@ log_pc_prior_theta(
 library(sf)
 boundary_sf <- st_sfc(st_polygon(list(rbind(c(0, 0.01), c(10, 0.01), c(10, 10), c(0, 10), c(0, 0.01)))))
 boundary <- fm_as_segm(boundary_sf)
-mesh <- fm_mesh_2d_inla(boundary = boundary, max.edge = c(1, 1))
+mesh <- fm_mesh_2d_inla(boundary = boundary, max.edge = c(2, 2))
 nodes <- mesh$loc
 n <- mesh$n
 plot(mesh)

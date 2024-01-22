@@ -15,7 +15,7 @@ set.seed(123)
 library(sf)
 boundary_sf <- st_sfc(st_polygon(list(rbind(c(0, 0.01), c(10, 0.01), c(10, 10), c(0, 10), c(0, 0.01)))))
 boundary <- fm_as_segm(boundary_sf)
-mesh <- fm_mesh_2d_inla(boundary = boundary, max.edge = c(1, 1))
+mesh <- fm_mesh_2d_inla(boundary = boundary, max.edge = c(2, 2))
 nodes <- mesh$loc
 n <- mesh$n
 plot(mesh)
@@ -96,7 +96,7 @@ log_laplace <- function(theta) {
 }
 # ---------------------- IMPORTANCE SAMPLING ----------------------
 # Simulate from Laplace approximation
-n_sim <- 2000
+n_sim <- 1000
 theta_sim <- MASS::mvrnorm(n_sim, map_pc$par, covariance_Laplace)
 log_ratio_function <- function(theta) {
     log_posterior_pc(theta) - log_laplace(theta)
@@ -109,7 +109,24 @@ log_importance_ratios <- apply(theta_sim, 1, log_ratio_function)
 # Subtract the mean to avoid numerical issues as it shouldn't change the result
 log_importance_ratios_2 <- log_importance_ratios - mean(log_importance_ratios)
 
-psis_result <- psis(-log_importance_ratios_2, r_eff = NA)
+#Using the log importance ratio with a minus (as per documentation of psis)
+psis_result_minus <- psis(-log_importance_ratios_2, r_eff = NA)
+psis_result_minus$diagnostics
+hist(psis_result_minus$log_weights, main ="Log smoothed weights")
+hist(log_importance_ratios_2, main ="Log unsmoothed weights")
+hist(-psis_result_minus$log_weights, main ="-Log smoothed weights")
+hist(log_importance_ratios_2+ psis_result_minus$log_weights,main ="Log weights+Log smoothed weights", breaks= 100 )
+log_importance_ratios_2+ psis_result_minus$log_weights
+
+#Using the log_importance_ratio without a minus
+psis_result <- psis(log_importance_ratios_2, r_eff = NA)
+psis_result$diagnostics
+hist(psis_result$log_weights)
+hist(log_importance_ratios_2)
+hist(log_importance_ratios_2- psis_result$log_weights)
+log_importance_ratios_2- psis_result$log_weights
+
+
 weights_smoothed <- exp(psis_result$log_weights)
 weights_smoothed_normalized <- weights_smoothed / sum(weights_smoothed)
 print(paste("The value of k is:", psis_result$diagnostics$pareto_k))

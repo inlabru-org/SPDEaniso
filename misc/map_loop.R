@@ -43,7 +43,7 @@ log_not_pc_prior <- log_gaussian_prior_quantile(
 library(sf)
 boundary_sf <- st_sfc(st_polygon(list(rbind(c(0, 0.01), c(10, 0.01), c(10, 10), c(0, 10), c(0, 0.01)))))
 boundary <- fm_as_segm(boundary_sf)
-mesh <- fm_mesh_2d_inla(boundary = boundary, max.edge = c(1, 1))
+mesh <- fm_mesh_2d_inla(boundary = boundary, max.edge = c(2, 2))
 nodes <- mesh$loc
 n <- mesh$n
 plot(mesh)
@@ -77,7 +77,7 @@ for (i in 1:number_of_loops) {
       y <- A %*% x + exp(log_sigma_epsilon) * stats::rnorm(n)
 
       # Calculating the MAP under each prior knowing simulated data
-      # Takes around 20s with mesh size 1
+      # Takes around 20s with mesh size 1 (554 degrees of freedom) and scales linearly in degrees of freedom
       map_pc <- MAP_prior(
         log_prior = log_pc_prior, mesh = mesh,
         y = y, A = A, m_u = m_u, max_iterations = maxit_MAP,
@@ -124,7 +124,8 @@ for (i in 1:number_of_loops) {
           y = y, A = A, m_u = m_u
         )
       }
-      # Takes about 4s each with mesh size (1,1) and with 100 weights. Scales linearly in number of weights
+      # Takes about 4s each with mesh size (1,1) and with 100 weights. Scales linearly in number of weights and
+      # degrees of freedom
       importance_pc <- log_unnormalized_importance_weights_and_integrals(
         log_posterior_density = log_posterior_pc,
         mu_Laplace = mu_Laplace_pc, Q_Laplace = Q_Laplace_pc,
@@ -217,11 +218,14 @@ for (i in 1:number_of_loops) {
   )
 }
 
-results
+# Eliminates NULL results
+not_null_indices <- sapply(results, function(x) !is.null(x$pc$importance_pc$log_unnormalized_weights))
+results <- results[not_null_indices]
 names <- rownames(results[[1]]$pc$confidence_intervals_Laplace)
 
 
 # Histogram of distances for PC and not PC and mean.
+
 par(mfrow = c(ceiling(length(results[[1]]$pc$distance_vector) / 2), 2))
 mean_distances_pc <- c()
 for (i in seq_len(length(results[[1]]$pc$distance_vector))) {
@@ -249,10 +253,10 @@ for (i in seq_len(length(results[[1]]$not_pc$distance_vector))) {
 }
 
 # We also get the mean standard deviation estimates for the Laplace approximation
-std_dev_estimates_Laplace_pc <- sapply(results, function(x) x$pc$std_dev_estimates_Laplace)
-std_dev_estimates_Laplace_not_pc <- sapply(results, function(x) x$not_pc$std_dev_estimates_Laplace)
-mean_std_dev_pc <- rowMeans(std_dev_estimates_Laplace_pc)
-mean_std_dev_not_pc <- rowMeans(std_dev_estimates_Laplace_not_pc)
+std_dev_estimates_Laplace_pc <- do.call(rbind, lapply(results, function(x) x$pc$std_dev_estimates_Laplace))
+std_dev_estimates_Laplace_not_pc <- do.call(rbind, lapply(results, function(x) x$not_pc$std_dev_estimates_Laplace))
+mean_std_dev_pc <- colMeans(std_dev_estimates_Laplace_pc)
+mean_std_dev_not_pc <- colMeans(std_dev_estimates_Laplace_not_pc)
 
 names(mean_distances_pc) <- names(results[[1]]$pc$distance_vector)
 names(mean_distances_not_pc) <- names(results[[1]]$not_pc$distance_vector)
@@ -263,7 +267,9 @@ print(mean_std_dev_not_pc)
 
 
 
-# Confidence Laplace intervals. Histogram of lengths for PC and not PC and mean.
+# Credible Laplace intervals. Histogram of lengths for PC and not PC and mean.
+
+
 par(mfrow = c(ceiling(length(results[[1]]$pc$confidence_intervals_Laplace) / 2), 2))
 mean_lengths_pc <- c()
 for (i in seq_len(nrow(results[[1]]$pc$confidence_intervals_Laplace))) {
@@ -276,7 +282,7 @@ for (i in seq_len(nrow(results[[1]]$pc$confidence_intervals_Laplace))) {
   }
   mean_length_pc <- mean(all_lengths)
   mean_lengths_pc <- c(mean_lengths_pc, mean_length_pc)
-  hist(all_distances, main = paste("Length of Laplace_pc CI for", names[[i]]), xlab = "Length")
+  hist(all_lengths, main = paste("Length of Laplace_pc CI for", names[[i]]), xlab = "Length")
 }
 par(mfrow = c(ceiling(length(results[[1]]$not_pc$confidence_intervals_Laplace) / 2), 2))
 
@@ -296,53 +302,59 @@ for (i in seq_len(nrow(results[[1]]$not_pc$confidence_intervals_Laplace))) {
 print(mean_lengths_pc)
 print(mean_lengths_not_pc)
 
+prior_types <- c("pc", "not_pc")
+approximation_types <- c("Laplace", "importance", "importance_smoothed")
 
-## KL divergence between pc and not pc. Histograms
-KL <- data.frame(
-  KL_unsmoothed_pc_not_pc = sapply(results, function(x) x$KL$KL_unsmoothed_pc_not_pc),
-  KL_smoothed_pc_not_pc = sapply(results, function(x) x$KL$KL_smoothed_pc_not_pc),
-  KL_unsmoothed_pc_smoothed_pc = sapply(results, function(x) x$KL$KL_unsmoothed_pc_smoothed_pc),
-  KL_unsmoothed_not_pc_smoothed_not_pc = sapply(results, function(x) x$KL$KL_unsmoothed_not_pc_smoothed_not_pc)
-)
+## Test
+calculate_lengths <- function(results, prior_type, approximation_type) {
+  ci_type <- paste0("confidence_intervals_", approximation_type)
+  par(mfrow = c(ceiling(length(results[[1]][[prior_type]][[ci_type]]) / 2), 2))
+  mean_lengths <- c()
 
-# Histogram of the KL divergences
-par(mfrow = c(2, 2))
-hist(KL$KL_unsmoothed_pc_not_pc, main = "KL(unsmoothed PC, not PC)", xlab = "KL divergence")
-hist(KL$KL_smoothed_pc_not_pc, main = "KL(smoothed PC, not PC)", xlab = "KL divergence")
-hist(KL$KL_unsmoothed_pc_smoothed_pc, main = "KL(unsmoothed PC, smoothed PC)", xlab = "KL divergence")
-hist(KL$KL_unsmoothed_not_pc_smoothed_not_pc, main = "KL(unsmoothed not PC, smoothed not PC)", xlab = "KL divergence")
+  for (i in seq_len(nrow(results[[1]][[prior_type]][[ci_type]]))) {
+    all_lengths <- c()
 
-# We also store and print the mean of the KL divergences
+    for (j in seq_along(results)) {
+      length <- diff(results[[j]][[prior_type]][[ci_type]][i, ])
+      all_lengths <- c(all_lengths, length)
+    }
 
-KL_mean <- data.frame(
-  KL_unsmoothed_pc_not_pc = mean(KL$KL_unsmoothed_pc_not_pc),
-  KL_smoothed_pc_not_pc = mean(KL$KL_smoothed_pc_not_pc),
-  KL_unsmoothed_pc_smoothed_pc = mean(KL$KL_unsmoothed_pc_smoothed_pc),
-  KL_unsmoothed_not_pc_smoothed_not_pc = mean(KL$KL_unsmoothed_not_pc_smoothed_not_pc)
-)
-print(KL_mean)
+    mean_length <- mean(all_lengths)
+    mean_lengths <- c(mean_lengths, mean_length)
+    hist(all_lengths, main = paste("Length of", ci_type, "of", names[[i]], "for", prior_type), xlab = "Length")
+  }
+
+  print(paste("Mean lengths for", prior_type, ci_type))
+  print(mean_lengths)
+}
+
+# Usage:
+for (prior_type in prior_types) {
+  for (approximation_type in approximation_types) {
+    calculate_lengths(results, prior_type, approximation_type)
+  }
+}
+
 
 # Percentage of times the true parameter is within the confidence interval
 
 within_ci <- data.frame()
 
-unlist(results[[j]][[method]][paste0("true_parameter_within_c_interval_", type)])[1]
-within <- results[[j]][[method]][paste0("true_parameter_within_c_interval_", type)][i] * 1
 within_ci <- data.frame(matrix(ncol = 0, nrow = 5))
-for (method in c("pc", "not_pc")) {
-  for (type in c("Laplace", "importance_smoothed", "importance")) {
-    method_results <- c()
+for (prior_type in c("pc", "not_pc")) {
+  for (approximation_type in c("Laplace", "importance_smoothed", "importance")) {
+    prior_type_results <- c()
     for (i in 1:5) {
       all_results <- c()
       for (j in seq_along(results)) {
-        within <- unlist(results[[j]][[method]][paste0("true_parameter_within_c_interval_", type)])[i] * 1
+        within <- unlist(results[[j]][[prior_type]][paste0("true_parameter_within_c_interval_", approximation_type)])[i] * 1
         all_results <- c(all_results, within)
       }
       proportion_within <- mean(all_results)
-      method_results <- c(method_results, proportion_within)
+      prior_type_results <- c(prior_type_results, proportion_within)
     }
-    # Add the method results as a new column in the data frame
-    within_ci[paste(method, type, sep = "_")] <- method_results
+    # Add the prior_type results as a new column in the data frame
+    within_ci[paste(prior_type, approximation_type, sep = "_")] <- prior_type_results
   }
 }
 # Set the row names of the data frame to the parameter names
@@ -356,10 +368,10 @@ for (i in seq_len(nrow(within_ci))) {
   text(x = midpoints, y = unlist(within_ci[i, ]) + 0.02, labels = round(unlist(within_ci[i, ]), 2), pos = 3, cex = 0.8)
 }
 KL_Laplace <- data.frame(
-  KL_unsmoothed_pc_Laplace = sort(sapply(results, function(x) x$pc$importance_pc$KL_divergence_importance_Laplace)),
-  KL_unsmoothed_not_pc_Laplace = sort(sapply(results, function(x) x$not_pc$importance_not_pc$KL_divergence_importance_Laplace)),
-  KL_smoothed_pc_Laplace = sort(sapply(results, function(x) x$pc$importance_pc$KL_divergence_smoothed_importance_Laplace)),
-  KL_smoothed_not_pc_Laplace = sort(sapply(results, function(x) x$not_pc$importance_not_pc$KL_divergence_smoothed_importance_Laplace))
+  KL_unsmoothed_pc_Laplace = sort(unlist(sapply(results, function(x) x$pc$importance_pc$KL_divergence_importance_Laplace))),
+  KL_unsmoothed_not_pc_Laplace = sort(unlist(sapply(results, function(x) x$not_pc$importance_not_pc$KL_divergence_importance_Laplace))),
+  KL_smoothed_pc_Laplace = sort(unlist(sapply(results, function(x) x$pc$importance_pc$KL_divergence_smoothed_importance_Laplace))),
+  KL_smoothed_not_pc_Laplace = sort(unlist(sapply(results, function(x) x$not_pc$importance_not_pc$KL_divergence_smoothed_importance_Laplace)))
 )
 
 # Histogram of the KL divergences between the Laplace and importance samples
@@ -382,3 +394,22 @@ print(KL_Laplace_mean)
 end_time <- Sys.time()
 execution_time <- end_time - start_time
 print(execution_time)
+
+
+# # Average variance of log unnormalized weights
+# var_weights <- sapply(results, function(x) var(normalize_log_weights(x$pc$importance_pc$log_unnormalized_weights)))
+# hist(var_weights, main = "Histogram of variances for PC", xlab = "Variance")
+#
+# var_weights_smoothed <- sapply(results, function(x) var(normalize_log_weights(x$pc$importance_pc$log_unnormalized_weights_smoothed)))
+# hist(var_weights_smoothed, main = "Histogram of variances for PC smoothed", xlab = "Variance")
+
+
+# We get the vector of k diagnostics
+k_diagnostics <- sapply(results, function(x) x$pc$importance_pc$k_diagnostic)
+hist(k_diagnostics, main = "Histogram of k diagnostics", xlab = "k diagnostic")
+mean(k_diagnostics)
+par(mfrow = c(1,1))
+j=3
+hist(results[[j]]$pc$importance_pc$log_unnormalized_weights_smoothed)
+hist(results[[j]]$pc$importance_pc$log_unnormalized_weights)
+hist(normalize_log_weights(results[[j]]$pc$importance_pc$log_unnormalized_weights_smoothed))

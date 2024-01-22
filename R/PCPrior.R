@@ -508,6 +508,9 @@ log_posterior_prior <- function(log_prior, mesh, log_kappa, v, log_sigma_u = 0, 
 
   # Calculates anisotropy
   n <- nrow(mesh$loc)
+  if (length(y) != n) {
+    stop("y must be a vector with the same length as the size of the mesh")
+  }
   kappa_values <- rep(kappa, n)
   vec_values <- matrix(v, n, 2, byrow = TRUE)
   aniso <- list(kappa = kappa_values, vec = vec_values)
@@ -724,8 +727,8 @@ calculate_confidence_intervals_importance <- function(theta, w, q) {
 
     # Calculate cumulative weights
     df <- df %>%
-      arrange(theta) %>%
-      mutate(cum_w = cumsum(w))
+      arrange(theta) %>% # Sort by theta
+      mutate(cum_w = cumsum(w)) # Calculate cumulative weights and add to the data frame as a new column called cum_w
 
     # Find lower and upper bounds
     lower_bound <- df$theta[which(df$cum_w >= q / 2)[1]]
@@ -827,11 +830,12 @@ log_unnormalized_importance_weights_and_integrals <- function(log_posterior_dens
   log_importance_ratios <- apply(theta_sim_importance, 1, log_ratio_function)
   log_importance_ratios <- log_importance_ratios - max(log_importance_ratios)
 
-  psis_result <- psis(-log_importance_ratios, r_eff = NA)
+  psis_result <- psis(log_importance_ratios, r_eff = NA)
   log_weights_smoothed <- psis_result$log_weights
 
   # Calculate the mean, variance and KL divergences with unsmoothed weights
   weights_normalized <- normalize_log_weights(log_importance_ratios)
+  n_eff <- 1 / sum(weights_normalized^2)
   mean_importance <- apply(theta_sim_importance, 2, weighted.mean, w = weights_normalized)
   cov_importance <- stats::cov.wt(theta_sim_importance, wt = weights_normalized)$cov
   marginal_variance_importance <- diag(cov_importance)
@@ -851,14 +855,17 @@ log_unnormalized_importance_weights_and_integrals <- function(log_posterior_dens
   # A discrete distribution (importance approximation to posterior) is not absolutely continuous with respect to a continuous one (Laplace approximation to posterior) so the KL divergence is not defined. As a result, we replace the Laplace approximation with its importance approximation to calculate the KL divergence.
   log_weights_Laplace <- apply(theta_sim_importance, 1, log_Laplace_density)
   weights_Laplace_normalized <- normalize_log_weights(log_weights_Laplace)
-  KL_divergence_importance_Laplace <- sum(weights_normalized * (log(weights_normalized) - log(weights_Laplace_normalized)))
-  KL_divergence_smoothed_importance_Laplace <- sum(weights_smoothed_normalized * (log(weights_smoothed_normalized) - log(weights_Laplace_normalized)))
+  KL_divergence_importance_Laplace <- sum(weights_normalized * log(weights_normalized)) + log(n_weights)
+  KL_divergence_smoothed_importance_Laplace <- sum(weights_smoothed_normalized * log(weights_smoothed_normalized)) + log(n_weights)
 
 
   list(
     log_unnormalized_weights = log_importance_ratios,
     log_unnormalized_weights_smoothed = log_weights_smoothed,
-    k_diagnostic = psis_result$k,
+    psis_result = psis_result,
+    k_diagnostic = psis_result$diagnostics$pareto_k,
+    n_eff = n_eff,
+    n_eff_smoothed = psis_result$diagnostics$n_eff,
     mean_importance = mean_importance,
     marginal_variance_importance = marginal_variance_importance,
     mean_smoothed_importance = mean_smoothed_importance,
