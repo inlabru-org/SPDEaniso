@@ -55,10 +55,10 @@ confidence_level <- 0.05
 results <- vector("list", number_of_loops) # Pre-allocates a list for m iterations
 start_time <- Sys.time()
 time_calculator <- function(mesh, number_of_weights, number_of_loops) { # estimates the time the loop will take
-  time_per_loop <- mesh$n * (20 + number_of_weights * 4 / 500) / 554 * 2*1.2
-  time_per_loop * number_of_loops / 60
+  time_per_loop <- mesh$n * (20 + number_of_weights * 4 / 500) / 554 * 2 * 3
+  time_per_loop * number_of_loops / 3600
 }
-print(paste("Estimated time:", time_calculator(mesh,number_of_weights, number_of_loops ), "minutes"))
+print(paste("Estimated time:", time_calculator(mesh, number_of_weights, number_of_loops), "hours"))
 
 for (i in 1:number_of_loops) {
   tryCatch(
@@ -78,7 +78,7 @@ for (i in 1:number_of_loops) {
       aniso <- list(rep(kappa, n), matrix(v, n, 2))
 
       # Sample from noisy data
-      x <- fm_aniso_basis_weights_sample(x = mesh, aniso = aniso)
+      x <- fm_aniso_basis_weights_sample(x = mesh, aniso = aniso, log_sigma = log_sigma_u)
       A <- Matrix::Diagonal(n, 1)
       y <- A %*% x + exp(log_sigma_epsilon) * stats::rnorm(n)
 
@@ -273,51 +273,16 @@ print(mean_std_dev_not_pc)
 
 
 
-# Credible Laplace intervals. Histogram of lengths for PC and not PC and mean.
-
-
-par(mfrow = c(ceiling(length(results[[1]]$pc$confidence_intervals_Laplace) / 2), 2))
-mean_lengths_pc <- c()
-for (i in seq_len(nrow(results[[1]]$pc$confidence_intervals_Laplace))) {
-  all_lengths <- c()
-
-  # For each run
-  for (j in seq_along(results)) {
-    length <- diff(results[[j]]$pc$confidence_intervals_Laplace[i, ])
-    all_lengths <- c(all_lengths, length)
-  }
-  mean_length_pc <- mean(all_lengths)
-  mean_lengths_pc <- c(mean_lengths_pc, mean_length_pc)
-  hist(all_lengths, main = paste("Length of Laplace_pc CI for", names[[i]]), xlab = "Length")
-}
-par(mfrow = c(ceiling(length(results[[1]]$not_pc$confidence_intervals_Laplace) / 2), 2))
-
-mean_lengths_not_pc <- c()
-
-for (i in seq_len(nrow(results[[1]]$not_pc$confidence_intervals_Laplace))) {
-  all_lengths <- c()
-  for (j in seq_along(results)) {
-    length <- diff(results[[j]]$not_pc$confidence_intervals_Laplace[i, ])
-    all_lengths <- c(all_lengths, length)
-  }
-  mean_length_not_pc <- mean(all_lengths)
-  mean_lengths_not_pc <- c(mean_lengths_not_pc, mean_length_not_pc)
-  hist(all_lengths, main = paste("Length of Laplace_not_pc CI for", names[[i]]), xlab = "Distance")
-}
-
-print(mean_lengths_pc)
-print(mean_lengths_not_pc)
-
+# Credible intervals. Histogram of lengths.
 prior_types <- c("pc", "not_pc")
 approximation_types <- c("Laplace", "importance", "importance_smoothed")
 
-## Test
 calculate_lengths <- function(results, prior_type, approximation_type) {
   ci_type <- paste0("confidence_intervals_", approximation_type)
   par(mfrow = c(ceiling(length(results[[1]][[prior_type]][[ci_type]]) / 2), 2))
   mean_lengths <- c()
 
-  for (i in seq_len(nrow(results[[1]][[prior_type]][[ci_type]]))) {
+  for (i in length(names)) {
     all_lengths <- c()
 
     for (j in seq_along(results)) {
@@ -347,8 +312,8 @@ for (prior_type in prior_types) {
 within_ci <- data.frame()
 
 within_ci <- data.frame(matrix(ncol = 0, nrow = 5))
-for (prior_type in c("pc", "not_pc")) {
-  for (approximation_type in c("Laplace", "importance_smoothed", "importance")) {
+for (prior_type in prior_types) {
+  for (approximation_type in approximation_types) {
     prior_type_results <- c()
     for (i in 1:5) {
       all_results <- c()
