@@ -909,7 +909,7 @@ log_unnormalized_importance_weights_and_integrals <- function(log_posterior_dens
     probabilities_importance = probabilities_importance,
     probabilities_importance_smoothed = probabilities_importance_smoothed,
     KL_divergence_importance_Laplace = KL_divergence_importance_Laplace,
-    KL_divergence_smoothed_importance_Laplace = KL_divergence_smoothed_importance_Laplace,
+    KL_divergence_smoothed_importance_Laplace = KL_divergence_smoothed_importance_Laplace
   )
 }
 

@@ -46,6 +46,7 @@ boundary <- fm_as_segm(boundary_sf)
 mesh <- fm_mesh_2d_inla(boundary = boundary, max.edge = c(2, 2))
 nodes <- mesh$loc
 n <- mesh$n
+par(mfrow=c(1,1))
 plot(mesh)
 
 number_of_loops <- 300 # number of iterations
@@ -378,5 +379,5 @@ k_diagnostics <- sapply(results, function(x) x$pc$importance_pc$k_diagnostic)
 hist(k_diagnostics, main = "Histogram of k diagnostics", xlab = "k diagnostic")
 par(mfrow = c(1, 2))
 j <- 1
-hist(results[[j]]$pc$importance_pc$log_unnormalized_weights_smoothed)
-hist(results[[j]]$pc$importance_pc$log_unnormalized_weights)
+hist(results[[j]]$pc$importance_pc$log_unnormalized_weights_smoothed, main ="Log weights", xlab= "Log weight")
+hist(results[[j]]$pc$importance_pc$log_unnormalized_weights, main ="Log weights", xlab ="Log weight")
