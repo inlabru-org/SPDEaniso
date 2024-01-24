@@ -48,7 +48,7 @@ nodes <- mesh$loc
 n <- mesh$n
 plot(mesh)
 
-number_of_loops <- 400 # number of iterations
+number_of_loops <- 300 # number of iterations
 maxit_MAP <- 600
 number_of_weights <- 10000
 confidence_level <- 0.05
@@ -223,66 +223,48 @@ for (i in 1:number_of_loops) {
     }
   )
 }
-
 # Eliminates NULL results
 not_null_indices <- sapply(results, function(x) !is.null(x$pc$importance_pc$log_unnormalized_weights))
 results <- results[not_null_indices]
+prior_types <- c("pc", "not_pc")
+approximation_types <- c("Laplace", "importance", "importance_smoothed")
 names <- rownames(results[[1]]$pc$confidence_intervals_Laplace)
 
+mean_distances <- list()
+mean_std_dev <- list()
 
-# Histogram of distances for PC and not PC and mean.
-
-par(mfrow = c(ceiling(length(results[[1]]$pc$distance_vector) / 2), 2))
-mean_distances_pc <- c()
-for (i in seq_len(length(results[[1]]$pc$distance_vector))) {
-  all_distances <- c()
-  for (j in seq_along(results)) {
-    distance <- results[[j]]$pc$distance_vector[i]
-    all_distances <- c(all_distances, distance)
+for (prior_type in prior_types) {
+  par(mfrow = c(ceiling(length(results[[1]][[prior_type]]$distance_vector) / 2), 2))
+  mean_distances[[prior_type]] <- c()
+  for (i in seq_len(length(results[[1]][[prior_type]]$distance_vector))) {
+    all_distances <- c()
+    for (j in seq_along(results)) {
+      distance <- results[[j]][[prior_type]]$distance_vector[i]
+      all_distances <- c(all_distances, distance)
+    }
+    mean_distance <- mean(all_distances)
+    mean_distances[[prior_type]] <- c(mean_distances[[prior_type]], mean_distance)
+    hist(all_distances, main = paste("Distance to MAP for", names[[i]], prior_type), xlab = "Distance")
   }
-  mean_distance_pc <- mean(all_distances)
-  mean_distances_pc <- c(mean_distances_pc, mean_distance_pc)
-  hist(all_distances, main = paste("Distance for", names[[i]]), xlab = "Distance")
+
+  std_dev_estimates_Laplace <- do.call(rbind, lapply(results, function(x) x[[prior_type]]$std_dev_estimates_Laplace))
+  mean_std_dev[[prior_type]] <- colMeans(std_dev_estimates_Laplace)
+
+  names(mean_distances[[prior_type]]) <- names(results[[1]][[prior_type]]$distance_vector)
+  print(mean_distances[[prior_type]])
+  print(mean_std_dev[[prior_type]])
 }
-par(mfrow = c(ceiling(length(results[[1]]$not_pc$distance_vector) / 2), 2))
-
-mean_distances_not_pc <- c()
-for (i in seq_len(length(results[[1]]$not_pc$distance_vector))) {
-  all_distances <- c()
-  for (j in seq_along(results)) {
-    distance <- results[[j]]$not_pc$distance_vector[i]
-    all_distances <- c(all_distances, distance)
-  }
-  mean_distance_not_pc <- mean(all_distances)
-  mean_distances_not_pc <- c(mean_distances_not_pc, mean_distance_not_pc)
-  hist(all_distances, main = paste("Distance for", names[[i]]), xlab = "Distance")
-}
-
-# We also get the mean standard deviation estimates for the Laplace approximation
-std_dev_estimates_Laplace_pc <- do.call(rbind, lapply(results, function(x) x$pc$std_dev_estimates_Laplace))
-std_dev_estimates_Laplace_not_pc <- do.call(rbind, lapply(results, function(x) x$not_pc$std_dev_estimates_Laplace))
-mean_std_dev_pc <- colMeans(std_dev_estimates_Laplace_pc)
-mean_std_dev_not_pc <- colMeans(std_dev_estimates_Laplace_not_pc)
-
-names(mean_distances_pc) <- names(results[[1]]$pc$distance_vector)
-names(mean_distances_not_pc) <- names(results[[1]]$not_pc$distance_vector)
-print(mean_distances_pc)
-print(mean_std_dev_pc)
-print(mean_distances_not_pc)
-print(mean_std_dev_not_pc)
 
 
 
 # Credible intervals. Histogram of lengths.
-prior_types <- c("pc", "not_pc")
-approximation_types <- c("Laplace", "importance", "importance_smoothed")
+
 
 calculate_lengths <- function(results, prior_type, approximation_type) {
   ci_type <- paste0("confidence_intervals_", approximation_type)
-  par(mfrow = c(ceiling(length(results[[1]][[prior_type]][[ci_type]]) / 2), 2))
   mean_lengths <- c()
 
-  for (i in length(names)) {
+  for (i in 1:length(names)) {
     all_lengths <- c()
 
     for (j in seq_along(results)) {
@@ -300,12 +282,16 @@ calculate_lengths <- function(results, prior_type, approximation_type) {
 }
 
 # Usage:
+
+# Set layout
+layout_matrix <- rbind(c(1, 2, 3), c(4, 5, 0))
+layout(layout_matrix)
+
 for (prior_type in prior_types) {
   for (approximation_type in approximation_types) {
     calculate_lengths(results, prior_type, approximation_type)
   }
 }
-
 
 # Percentage of times the true parameter is within the confidence interval
 
@@ -333,8 +319,9 @@ rownames(within_ci) <- rownames(results[[1]]$pc$confidence_intervals_Laplace)
 
 # Create a bar plot for each parameter
 
+layout(layout_matrix)
+
 for (i in seq_len(nrow(within_ci))) {
-  dev.new()
   midpoints <- barplot(unlist(within_ci[i, ]), main = rownames(within_ci)[i], ylab = "Proportion within CI", ylim = c(0, 1))
   text(x = midpoints, y = unlist(within_ci[i, ]) + 0.02, labels = round(unlist(within_ci[i, ]), 2), pos = 3, cex = 0.8)
 }
@@ -361,10 +348,20 @@ KL_Laplace_mean <- data.frame(
 )
 print(KL_Laplace_mean)
 
+# We check whether the quantiles P[theta<=theta^*] are uniformly distributed
+par(mfrow = c(2, 3))
+for (prior_type in prior_types) {
+  for (approximation_type in approximation_types) {
+    probabilities <- sapply(results, function(x) x[[prior_type]][[paste0("importance_", prior_type)]][[paste0("probabilities_", approximation_type)]])
+    for (i in length(names)) {
+      hist(probabilities[i, ], main = paste("Histogram of P[theta<=MAP] for", names[[i]], "for", prior_type, approximation_type), xlab = "P[theta<=theta^*]")
+      # We also get the mean of the probabilities
+      print(paste("Mean of P[theta<=theta^*] for", names[[i]], "for", prior_type, approximation_type))
+      print(mean(probabilities[i, ]))
+    }
+  }
+}
 
-end_time <- Sys.time()
-execution_time <- end_time - start_time
-print(execution_time)
 
 
 # # Average variance of log unnormalized weights
@@ -375,11 +372,11 @@ print(execution_time)
 # hist(var_weights_smoothed, main = "Histogram of variances for PC smoothed", xlab = "Variance")
 
 
-# We get the vector of k diagnostics
+# We get the vector of k diagnostics and show the log weights are similar
+par(mfrow = c(1, 1))
 k_diagnostics <- sapply(results, function(x) x$pc$importance_pc$k_diagnostic)
 hist(k_diagnostics, main = "Histogram of k diagnostics", xlab = "k diagnostic")
-mean(k_diagnostics)
-par(mfrow = c(1, 1))
-j <- 3
+par(mfrow = c(1, 2))
+j <- 1
 hist(results[[j]]$pc$importance_pc$log_unnormalized_weights_smoothed)
 hist(results[[j]]$pc$importance_pc$log_unnormalized_weights)
