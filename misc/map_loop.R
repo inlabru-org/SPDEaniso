@@ -19,8 +19,8 @@ set.seed(123)
 # Defines the upper bounds for the quantiles
 rho0 <- 1 # Controls the size of kappa
 a0 <- 2 # Controls the size of v
-sigma_u0 <- 2 # controls standard deviation of field
-sigma_epsilon0 <- 0.1 # control standard deviation of noise
+sigma_u0 <- 10 # controls standard deviation of field
+sigma_epsilon0 <- 2 # control standard deviation of noise
 sigma0 <- 1.5 # Controls the size of v in non PC priors
 # Defines the quantile
 alpha <- 0.01
@@ -43,25 +43,20 @@ log_not_pc_prior <- log_gaussian_prior_quantile(
 library(sf)
 boundary_sf <- st_sfc(st_polygon(list(rbind(c(0, 0.01), c(10, 0.01), c(10, 10), c(0, 10), c(0, 0.01)))))
 boundary <- fm_as_segm(boundary_sf)
-mesh <- fm_mesh_2d_inla(boundary = boundary, max.edge = c(2, 2))
+mesh <- fm_mesh_2d_inla(boundary = boundary, max.edge = c(3, 3))
 nodes <- mesh$loc
 n <- mesh$n
-par(mfrow=c(1,1))
+par(mfrow = c(1, 1))
 plot(mesh)
 
-number_of_loops <- 300 # number of iterations
+number_of_loops <- 200 # number of iterations
 maxit_MAP <- 600
-number_of_weights <- 10000
+number_of_weights <- 20000
 confidence_level <- 0.05
 results <- vector("list", number_of_loops) # Pre-allocates a list for m iterations
-start_time <- Sys.time()
-time_calculator <- function(mesh, number_of_weights, number_of_loops) { # estimates the time the loop will take
-  time_per_loop <- mesh$n * (20 + number_of_weights * 4 / 500) / 554 * 2 * 3
-  time_per_loop * number_of_loops / 3600
-}
-print(paste("Estimated time:", time_calculator(mesh, number_of_weights, number_of_loops), "hours"))
 
 for (i in 1:number_of_loops) {
+  start_time <- Sys.time()
   tryCatch(
     {
       # Simulate parameters from PC prior
@@ -85,16 +80,17 @@ for (i in 1:number_of_loops) {
 
       # Calculating the MAP under each prior knowing simulated data
       # Takes around 20s with mesh size 1 (554 degrees of freedom) and scales linearly in degrees of freedom
+      delta <- rnorm(5, 0, 1) # Used to randomize starting point of MAP
       map_pc <- MAP_prior(
         log_prior = log_pc_prior, mesh = mesh,
         y = y, A = A, m_u = m_u, max_iterations = maxit_MAP,
-        theta0 = unlist(true_params)
+        theta0 = unlist(true_params) + delta
       )
 
       map_not_pc <- MAP_prior(
         log_prior = log_not_pc_prior, mesh = mesh,
         y = y, A = A, m_u = m_u, max_iterations = maxit_MAP,
-        theta0 = unlist(true_params)
+        theta0 = unlist(true_params) + delta
       )
 
       # Laplace approximation
@@ -143,24 +139,24 @@ for (i in 1:number_of_loops) {
         mu_Laplace = mu_Laplace_not_pc, Q_Laplace = Q_Laplace_not_pc,
         n_weights = number_of_weights, q = confidence_level
       )
-      KL <- data.frame(
-        KL_unsmoothed_pc_not_pc = KL_discrete_log_unnormalized_weights(
-          importance_pc$log_unnormalized_weights,
-          importance_not_pc$log_unnormalized_weights
-        ),
-        KL_smoothed_pc_not_pc = KL_discrete_log_unnormalized_weights(
-          importance_pc$log_unnormalized_weights_smoothed,
-          importance_not_pc$log_unnormalized_weights_smoothed
-        ),
-        KL_unsmoothed_pc_smoothed_pc = KL_discrete_log_unnormalized_weights(
-          importance_pc$log_unnormalized_weights,
-          importance_pc$log_unnormalized_weights_smoothed
-        ),
-        KL_unsmoothed_not_pc_smoothed_not_pc = KL_discrete_log_unnormalized_weights(
-          importance_not_pc$log_unnormalized_weights,
-          importance_not_pc$log_unnormalized_weights_smoothed
-        )
-      )
+      # KL <- data.frame(
+      #   KL_unsmoothed_pc_not_pc = KL_discrete_log_unnormalized_weights(
+      #     importance_pc$log_unnormalized_weights,
+      #     importance_not_pc$log_unnormalized_weights
+      #   ),
+      #   KL_smoothed_pc_not_pc = KL_discrete_log_unnormalized_weights(
+      #     importance_pc$log_unnormalized_weights_smoothed,
+      #     importance_not_pc$log_unnormalized_weights_smoothed
+      #   ),
+      #   KL_unsmoothed_pc_smoothed_pc = KL_discrete_log_unnormalized_weights(
+      #     importance_pc$log_unnormalized_weights,
+      #     importance_pc$log_unnormalized_weights_smoothed
+      #   ),
+      #   KL_unsmoothed_not_pc_smoothed_not_pc = KL_discrete_log_unnormalized_weights(
+      #     importance_not_pc$log_unnormalized_weights,
+      #     importance_not_pc$log_unnormalized_weights_smoothed
+      #   )
+      # )
 
       # CIs
       confidence_intervals_Laplace_pc <- importance_pc$confidence_intervals_Laplace
@@ -215,27 +211,33 @@ for (i in 1:number_of_loops) {
       results[[i]] <- list(
         true_params = true_params,
         pc = pc_results,
-        not_pc = not_pc_results,
-        KL = KL
+        not_pc = not_pc_results
+        # ,KL = KL
       )
     },
     error = function(e) {
       e
     }
   )
+  end_time <- Sys.time()
+  execution_time <- as.numeric(difftime(end_time, start_time, units = "secs"))
+  formatted_time <- seconds_to_hours_minutes_seconds(execution_time)
+  print(paste("Iteration", i, "took", formatted_time))
+  time_left <- as.numeric(difftime(end_time, start_time, units = "secs")) * (number_of_loops - i)
+  print(paste("Estimated time left:", seconds_to_hours_minutes_seconds(time_left)))
 }
 # Eliminates NULL results
 not_null_indices <- sapply(results, function(x) !is.null(x$pc$importance_pc$log_unnormalized_weights))
 results <- results[not_null_indices]
 prior_types <- c("pc", "not_pc")
 approximation_types <- c("Laplace", "importance", "importance_smoothed")
-names <- rownames(results[[1]]$pc$confidence_intervals_Laplace)
+parameter_names <- rownames(results[[1]]$pc$confidence_intervals_Laplace)
 
 mean_distances <- list()
 mean_std_dev <- list()
 
 for (prior_type in prior_types) {
-  par(mfrow = c(ceiling(length(results[[1]][[prior_type]]$distance_vector) / 2), 2))
+  par(mfrow = c(3, 2))
   mean_distances[[prior_type]] <- c()
   for (i in seq_len(length(results[[1]][[prior_type]]$distance_vector))) {
     all_distances <- c()
@@ -245,14 +247,16 @@ for (prior_type in prior_types) {
     }
     mean_distance <- mean(all_distances)
     mean_distances[[prior_type]] <- c(mean_distances[[prior_type]], mean_distance)
-    hist(all_distances, main = paste("Distance to MAP for", names[[i]], prior_type), xlab = "Distance")
+    hist(all_distances, main = paste("Distance to MAP for", parameter_names[[i]], prior_type), xlab = "Distance")
   }
 
   std_dev_estimates_Laplace <- do.call(rbind, lapply(results, function(x) x[[prior_type]]$std_dev_estimates_Laplace))
   mean_std_dev[[prior_type]] <- colMeans(std_dev_estimates_Laplace)
 
   names(mean_distances[[prior_type]]) <- names(results[[1]][[prior_type]]$distance_vector)
+  print(paste("Mean distances for", prior_type))
   print(mean_distances[[prior_type]])
+  print(paste("Mean standard deviations for", prior_type))
   print(mean_std_dev[[prior_type]])
 }
 
@@ -265,7 +269,7 @@ calculate_lengths <- function(results, prior_type, approximation_type) {
   ci_type <- paste0("confidence_intervals_", approximation_type)
   mean_lengths <- c()
 
-  for (i in 1:length(names)) {
+  for (i in 1:length(parameter_names)) {
     all_lengths <- c()
 
     for (j in seq_along(results)) {
@@ -275,14 +279,13 @@ calculate_lengths <- function(results, prior_type, approximation_type) {
 
     mean_length <- mean(all_lengths)
     mean_lengths <- c(mean_lengths, mean_length)
-    hist(all_lengths, main = paste("Length of", ci_type, "of", names[[i]], "for", prior_type), xlab = "Length")
+    hist(all_lengths, main = paste("Length of", ci_type, "of", parameter_names[[i]], "for", prior_type), xlab = "Length")
   }
 
   print(paste("Mean lengths for", prior_type, ci_type))
   print(mean_lengths)
 }
 
-# Usage:
 
 # Set layout
 layout_matrix <- rbind(c(1, 2, 3), c(4, 5, 0))
@@ -354,10 +357,10 @@ par(mfrow = c(2, 3))
 for (prior_type in prior_types) {
   for (approximation_type in approximation_types) {
     probabilities <- sapply(results, function(x) x[[prior_type]][[paste0("importance_", prior_type)]][[paste0("probabilities_", approximation_type)]])
-    for (i in length(names)) {
-      hist(probabilities[i, ], main = paste("Histogram of P[theta<=MAP] for", names[[i]], "for", prior_type, approximation_type), xlab = "P[theta<=theta^*]")
+    for (i in length(parameter_names)) {
+      hist(probabilities[i, ], main = paste("Histogram of P[theta<=MAP] for", parameter_names[[i]], "for", prior_type, approximation_type), xlab = "P[theta<=theta^*]")
       # We also get the mean of the probabilities
-      print(paste("Mean of P[theta<=theta^*] for", names[[i]], "for", prior_type, approximation_type))
+      print(paste("Mean of P[theta<=theta^*] for", parameter_names[[i]], "for", prior_type, approximation_type))
       print(mean(probabilities[i, ]))
     }
   }
@@ -379,5 +382,5 @@ k_diagnostics <- sapply(results, function(x) x$pc$importance_pc$k_diagnostic)
 hist(k_diagnostics, main = "Histogram of k diagnostics", xlab = "k diagnostic")
 par(mfrow = c(1, 2))
 j <- 1
-hist(results[[j]]$pc$importance_pc$log_unnormalized_weights_smoothed, main ="Log weights", xlab= "Log weight")
-hist(results[[j]]$pc$importance_pc$log_unnormalized_weights, main ="Log weights", xlab ="Log weight")
+hist(results[[j]]$pc$importance_pc$log_unnormalized_weights_smoothed, main = "Log weights", xlab = "Log weight")
+hist(results[[j]]$pc$importance_pc$log_unnormalized_weights, main = "Log weights", xlab = "Log weight")

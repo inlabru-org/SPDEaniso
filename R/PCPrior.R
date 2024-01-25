@@ -930,3 +930,26 @@ KL_discrete_log_unnormalized_weights <- function(log_unnormalized_weights_1, log
   weights_2_normalized <- normalize_log_weights(log_unnormalized_weights_2)
   return(sum(weights_1_normalized * (log(weights_1_normalized) - log(weights_2_normalized))))
 }
+
+#' @title Convert seconds to hours, minutes, and seconds
+#' @description Converts seconds to hours, minutes, and seconds
+#' @param seconds A number representing the number of seconds
+#' @return A string representing the number of hours, minutes, and seconds
+#' @export
+#' @examples
+#' seconds <- 100
+#' seconds_to_hours_minutes_seconds(seconds)
+#' seconds <- 10000
+#' seconds_to_hours_minutes_seconds(seconds)
+seconds_to_hours_minutes_seconds <- function(seconds) {
+  hours <- floor(seconds / 3600)
+  minutes <- floor((seconds %% 3600) / 60)
+  seconds <- round(seconds %% 60)
+  if (hours == 0 && minutes == 0) {
+    return(paste0(seconds, "s"))
+  }
+  if (hours == 0) {
+    return(paste0(minutes, "m ", seconds, "s"))
+  }
+  return(paste0(hours, "h ", minutes, "m ", seconds, "s"))
+}
