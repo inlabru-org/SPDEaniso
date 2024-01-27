@@ -811,10 +811,10 @@ parameter_within_confidence_intervals <- function(parameter, confidence_interval
 
 
 #' @title Calculate unnormalized log importance weights, mean, variance, and KL divergences
-#' @description Calculates the unnormalized log importance weights, mean, variance, and KL divergences between the importance approximation and the Laplace approximation
+#' @description Calculates the unnormalized log importance weights, mean, variance, and KL divergences between the importance approximation and the Gaussian_median approximation
 #' @param log_posterior_density A function that calculates the unnormalized log posterior of theta
-#' @param mu_Laplace A 5D vector representing the mean of the Laplace approximation
-#' @param Q_Laplace A 5x5 matrix representing the precision matrix of the Laplace approximation
+#' @param mu_Gaussian_median A 5D vector representing the mean of the Gaussian_median approximation
+#' @param Q_Gaussian_median A 5x5 matrix representing the precision matrix of the Gaussian_median approximation
 #' @param n_weights Number of weights to be calculated
 #' @param q The significance level. By default, set to 0.05.
 #'
@@ -842,22 +842,22 @@ parameter_within_confidence_intervals <- function(parameter, confidence_interval
 #'   )
 #' }
 #' # Calculates the importance weights, mean, variance, and KL divergences
-#' mu_Laplace <- c(0, 0, 0, 0, 0)
-#' Q_Laplace <- diag(5)
-#' log_unnormalized_importance_weights_and_integrals(log_posterior_pc, mu_Laplace, Q_Laplace, n_weights = 1000)
-log_unnormalized_importance_weights_and_integrals <- function(log_posterior_density, mu_Laplace, Q_Laplace, n_weights, q = 0.05, true_params) {
+#' mu_Gaussian_median <- c(0, 0, 0, 0, 0)
+#' Q_Gaussian_median <- diag(5)
+#' log_unnormalized_importance_weights_and_integrals(log_posterior_pc, mu_Gaussian_median, Q_Gaussian_median, n_weights = 1000)
+log_unnormalized_importance_weights_and_integrals <- function(log_posterior_density, mu_Gaussian_median, Q_Gaussian_median, n_weights, q = 0.05, true_params) {
   # Calculate the importance weights
-  log_Laplace_density <- function(theta) {
+  log_Gaussian_median_density <- function(theta) {
     logGdensity(
-      x = theta, mu = mu_Laplace, Q = Q_Laplace
+      x = theta, mu = mu_Gaussian_median, Q = Q_Gaussian_median
     )
   }
 
   log_ratio_function <- function(theta) {
-    log_posterior_density(theta) - log_Laplace_density(theta)
+    log_posterior_density(theta) - log_Gaussian_median_density(theta)
   }
-  covariance_Laplace <- solve(Q_Laplace)
-  theta_sim_importance <- MASS::mvrnorm(n_weights, mu_Laplace, covariance_Laplace)
+  covariance_Gaussian_median <- solve(Q_Gaussian_median)
+  theta_sim_importance <- MASS::mvrnorm(n_weights, mu_Gaussian_median, covariance_Gaussian_median)
   # Subtract the max to avoid numerical issues as it shouldn't change the result
   log_importance_ratios <- apply(theta_sim_importance, 1, log_ratio_function)
   log_importance_ratios <- log_importance_ratios - max(log_importance_ratios)
@@ -879,20 +879,20 @@ log_unnormalized_importance_weights_and_integrals <- function(log_posterior_dens
   marginal_variance_smoothed_importance <- diag(cov_smoothed_importance)
 
   # Calculate a 95% confidence interval for each component of the parameters around its mean
-  std_dev_Laplace <- sqrt(diag(covariance_Laplace))
-  confidence_intervals_Laplace <- calculate_confidence_intervals_gaussian(mu_Laplace, std_dev_Laplace, q)
+  std_dev_Gaussian_median <- sqrt(diag(covariance_Gaussian_median))
+  confidence_intervals_Gaussian_median <- calculate_confidence_intervals_gaussian(mu_Gaussian_median, std_dev_Gaussian_median, q)
   confidence_intervals_importance <- calculate_confidence_intervals_importance(theta_sim_importance, weights_normalized, q)
   confidence_intervals_importance_smoothed <- calculate_confidence_intervals_importance(theta_sim_importance, weights_smoothed_normalized, q)
   # Calculates the probabilities P[theta_i <= true_params_i]
-  probabilities_Laplace <- pnorm(true_params, mu_Laplace, std_dev_Laplace)
+  probabilities_Gaussian_median <- pnorm(true_params, mu_Gaussian_median, std_dev_Gaussian_median)
   probabilities_importance <- calculate_probabilities(true_params, theta_sim_importance, weights_normalized)
   probabilities_importance_smoothed <- calculate_probabilities(true_params, theta_sim_importance, weights_smoothed_normalized)
 
-  # A discrete distribution (importance approximation to posterior) is not absolutely continuous with respect to a continuous one (Laplace approximation to posterior) so the KL divergence is not defined. As a result, we replace the Laplace approximation with its importance approximation to calculate the KL divergence.
-  log_weights_Laplace <- apply(theta_sim_importance, 1, log_Laplace_density)
-  weights_Laplace_normalized <- normalize_log_weights(log_weights_Laplace)
-  KL_divergence_importance_Laplace <- sum(weights_normalized * log(weights_normalized)) + log(n_weights)
-  KL_divergence_smoothed_importance_Laplace <- sum(weights_smoothed_normalized * log(weights_smoothed_normalized)) + log(n_weights)
+  # A discrete distribution (importance approximation to posterior) is not absolutely continuous with respect to a continuous one (Gaussian_median approximation to posterior) so the KL divergence is not defined. As a result, we replace the Gaussian_median approximation with its importance approximation to calculate the KL divergence.
+  log_weights_Gaussian_median <- apply(theta_sim_importance, 1, log_Gaussian_median_density)
+  weights_Gaussian_median_normalized <- normalize_log_weights(log_weights_Gaussian_median)
+  KL_divergence_importance_Gaussian_median <- sum(weights_normalized * log(weights_normalized)) + log(n_weights)
+  KL_divergence_smoothed_importance_Gaussian_median <- sum(weights_smoothed_normalized * log(weights_smoothed_normalized)) + log(n_weights)
 
   list(
     log_unnormalized_weights = log_importance_ratios,
@@ -905,14 +905,14 @@ log_unnormalized_importance_weights_and_integrals <- function(log_posterior_dens
     marginal_variance_importance = marginal_variance_importance,
     mean_smoothed_importance = mean_smoothed_importance,
     marginal_variance_smoothed_importance = marginal_variance_smoothed_importance,
-    confidence_intervals_Laplace = confidence_intervals_Laplace,
+    confidence_intervals_Gaussian_median = confidence_intervals_Gaussian_median,
     confidence_intervals_importance = confidence_intervals_importance,
     confidence_intervals_importance_smoothed = confidence_intervals_importance_smoothed,
-    probabilities_Laplace = probabilities_Laplace,
+    probabilities_Gaussian_median = probabilities_Gaussian_median,
     probabilities_importance = probabilities_importance,
     probabilities_importance_smoothed = probabilities_importance_smoothed,
-    KL_divergence_importance_Laplace = KL_divergence_importance_Laplace,
-    KL_divergence_smoothed_importance_Laplace = KL_divergence_smoothed_importance_Laplace
+    KL_divergence_importance_Gaussian_median = KL_divergence_importance_Gaussian_median,
+    KL_divergence_smoothed_importance_Gaussian_median = KL_divergence_smoothed_importance_Gaussian_median
   )
 }
 

@@ -6,8 +6,8 @@
 \usage{
 log_unnormalized_importance_weights_and_integrals(
   log_posterior_density,
-  mu_Laplace,
-  Q_Laplace,
+  mu_Gaussian_median,
+  Q_Gaussian_median,
   n_weights,
   q = 0.05,
   true_params
@@ -16,9 +16,9 @@ log_unnormalized_importance_weights_and_integrals(
 \arguments{
 \item{log_posterior_density}{A function that calculates the unnormalized log posterior of theta}
 
-\item{mu_Laplace}{A 5D vector representing the mean of the Laplace approximation}
+\item{mu_Gaussian_median}{A 5D vector representing the mean of the Gaussian_median approximation}
 
-\item{Q_Laplace}{A 5x5 matrix representing the precision matrix of the Laplace approximation}
+\item{Q_Gaussian_median}{A 5x5 matrix representing the precision matrix of the Gaussian_median approximation}
 
 \item{n_weights}{Number of weights to be calculated}
 
@@ -28,7 +28,7 @@ log_unnormalized_importance_weights_and_integrals(
 A list with three elements: log_unnormalized_weights, log_unnormalized_weights_smoothed and the k-diagnostic for PSIS
 }
 \description{
-Calculates the unnormalized log importance weights, mean, variance, and KL divergences between the importance approximation and the Laplace approximation
+Calculates the unnormalized log importance weights, mean, variance, and KL divergences between the importance approximation and the Gaussian_median approximation
 }
 \examples{
 # Defines the log prior density function of theta for PC and non-PC priors
@@ -51,7 +51,7 @@ log_posterior_pc <- function(theta) {
   )
 }
 # Calculates the importance weights, mean, variance, and KL divergences
-mu_Laplace <- c(0, 0, 0, 0, 0)
-Q_Laplace <- diag(5)
-log_unnormalized_importance_weights_and_integrals(log_posterior_pc, mu_Laplace, Q_Laplace, n_weights = 1000)
+mu_Gaussian_median <- c(0, 0, 0, 0, 0)
+Q_Gaussian_median <- diag(5)
+log_unnormalized_importance_weights_and_integrals(log_posterior_pc, mu_Gaussian_median, Q_Gaussian_median, n_weights = 1000)
 }

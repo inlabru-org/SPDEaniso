@@ -98,15 +98,15 @@ for (i in 1:number_of_loops) {
         theta0 = unlist(true_params) + delta
       )
 
-      # Laplace approximation
-      mu_Laplace_pc <- map_pc$par
-      mu_Laplace_not_pc <- map_not_pc$par
-      Q_Laplace_pc <- -map_pc$hessian
-      Q_Laplace_not_pc <- -map_not_pc$hessian
-      Covariance_Laplace_pc <- solve(Q_Laplace_pc)
-      Covariance_Laplace_not_pc <- solve(Q_Laplace_not_pc)
-      std_dev_estimates_Laplace_pc <- sqrt(diag(Covariance_Laplace_pc))
-      std_dev_estimates_Laplace_not_pc <- sqrt(diag(Covariance_Laplace_not_pc))
+      # Gaussian_median approximation
+      mu_Gaussian_median_pc <- map_pc$par
+      mu_Gaussian_median_not_pc <- map_not_pc$par
+      Q_Gaussian_median_pc <- -map_pc$hessian
+      Q_Gaussian_median_not_pc <- -map_not_pc$hessian
+      Covariance_Gaussian_median_pc <- solve(Q_Gaussian_median_pc)
+      Covariance_Gaussian_median_not_pc <- solve(Q_Gaussian_median_not_pc)
+      std_dev_estimates_Gaussian_median_pc <- sqrt(diag(Covariance_Gaussian_median_pc))
+      std_dev_estimates_Gaussian_median_not_pc <- sqrt(diag(Covariance_Gaussian_median_not_pc))
       m_u <- 0
       log_posterior_pc <- function(theta) {
         log_kappa <- theta[1]
@@ -136,12 +136,12 @@ for (i in 1:number_of_loops) {
       # degrees of freedom
       importance_pc <- log_unnormalized_importance_weights_and_integrals(
         log_posterior_density = log_posterior_pc,
-        mu_Laplace = mu_Laplace_pc, Q_Laplace = Q_Laplace_pc,
+        mu_Gaussian_median = mu_Gaussian_median_pc, Q_Gaussian_median = Q_Gaussian_median_pc,
         n_weights = number_of_weights, q = confidence_level, true_params = unlist(true_params)
       )
       importance_not_pc <- log_unnormalized_importance_weights_and_integrals(
         log_posterior_density = log_posterior_not_pc,
-        mu_Laplace = mu_Laplace_not_pc, Q_Laplace = Q_Laplace_not_pc,
+        mu_Gaussian_median = mu_Gaussian_median_not_pc, Q_Gaussian_median = Q_Gaussian_median_not_pc,
         n_weights = number_of_weights, q = confidence_level, true_params = unlist(true_params)
       )
       # KL <- data.frame(
@@ -164,16 +164,16 @@ for (i in 1:number_of_loops) {
       # )
 
       # CIs
-      confidence_intervals_Laplace_pc <- importance_pc$confidence_intervals_Laplace
+      confidence_intervals_Gaussian_median_pc <- importance_pc$confidence_intervals_Gaussian_median
       confidence_intervals_importance_pc <- importance_pc$confidence_intervals_importance
       confidence_intervals_importance_smoothed_pc <- importance_pc$confidence_intervals_importance_smoothed
-      confidence_intervals_Laplace_not_pc <- importance_not_pc$confidence_intervals_Laplace
+      confidence_intervals_Gaussian_median_not_pc <- importance_not_pc$confidence_intervals_Gaussian_median
       confidence_intervals_importance_not_pc <- importance_not_pc$confidence_intervals_importance
       confidence_intervals_importance_smoothed_not_pc <- importance_not_pc$confidence_intervals_importance_smoothed
-      parameter_within_confidence_intervals_Laplace_pc <- parameter_within_confidence_intervals(true_params, confidence_intervals_Laplace_pc)
+      parameter_within_confidence_intervals_Gaussian_median_pc <- parameter_within_confidence_intervals(true_params, confidence_intervals_Gaussian_median_pc)
       parameter_within_confidence_intervals_importance_pc <- parameter_within_confidence_intervals(true_params, confidence_intervals_importance_pc)
       parameter_within_confidence_intervals_importance_smoothed_pc <- parameter_within_confidence_intervals(true_params, confidence_intervals_importance_smoothed_pc)
-      parameter_within_confidence_intervals_Laplace_not_pc <- parameter_within_confidence_intervals(true_params, confidence_intervals_Laplace_not_pc)
+      parameter_within_confidence_intervals_Gaussian_median_not_pc <- parameter_within_confidence_intervals(true_params, confidence_intervals_Gaussian_median_not_pc)
       parameter_within_confidence_intervals_importance_not_pc <- parameter_within_confidence_intervals(true_params, confidence_intervals_importance_not_pc)
       parameter_within_confidence_intervals_importance_smoothed_not_pc <- parameter_within_confidence_intervals(true_params, confidence_intervals_importance_smoothed_not_pc)
 
@@ -184,12 +184,12 @@ for (i in 1:number_of_loops) {
         MAP_value = map_pc$value,
         convergence = map_pc$convergence, # convergence = 0 no convergence =1
         distance_vector = abs(map_pc$par - unlist(true_params)), # a 5d vector
-        covariance_estimate = Covariance_Laplace_pc, # a 5x5 matrix
-        std_dev_estimates_Laplace = std_dev_estimates_Laplace_pc, # a 5d vector
-        confidence_intervals_Laplace = confidence_intervals_Laplace_pc,
+        covariance_estimate = Covariance_Gaussian_median_pc, # a 5x5 matrix
+        std_dev_estimates_Gaussian_median = std_dev_estimates_Gaussian_median_pc, # a 5d vector
+        confidence_intervals_Gaussian_median = confidence_intervals_Gaussian_median_pc,
         confidence_intervals_importance = confidence_intervals_importance_pc,
         confidence_intervals_importance_smoothed = confidence_intervals_importance_smoothed_pc,
-        true_parameter_within_c_interval_Laplace = parameter_within_confidence_intervals_Laplace_pc, # a 5d vector
+        true_parameter_within_c_interval_Gaussian_median = parameter_within_confidence_intervals_Gaussian_median_pc, # a 5d vector
         true_parameter_within_c_interval_importance = parameter_within_confidence_intervals_importance_pc,
         true_parameter_within_c_interval_importance_smoothed = parameter_within_confidence_intervals_importance_smoothed_pc,
         importance_pc = importance_pc
@@ -200,12 +200,12 @@ for (i in 1:number_of_loops) {
         MAP_value = map_not_pc$value,
         convergence = map_not_pc$convergence, # convergence = 0 no convergence =1
         distance_vector = abs(map_not_pc$par - unlist(true_params)), # a 5d vector
-        covariance_estimate = Covariance_Laplace_not_pc, # a 5x5 matrix
-        std_dev_estimates_Laplace = sqrt(diag(Covariance_Laplace_not_pc)), # a 5d vector
-        confidence_intervals_Laplace = confidence_intervals_Laplace_not_pc,
+        covariance_estimate = Covariance_Gaussian_median_not_pc, # a 5x5 matrix
+        std_dev_estimates_Gaussian_median = sqrt(diag(Covariance_Gaussian_median_not_pc)), # a 5d vector
+        confidence_intervals_Gaussian_median = confidence_intervals_Gaussian_median_not_pc,
         confidence_intervals_importance = confidence_intervals_importance_not_pc,
         confidence_intervals_importance_smoothed = confidence_intervals_importance_smoothed_not_pc,
-        true_parameter_within_c_interval_Laplace = parameter_within_confidence_intervals_Laplace_not_pc, # a 5d vector
+        true_parameter_within_c_interval_Gaussian_median = parameter_within_confidence_intervals_Gaussian_median_not_pc, # a 5d vector
         true_parameter_within_c_interval_importance = parameter_within_confidence_intervals_importance_not_pc,
         true_parameter_within_c_interval_importance_smoothed = parameter_within_confidence_intervals_importance_smoothed_not_pc,
         importance_not_pc = importance_not_pc
@@ -235,8 +235,8 @@ for (i in 1:number_of_loops) {
 not_null_indices <- sapply(results, function(x) !is.null(x$pc$importance_pc$log_unnormalized_weights))
 results <- results[not_null_indices]
 prior_types <- c("pc", "not_pc")
-approximation_types <- c("Laplace", "importance", "importance_smoothed")
-parameter_names <- rownames(results[[1]]$pc$confidence_intervals_Laplace)
+approximation_types <- c("Gaussian_median", "importance", "importance_smoothed")
+parameter_names <- rownames(results[[1]]$pc$confidence_intervals_Gaussian_median)
 
 mean_distances <- list()
 mean_std_dev <- list()
@@ -255,8 +255,8 @@ for (prior_type in prior_types) {
     hist(all_distances, main = paste("Distance to MAP for", parameter_names[[i]], prior_type), xlab = "Distance")
   }
 
-  std_dev_estimates_Laplace <- do.call(rbind, lapply(results, function(x) x[[prior_type]]$std_dev_estimates_Laplace))
-  mean_std_dev[[prior_type]] <- colMeans(std_dev_estimates_Laplace)
+  std_dev_estimates_Gaussian_median <- do.call(rbind, lapply(results, function(x) x[[prior_type]]$std_dev_estimates_Gaussian_median))
+  mean_std_dev[[prior_type]] <- colMeans(std_dev_estimates_Gaussian_median)
 
   names(mean_distances[[prior_type]]) <- names(results[[1]][[prior_type]]$distance_vector)
   print(paste("Mean distances for", prior_type))
@@ -324,7 +324,7 @@ for (prior_type in prior_types) {
   }
 }
 # Set the row names of the data frame to the parameter names
-rownames(within_ci) <- rownames(results[[1]]$pc$confidence_intervals_Laplace)
+rownames(within_ci) <- rownames(results[[1]]$pc$confidence_intervals_Gaussian_median)
 
 # Create a bar plot for each parameter
 
@@ -334,35 +334,35 @@ for (i in seq_len(nrow(within_ci))) {
   midpoints <- barplot(unlist(within_ci[i, ]), main = rownames(within_ci)[i], ylab = "Proportion within CI", ylim = c(0, 1))
   text(x = midpoints, y = unlist(within_ci[i, ]) + 0.02, labels = round(unlist(within_ci[i, ]), 2), pos = 3, cex = 0.8)
 }
-KL_Laplace <- data.frame(
-  KL_unsmoothed_pc_Laplace = sort(unlist(sapply(results, function(x) x$pc$importance_pc$KL_divergence_importance_Laplace))),
-  KL_unsmoothed_not_pc_Laplace = sort(unlist(sapply(results, function(x) x$not_pc$importance_not_pc$KL_divergence_importance_Laplace))),
-  KL_smoothed_pc_Laplace = sort(unlist(sapply(results, function(x) x$pc$importance_pc$KL_divergence_smoothed_importance_Laplace))),
-  KL_smoothed_not_pc_Laplace = sort(unlist(sapply(results, function(x) x$not_pc$importance_not_pc$KL_divergence_smoothed_importance_Laplace)))
+KL_Gaussian_median <- data.frame(
+  KL_unsmoothed_pc_Gaussian_median = sort(unlist(sapply(results, function(x) x$pc$importance_pc$KL_divergence_importance_Gaussian_median))),
+  KL_unsmoothed_not_pc_Gaussian_median = sort(unlist(sapply(results, function(x) x$not_pc$importance_not_pc$KL_divergence_importance_Gaussian_median))),
+  KL_smoothed_pc_Gaussian_median = sort(unlist(sapply(results, function(x) x$pc$importance_pc$KL_divergence_smoothed_importance_Gaussian_median))),
+  KL_smoothed_not_pc_Gaussian_median = sort(unlist(sapply(results, function(x) x$not_pc$importance_not_pc$KL_divergence_smoothed_importance_Gaussian_median)))
 )
 
-# Histogram of the KL divergences between the Laplace and importance samples
+# Histogram of the KL divergences between the Gaussian_median and importance samples
 par(mfrow = c(2, 2))
-hist(KL_Laplace$KL_unsmoothed_pc_Laplace, main = "KL(unsmoothed PC, Laplace)", xlab = "KL divergence")
-hist(KL_Laplace$KL_unsmoothed_not_pc_Laplace, main = "KL(unsmoothed not PC, Laplace)", xlab = "KL divergence")
-hist(KL_Laplace$KL_smoothed_pc_Laplace, main = "KL(smoothed PC, Laplace)", xlab = "KL divergence")
-hist(KL_Laplace$KL_smoothed_not_pc_Laplace, main = "KL(smoothed not PC, Laplace)", xlab = "KL divergence")
+hist(KL_Gaussian_median$KL_unsmoothed_pc_Gaussian_median, main = "KL(unsmoothed PC, Gaussian_median)", xlab = "KL divergence")
+hist(KL_Gaussian_median$KL_unsmoothed_not_pc_Gaussian_median, main = "KL(unsmoothed not PC, Gaussian_median)", xlab = "KL divergence")
+hist(KL_Gaussian_median$KL_smoothed_pc_Gaussian_median, main = "KL(smoothed PC, Gaussian_median)", xlab = "KL divergence")
+hist(KL_Gaussian_median$KL_smoothed_not_pc_Gaussian_median, main = "KL(smoothed not PC, Gaussian_median)", xlab = "KL divergence")
 ggplot(rbind(
-  data.frame(model = "PC", generator = "Laplace", IS = "unsmoothed", KL = KL_Laplace$KL_unsmoothed_pc_Laplace),
-  data.frame(model = "PC", generator = "Laplace", IS = "smoothed", KL = KL_Laplace$KL_smoothed_pc_Laplace),
-  data.frame(model = "NOT_PC", generator = "Laplace", IS = "unsmoothed", KL = KL_Laplace$KL_unsmoothed_not_pc_Laplace),
-  data.frame(model = "NOT_PC", generator = "Laplace", IS = "smoothed", KL = KL_Laplace$KL_smoothed_not_pc_Laplace)
+  data.frame(model = "PC", generator = "Gaussian_median", IS = "unsmoothed", KL = KL_Gaussian_median$KL_unsmoothed_pc_Gaussian_median),
+  data.frame(model = "PC", generator = "Gaussian_median", IS = "smoothed", KL = KL_Gaussian_median$KL_smoothed_pc_Gaussian_median),
+  data.frame(model = "NOT_PC", generator = "Gaussian_median", IS = "unsmoothed", KL = KL_Gaussian_median$KL_unsmoothed_not_pc_Gaussian_median),
+  data.frame(model = "NOT_PC", generator = "Gaussian_median", IS = "smoothed", KL = KL_Gaussian_median$KL_smoothed_not_pc_Gaussian_median)
 )) +
   stat_ecdf(aes(KL, col = model, linetype = IS))
 # +  facet_wrap(vars(IS, model))
 # We also store the mean of the KL divergences
-KL_Laplace_mean <- data.frame(
-  KL_unsmoothed_pc_Laplace = mean(KL_Laplace$KL_unsmoothed_pc_Laplace),
-  KL_unsmoothed_not_pc_Laplace = mean(KL_Laplace$KL_unsmoothed_not_pc_Laplace),
-  KL_smoothed_pc_Laplace = mean(KL_Laplace$KL_smoothed_pc_Laplace),
-  KL_smoothed_not_pc_Laplace = mean(KL_Laplace$KL_smoothed_not_pc_Laplace)
+KL_Gaussian_median_mean <- data.frame(
+  KL_unsmoothed_pc_Gaussian_median = mean(KL_Gaussian_median$KL_unsmoothed_pc_Gaussian_median),
+  KL_unsmoothed_not_pc_Gaussian_median = mean(KL_Gaussian_median$KL_unsmoothed_not_pc_Gaussian_median),
+  KL_smoothed_pc_Gaussian_median = mean(KL_Gaussian_median$KL_smoothed_pc_Gaussian_median),
+  KL_smoothed_not_pc_Gaussian_median = mean(KL_Gaussian_median$KL_smoothed_not_pc_Gaussian_median)
 )
-print(KL_Laplace_mean)
+print(KL_Gaussian_median_mean)
 
 # We check whether the quantiles P[theta<=theta^*] are uniformly distributed
 par(mfrow = c(2, 3))

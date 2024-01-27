@@ -71,7 +71,7 @@ log_posterior_pc <- function(theta) {
     )
 }
 
-########## LAPLACE APPROXIMATION TO THE POSTERIOR############
+########## Gaussian_median APPROXIMATION TO THE POSTERIOR############
 maxit <- 600
 tryCatch({
     # Calculating the MAP under each prior knowing simulated data
@@ -85,23 +85,23 @@ tryCatch({
     error <- function(e) {}
 })
 
-Q_Laplace <- -map_pc$hessian
-covariance_Laplace <- solve(Q_Laplace)
+Q_Gaussian_median <- -map_pc$hessian
+covariance_Gaussian_median <- solve(Q_Gaussian_median)
 
 
 
-log_laplace <- function(theta, Q) {
+log_Gaussian_median <- function(theta, Q) {
     logGdensity(
         x = theta, mu = map_pc$par, Q = Q
     )
 }
 # ---------------------- IMPORTANCE SAMPLING ----------------------
-# Simulate from Laplace approximation
+# Simulate from Gaussian_median approximation
 n_sim <- 1000
 precision_multiplier <- 1.2
-theta_sim <- MASS::mvrnorm(n_sim, map_pc$par, covariance_Laplace / precision_multiplier)
+theta_sim <- MASS::mvrnorm(n_sim, map_pc$par, covariance_Gaussian_median / precision_multiplier)
 log_ratio_function <- function(theta) {
-    log_posterior_pc(theta) - log_laplace(theta, Q_Laplace * precision_multiplier)
+    log_posterior_pc(theta) - log_Gaussian_median(theta, Q_Gaussian_median * precision_multiplier)
 }
 
 # Calculate the importance weights
@@ -139,5 +139,3 @@ plot.ecdf(exp(psis_result$log_weights) / mean(exp(psis_result$log_weights)), add
 # hist(log_importance_ratios_2)
 # hist(log_importance_ratios_2 - psis_result$log_weights)
 # log_importance_ratios_2 - psis_result$log_weights
-
-

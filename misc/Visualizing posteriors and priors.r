@@ -126,11 +126,11 @@ log_posterior_not_pc <- function(log_kappa, v, log_sigma_u, log_sigma_epsilon) {
 
 
 
-########## UNNORMALIZED LAPLACE APPROXIMATIONS TO THE POSTERIOR SET TO MATCH VALUE OF  LOG POSTERIOR AT MAP_PC############
+########## UNNORMALIZED Gaussian_median APPROXIMATIONS TO THE POSTERIOR SET TO MATCH VALUE OF  LOG POSTERIOR AT MAP_PC############
 
 hessian_pc <- map_pc$hessian
 
-log_laplace_density_pc <- function(theta) {
+log_Gaussian_median_density_pc <- function(theta) {
     logGdensity(
         x = theta, mu = map_pc$par, Q = -hessian_pc
     ) - logGdensity(
@@ -140,7 +140,7 @@ log_laplace_density_pc <- function(theta) {
 
 hessian_not_pc <- map_not_pc$hessian
 
-log_laplace_density_not_pc <- function(theta) {
+log_Gaussian_median_density_not_pc <- function(theta) {
     logGdensity(
         x = theta, mu = map_not_pc$par, Q = -hessian_not_pc
     ) - logGdensity(
@@ -258,32 +258,32 @@ plotter <- function(map) {
         )
     }
 
-    log_laplace_log_kappa <- function(log_kappa) {
-        log_laplace_density_pc(
+    log_Gaussian_median_log_kappa <- function(log_kappa) {
+        log_Gaussian_median_density_pc(
             theta = c(log_kappa, map$par[2:5])
         )
     }
 
-    log_laplace_v1 <- function(v1) {
-        log_laplace_density_pc(
+    log_Gaussian_median_v1 <- function(v1) {
+        log_Gaussian_median_density_pc(
             theta = c(map$par[1], v1, map$par[3:5])
         )
     }
 
-    log_laplace_v2 <- function(v2) {
-        log_laplace_density_pc(
+    log_Gaussian_median_v2 <- function(v2) {
+        log_Gaussian_median_density_pc(
             theta = c(map$par[1:2], v2, map$par[4:5])
         )
     }
 
-    log_laplace_log_sigma_u <- function(log_sigma_u) {
-        log_laplace_density_pc(
+    log_Gaussian_median_log_sigma_u <- function(log_sigma_u) {
+        log_Gaussian_median_density_pc(
             theta = c(map$par[1:3], log_sigma_u, map$par[5])
         )
     }
 
-    log_laplace_log_sigma_epsilon <- function(log_sigma_epsilon) {
-        log_laplace_density_pc(
+    log_Gaussian_median_log_sigma_epsilon <- function(log_sigma_epsilon) {
+        log_Gaussian_median_density_pc(
             theta = c(map$par[1:4], log_sigma_epsilon)
         )
     }
@@ -368,11 +368,11 @@ plotter <- function(map) {
     posterior_values_v2_not_pc <- sapply(partition_v2, log_posterior_not_pc_v2)
     posterior_values_log_sigma_u_not_pc <- sapply(partition_log_sigma_u, log_posterior_not_pc_log_sigma_u)
     posterior_values_log_sigma_epsilon_not_pc <- sapply(partition_log_sigma_epsilon, log_posterior_not_pc_log_sigma_epsilon)
-    laplace_values_log_kappa <- sapply(partition_log_kappa, log_laplace_log_kappa)
-    laplace_values_v1 <- sapply(partition_v1, log_laplace_v1)
-    laplace_values_v2 <- sapply(partition_v2, log_laplace_v2)
-    laplace_values_log_sigma_u <- sapply(partition_log_sigma_u, log_laplace_log_sigma_u)
-    laplace_values_log_sigma_epsilon <- sapply(partition_log_sigma_epsilon, log_laplace_log_sigma_epsilon)
+    Gaussian_median_values_log_kappa <- sapply(partition_log_kappa, log_Gaussian_median_log_kappa)
+    Gaussian_median_values_v1 <- sapply(partition_v1, log_Gaussian_median_v1)
+    Gaussian_median_values_v2 <- sapply(partition_v2, log_Gaussian_median_v2)
+    Gaussian_median_values_log_sigma_u <- sapply(partition_log_sigma_u, log_Gaussian_median_log_sigma_u)
+    Gaussian_median_values_log_sigma_epsilon <- sapply(partition_log_sigma_epsilon, log_Gaussian_median_log_sigma_epsilon)
     pc_prior_values_log_kappa <- sapply(partition_log_kappa, log_pc_log_kappa)
     pc_prior_values_v1 <- sapply(partition_v1, log_pc_v1)
     pc_prior_values_v2 <- sapply(partition_v2, log_pc_v2)
@@ -391,46 +391,46 @@ plotter <- function(map) {
     # Plot the results with a vertical line at the MAP_prior value of kappa
     plot(partition_log_kappa, posterior_values_log_kappa, type = "l", xlab = "log_kappa", ylab = "log density")
     points(partition_log_kappa, posterior_values_log_kappa_not_pc, type = "l", col = "orange")
-    points(partition_log_kappa, laplace_values_log_kappa, type = "l", col = "blue")
+    points(partition_log_kappa, Gaussian_median_values_log_kappa, type = "l", col = "blue")
     points(partition_log_kappa, pc_prior_values_log_kappa, type = "l", col = "green")
     points(partition_log_kappa, not_pc_prior_values_log_kappa, type = "l", col = "purple")
     abline(v = map$par[1], col = "red")
-    legend("bottomleft", legend = c("posterior_pc", "posterior_not_pc", "Laplace_pc", "pc_prior", "not_pc_prior"), col = c("black", "orange", "blue", "green", "purple"), pch = 1)
+    legend("bottomleft", legend = c("posterior_pc", "posterior_not_pc", "Gaussian_median_pc", "pc_prior", "not_pc_prior"), col = c("black", "orange", "blue", "green", "purple"), pch = 1)
 
     # Plot the results with a vertical line at the MAP_prior value of v1
     plot(partition_v1, posterior_values_v1, type = "l", xlab = "v1", ylab = "log density")
     points(partition_v1, posterior_values_v1_not_pc, type = "l", col = "orange")
-    points(partition_v1, laplace_values_v1, type = "l", col = "blue")
+    points(partition_v1, Gaussian_median_values_v1, type = "l", col = "blue")
     points(partition_v1, pc_prior_values_v1, type = "l", col = "green")
     points(partition_v1, not_pc_prior_values_v1, type = "l", col = "purple")
     abline(v = map$par[2], col = "red")
-    legend("bottomleft", legend = c("posterior_pc", "posterior_not_pc", "Laplace_pc", "pc_prior", "not_pc_prior"), col = c("black", "orange", "blue", "green", "purple"), pch = 1)
+    legend("bottomleft", legend = c("posterior_pc", "posterior_not_pc", "Gaussian_median_pc", "pc_prior", "not_pc_prior"), col = c("black", "orange", "blue", "green", "purple"), pch = 1)
     # Plot the results with a vertical line at the MAP_prior value of v2
     plot(partition_v2, posterior_values_v2, type = "l", xlab = "v2", ylab = "log density")
     points(partition_v2, posterior_values_v2_not_pc, type = "l", col = "orange")
-    points(partition_v2, laplace_values_v2, type = "l", col = "blue")
+    points(partition_v2, Gaussian_median_values_v2, type = "l", col = "blue")
     points(partition_v2, pc_prior_values_v2, type = "l", col = "green")
     points(partition_v2, not_pc_prior_values_v2, type = "l", col = "purple")
     abline(v = map$par[3], col = "red")
-    legend("bottomleft", legend = c("posterior_pc", "posterior_not_pc", "Laplace_pc", "pc_prior", "not_pc_prior"), col = c("black", "orange", "blue", "green", "purple"), pch = 1)
+    legend("bottomleft", legend = c("posterior_pc", "posterior_not_pc", "Gaussian_median_pc", "pc_prior", "not_pc_prior"), col = c("black", "orange", "blue", "green", "purple"), pch = 1)
 
     # Plot the results with a vertical line at the MAP_prior value of log_sigma_u
     plot(partition_log_sigma_u, posterior_values_log_sigma_u, type = "l", xlab = "log_sigma_u", ylab = "log density")
     points(partition_log_sigma_u, posterior_values_log_sigma_u_not_pc, type = "l", col = "orange")
-    points(partition_log_sigma_u, laplace_values_log_sigma_u, type = "l", col = "blue")
+    points(partition_log_sigma_u, Gaussian_median_values_log_sigma_u, type = "l", col = "blue")
     points(partition_log_sigma_u, pc_prior_values_log_sigma_u, type = "l", col = "green")
     points(partition_log_sigma_u, not_pc_prior_values_log_sigma_u, type = "l", col = "purple")
     abline(v = map$par[4], col = "red")
-    legend("bottomleft", legend = c("posterior_pc", "posterior_not_pc", "Laplace_pc", "pc_prior", "not_pc_prior"), col = c("black", "orange", "blue", "green", "purple"), pch = 1)
+    legend("bottomleft", legend = c("posterior_pc", "posterior_not_pc", "Gaussian_median_pc", "pc_prior", "not_pc_prior"), col = c("black", "orange", "blue", "green", "purple"), pch = 1)
 
     # Plot the results with a vertical line at the MAP_prior value of log_sigma_epsilon
     plot(partition_log_sigma_epsilon, posterior_values_log_sigma_epsilon, type = "l", xlab = "log_sigma_epsilon", ylab = "log density")
     points(partition_log_sigma_epsilon, posterior_values_log_sigma_epsilon_not_pc, type = "l", col = "orange")
-    points(partition_log_sigma_epsilon, laplace_values_log_sigma_epsilon, type = "l", col = "blue")
+    points(partition_log_sigma_epsilon, Gaussian_median_values_log_sigma_epsilon, type = "l", col = "blue")
     points(partition_log_sigma_epsilon, pc_prior_values_log_sigma_epsilon, type = "l", col = "green")
     points(partition_log_sigma_epsilon, not_pc_prior_values_log_sigma_epsilon, type = "l", col = "purple")
     abline(v = map$par[5], col = "red")
-    legend("bottomleft", legend = c("posterior_pc", "posterior_not_pc", "Laplace_pc", "pc_prior", "not_pc_prior"), col = c("black", "orange", "blue", "green", "purple"), pch = 1)
+    legend("bottomleft", legend = c("posterior_pc", "posterior_not_pc", "Gaussian_median_pc", "pc_prior", "not_pc_prior"), col = c("black", "orange", "blue", "green", "purple"), pch = 1)
 }
 
 plotter(map = map_pc)
