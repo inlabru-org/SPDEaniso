@@ -74,7 +74,7 @@ log_pc_prior <- log_pc_prior_quantile(
 )
 
 log_not_pc_prior <- log_gaussian_prior_quantile(
-  sigma_u0 = 10 * sigma_u0, sigma_epsilon0 = sigma_epsilon0,
+  sigma_u0 = sigma_u0, sigma_epsilon0 = sigma_epsilon0,
   a0 = a0, rho0 = rho0, alpha = alpha
 )
 
@@ -115,7 +115,7 @@ plot(mesh)
 
 # Sample from noisy data
 aniso <- list(rep(kappa, n), matrix(v, n, 2))
-x <- fm_aniso_basis_weights_sample(x = mesh, aniso = aniso)
+x <- fm_aniso_basis_weights_sample(x = mesh, aniso = aniso, log_sigma = log_sigma_u)
 A <- Matrix::Diagonal(n, 1)
 y <- A %*% x + exp(log_sigma_epsilon) * stats::rnorm(n)
 

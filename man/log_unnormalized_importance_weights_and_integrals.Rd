@@ -9,7 +9,8 @@ log_unnormalized_importance_weights_and_integrals(
   mu_Laplace,
   Q_Laplace,
   n_weights,
-  q = 0.05
+  q = 0.05,
+  true_params
 )
 }
 \arguments{

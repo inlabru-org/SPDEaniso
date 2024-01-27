@@ -4,10 +4,10 @@
 \alias{calculate_probabilities}
 \title{Calculate the probabilities P\link{theta_i <= theta^*_i}}
 \usage{
-calculate_probabilities(theta_star, theta, w)
+calculate_probabilities(theta_0, theta, w)
 }
 \arguments{
-\item{theta_star}{A vector representing the values theta^*_i.}
+\item{theta_0}{A vector representing the values theta^*_i.}
 
 \item{theta}{A vector representing the sample.}
 

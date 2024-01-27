@@ -43,15 +43,15 @@ log_not_pc_prior <- log_gaussian_prior_quantile(
 library(sf)
 boundary_sf <- st_sfc(st_polygon(list(rbind(c(0, 0.01), c(10, 0.01), c(10, 10), c(0, 10), c(0, 0.01)))))
 boundary <- fm_as_segm(boundary_sf)
-mesh <- fm_mesh_2d_inla(boundary = boundary, max.edge = c(3, 3))
+mesh <- fm_mesh_2d_inla(boundary = boundary, max.edge = c(5, 5))
 nodes <- mesh$loc
 n <- mesh$n
 par(mfrow = c(1, 1))
 plot(mesh)
 
-number_of_loops <- 200 # number of iterations
+number_of_loops <- 2 # number of iterations
 maxit_MAP <- 600
-number_of_weights <- 20000
+number_of_weights <- 100
 confidence_level <- 0.05
 results <- vector("list", number_of_loops) # Pre-allocates a list for m iterations
 
@@ -75,8 +75,13 @@ for (i in 1:number_of_loops) {
 
       # Sample from noisy data
       x <- fm_aniso_basis_weights_sample(x = mesh, aniso = aniso, log_sigma = log_sigma_u)
-      A <- Matrix::Diagonal(n, 1)
-      y <- A %*% x + exp(log_sigma_epsilon) * stats::rnorm(n)
+      # To only observe the field at some of the nodes we set A to be rectangualr of size mxn
+      m <- round(n / 4)
+      A <- matrix(0, m, n)
+      A[1:m, 1:m] <- diag(m)
+      y <- A %*% x + rnorm(m, 0, exp(log_sigma_epsilon))
+
+
 
       # Calculating the MAP under each prior knowing simulated data
       # Takes around 20s with mesh size 1 (554 degrees of freedom) and scales linearly in degrees of freedom
@@ -132,12 +137,12 @@ for (i in 1:number_of_loops) {
       importance_pc <- log_unnormalized_importance_weights_and_integrals(
         log_posterior_density = log_posterior_pc,
         mu_Laplace = mu_Laplace_pc, Q_Laplace = Q_Laplace_pc,
-        n_weights = number_of_weights, q = confidence_level
+        n_weights = number_of_weights, q = confidence_level, true_params = unlist(true_params)
       )
       importance_not_pc <- log_unnormalized_importance_weights_and_integrals(
         log_posterior_density = log_posterior_not_pc,
         mu_Laplace = mu_Laplace_not_pc, Q_Laplace = Q_Laplace_not_pc,
-        n_weights = number_of_weights, q = confidence_level
+        n_weights = number_of_weights, q = confidence_level, true_params = unlist(true_params)
       )
       # KL <- data.frame(
       #   KL_unsmoothed_pc_not_pc = KL_discrete_log_unnormalized_weights(
@@ -269,7 +274,7 @@ calculate_lengths <- function(results, prior_type, approximation_type) {
   ci_type <- paste0("confidence_intervals_", approximation_type)
   mean_lengths <- c()
 
-  for (i in 1:length(parameter_names)) {
+  for (i in seq_along(parameter_names)) {
     all_lengths <- c()
 
     for (j in seq_along(results)) {
@@ -342,7 +347,14 @@ hist(KL_Laplace$KL_unsmoothed_pc_Laplace, main = "KL(unsmoothed PC, Laplace)", x
 hist(KL_Laplace$KL_unsmoothed_not_pc_Laplace, main = "KL(unsmoothed not PC, Laplace)", xlab = "KL divergence")
 hist(KL_Laplace$KL_smoothed_pc_Laplace, main = "KL(smoothed PC, Laplace)", xlab = "KL divergence")
 hist(KL_Laplace$KL_smoothed_not_pc_Laplace, main = "KL(smoothed not PC, Laplace)", xlab = "KL divergence")
-
+ggplot(rbind(
+  data.frame(model = "PC", generator = "Laplace", IS = "unsmoothed", KL = KL_Laplace$KL_unsmoothed_pc_Laplace),
+  data.frame(model = "PC", generator = "Laplace", IS = "smoothed", KL = KL_Laplace$KL_smoothed_pc_Laplace),
+  data.frame(model = "NOT_PC", generator = "Laplace", IS = "unsmoothed", KL = KL_Laplace$KL_unsmoothed_not_pc_Laplace),
+  data.frame(model = "NOT_PC", generator = "Laplace", IS = "smoothed", KL = KL_Laplace$KL_smoothed_not_pc_Laplace)
+)) +
+  stat_ecdf(aes(KL, col = model, linetype = IS))
+# +  facet_wrap(vars(IS, model))
 # We also store the mean of the KL divergences
 KL_Laplace_mean <- data.frame(
   KL_unsmoothed_pc_Laplace = mean(KL_Laplace$KL_unsmoothed_pc_Laplace),
