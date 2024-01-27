@@ -75,7 +75,7 @@ for (i in 1:number_of_loops) {
 
       # Sample from noisy data
       x <- fm_aniso_basis_weights_sample(x = mesh, aniso = aniso, log_sigma = log_sigma_u)
-      # To only observe the field at some of the nodes we set A to be rectangualr of size mxn
+      # To only observe the field at some of the nodes we set A to be rectangular of size m x n
       m <- round(n / 4)
       A <- matrix(0, m, n)
       A[1:m, 1:m] <- diag(m)
