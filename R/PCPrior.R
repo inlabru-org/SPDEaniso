@@ -764,11 +764,15 @@ calculate_probabilities <- function(theta_0, theta, w) {
 
     # Finds probabilities
     probabilities <- df$cum_w[which(df$theta <= theta_0)]
-    return(probabilities[length(probabilities)])
+    if (length(probabilities) > 0) {
+      return(probabilities[length(probabilities)])
+    } else {
+      return(0) # or NA, or any other value that makes sense in your context
+    }
   }
 
   # Apply the function to each dimension of theta
-  sapply(1:length(theta_0), function(i) probability(theta[, i], w, theta_0[i]))
+  sapply(1:seq_along(theta_0), function(i) probability(theta[, i], w, theta_0[i]))
 }
 #' @title Calculate confidence intervals for Gaussian
 #' @description Calculates the confidence intervals for a Gaussian distribution.

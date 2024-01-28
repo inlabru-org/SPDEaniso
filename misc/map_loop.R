@@ -9,6 +9,7 @@ library(future)
 library(future.apply)
 library(loo)
 library(dplyr)
+library(tidyverse)
 document()
 
 # Set the parallel plan to use all local cores (currently not used as future package doesn't recognize functions in prior.R)
@@ -43,15 +44,15 @@ log_not_pc_prior <- log_gaussian_prior_quantile(
 library(sf)
 boundary_sf <- st_sfc(st_polygon(list(rbind(c(0, 0.01), c(10, 0.01), c(10, 10), c(0, 10), c(0, 0.01)))))
 boundary <- fm_as_segm(boundary_sf)
-mesh <- fm_mesh_2d_inla(boundary = boundary, max.edge = c(5, 5))
+mesh <- fm_mesh_2d_inla(boundary = boundary, max.edge = c(3, 3))
 nodes <- mesh$loc
 n <- mesh$n
 par(mfrow = c(1, 1))
 plot(mesh)
 
-number_of_loops <- 2 # number of iterations
+number_of_loops <- 200 # number of iterations
 maxit_MAP <- 600
-number_of_weights <- 100
+number_of_weights <- 20000
 confidence_level <- 0.05
 results <- vector("list", number_of_loops) # Pre-allocates a list for m iterations
 
@@ -334,49 +335,98 @@ for (i in seq_len(nrow(within_ci))) {
   midpoints <- barplot(unlist(within_ci[i, ]), main = rownames(within_ci)[i], ylab = "Proportion within CI", ylim = c(0, 1))
   text(x = midpoints, y = unlist(within_ci[i, ]) + 0.02, labels = round(unlist(within_ci[i, ]), 2), pos = 3, cex = 0.8)
 }
-KL_Gaussian_median <- data.frame(
+KL <- data.frame(
   KL_unsmoothed_pc_Gaussian_median = sort(unlist(sapply(results, function(x) x$pc$importance_pc$KL_divergence_importance_Gaussian_median))),
   KL_unsmoothed_not_pc_Gaussian_median = sort(unlist(sapply(results, function(x) x$not_pc$importance_not_pc$KL_divergence_importance_Gaussian_median))),
   KL_smoothed_pc_Gaussian_median = sort(unlist(sapply(results, function(x) x$pc$importance_pc$KL_divergence_smoothed_importance_Gaussian_median))),
   KL_smoothed_not_pc_Gaussian_median = sort(unlist(sapply(results, function(x) x$not_pc$importance_not_pc$KL_divergence_smoothed_importance_Gaussian_median)))
 )
 
-# Histogram of the KL divergences between the Gaussian_median and importance samples
-par(mfrow = c(2, 2))
-hist(KL_Gaussian_median$KL_unsmoothed_pc_Gaussian_median, main = "KL(unsmoothed PC, Gaussian_median)", xlab = "KL divergence")
-hist(KL_Gaussian_median$KL_unsmoothed_not_pc_Gaussian_median, main = "KL(unsmoothed not PC, Gaussian_median)", xlab = "KL divergence")
-hist(KL_Gaussian_median$KL_smoothed_pc_Gaussian_median, main = "KL(smoothed PC, Gaussian_median)", xlab = "KL divergence")
-hist(KL_Gaussian_median$KL_smoothed_not_pc_Gaussian_median, main = "KL(smoothed not PC, Gaussian_median)", xlab = "KL divergence")
 ggplot(rbind(
-  data.frame(model = "PC", generator = "Gaussian_median", IS = "unsmoothed", KL = KL_Gaussian_median$KL_unsmoothed_pc_Gaussian_median),
-  data.frame(model = "PC", generator = "Gaussian_median", IS = "smoothed", KL = KL_Gaussian_median$KL_smoothed_pc_Gaussian_median),
-  data.frame(model = "NOT_PC", generator = "Gaussian_median", IS = "unsmoothed", KL = KL_Gaussian_median$KL_unsmoothed_not_pc_Gaussian_median),
-  data.frame(model = "NOT_PC", generator = "Gaussian_median", IS = "smoothed", KL = KL_Gaussian_median$KL_smoothed_not_pc_Gaussian_median)
+  data.frame(model = "PC", generator = "Gaussian_median", IS = "unsmoothed", KL = KL$KL_unsmoothed_pc_Gaussian_median),
+  data.frame(model = "PC", generator = "Gaussian_median", IS = "smoothed", KL = KL$KL_smoothed_pc_Gaussian_median),
+  data.frame(model = "NOT_PC", generator = "Gaussian_median", IS = "unsmoothed", KL = KL$KL_unsmoothed_not_pc_Gaussian_median),
+  data.frame(model = "NOT_PC", generator = "Gaussian_median", IS = "smoothed", KL = KL$KL_smoothed_not_pc_Gaussian_median)
 )) +
   stat_ecdf(aes(KL, col = model, linetype = IS))
-# +  facet_wrap(vars(IS, model))
 # We also store the mean of the KL divergences
 KL_Gaussian_median_mean <- data.frame(
-  KL_unsmoothed_pc_Gaussian_median = mean(KL_Gaussian_median$KL_unsmoothed_pc_Gaussian_median),
-  KL_unsmoothed_not_pc_Gaussian_median = mean(KL_Gaussian_median$KL_unsmoothed_not_pc_Gaussian_median),
-  KL_smoothed_pc_Gaussian_median = mean(KL_Gaussian_median$KL_smoothed_pc_Gaussian_median),
-  KL_smoothed_not_pc_Gaussian_median = mean(KL_Gaussian_median$KL_smoothed_not_pc_Gaussian_median)
+  KL_unsmoothed_pc_Gaussian_median = mean(KL$KL_unsmoothed_pc_Gaussian_median),
+  KL_unsmoothed_not_pc_Gaussian_median = mean(KL$KL_unsmoothed_not_pc_Gaussian_median),
+  KL_smoothed_pc_Gaussian_median = mean(KL$KL_smoothed_pc_Gaussian_median),
+  KL_smoothed_not_pc_Gaussian_median = mean(KL$KL_smoothed_not_pc_Gaussian_median)
 )
 print(KL_Gaussian_median_mean)
 
-# We check whether the quantiles P[theta<=theta^*] are uniformly distributed
-par(mfrow = c(2, 3))
+
+all_probabilities <- data.frame()
+
 for (prior_type in prior_types) {
   for (approximation_type in approximation_types) {
     probabilities <- sapply(results, function(x) x[[prior_type]][[paste0("importance_", prior_type)]][[paste0("probabilities_", approximation_type)]])
-    for (i in length(parameter_names)) {
-      hist(probabilities[i, ], main = paste("Histogram of P[theta<=MAP] for", parameter_names[[i]], "for", prior_type, approximation_type), xlab = "P[theta<=theta^*]")
-      # We also get the mean of the probabilities
-      print(paste("Mean of P[theta<=theta^*] for", parameter_names[[i]], "for", prior_type, approximation_type))
-      print(mean(probabilities[i, ]))
+    for (i in seq_along(parameter_names)) {
+      # If any element in probabilities[i, ] is numeric(0), replace it with 0
+      probabilities[i, ] <- sapply(probabilities[i, ], function(x) if (length(x) == 0) 0 else x)
+      # Create a data frame for the current probabilities and add it to all_probabilities
+      df <- data.frame(prob = unlist(probabilities[i, ]), parameter = parameter_names[[i]], prior = prior_type, approximation = approximation_type)
+      all_probabilities <- rbind(all_probabilities, df)
     }
   }
 }
+
+# Plot the ECDF for all probabilities
+ggplot(all_probabilities) +
+  stat_ecdf(aes(prob, col = prior, linetype = approximation)) +
+  geom_abline(slope = 1, intercept = 0, color = "red") + # Add this line
+  facet_wrap(~parameter)
+
+# Now we calculate the Kolmogorov-Smirnov statistic for each parameter and represent it in a point plot
+KS_results <- data.frame()
+
+for (i in seq_along(parameter_names)) {
+  # Get the probabilities for the current parameter
+  probabilities <- all_probabilities[all_probabilities$parameter == parameter_names[[i]], ]
+  # Calculate the KS statistic for each prior and approximation type
+  for (prior_type in prior_types) {
+    for (approximation_type in approximation_types) {
+      KS_result <- ks.test(probabilities[probabilities$prior == prior_type & probabilities$approximation == approximation_type, ]$prob, "punif")
+      # Add the KS statistic and p-value for the current parameter to the data frame
+      KS_results <- rbind(KS_results, data.frame(parameter = parameter_names[[i]], prior = prior_type, approximation = approximation_type, statistic = KS_result$statistic, p_value = KS_result$p.value))
+    }
+  }
+}
+# Get the unique parameters
+unique_parameters <- unique(KS_results$parameter)
+
+# Loop over the unique parameters
+for (param in unique_parameters) {
+  # Subset the data for the current parameter
+  subset_data <- KS_results[KS_results$parameter == param, ]
+
+  # Plot the KS statistic for the current parameter
+  p1 <- ggplot(subset_data) +
+    geom_point(aes(x = prior, y = statistic, color = prior, shape = approximation)) +
+    labs(title = paste("KS Statistic for", param))
+
+  # Plot the p-value for the current parameter
+  p2 <- ggplot(subset_data) +
+    geom_point(aes(x = prior, y = p_value, color = prior, shape = approximation)) +
+    labs(title = paste("p-value for", param))
+
+  # Print the plots
+  print(p1)
+  print(p2)
+}
+
+# Plot the KS statistic for each parameter
+ggplot(KS_results) +
+  geom_point(aes(x = parameter, y = statistic, color = prior, shape = approximation)) +
+  # facet_wrap(~parameter)
+
+  ggplot(KS_results) +
+  geom_point(aes(x = parameter, y = p_value, color = prior, shape = approximation)) +
+  facet_wrap(~parameter)
+
 
 
 
