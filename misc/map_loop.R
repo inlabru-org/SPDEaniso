@@ -133,8 +133,7 @@ for (i in 1:number_of_loops) {
           y = y, A = A, m_u = m_u
         )
       }
-      # Takes about 4s each with mesh size (1,1) and with 100 weights. Scales linearly in number of weights and
-      # degrees of freedom
+
       importance_pc <- log_unnormalized_importance_weights_and_integrals(
         log_posterior_density = log_posterior_pc,
         mu_Gaussian_median = mu_Gaussian_median_pc, Q_Gaussian_median = Q_Gaussian_median_pc,
@@ -145,24 +144,6 @@ for (i in 1:number_of_loops) {
         mu_Gaussian_median = mu_Gaussian_median_not_pc, Q_Gaussian_median = Q_Gaussian_median_not_pc,
         n_weights = number_of_weights, q = confidence_level, true_params = unlist(true_params)
       )
-      # KL <- data.frame(
-      #   KL_unsmoothed_pc_not_pc = KL_discrete_log_unnormalized_weights(
-      #     importance_pc$log_unnormalized_weights,
-      #     importance_not_pc$log_unnormalized_weights
-      #   ),
-      #   KL_smoothed_pc_not_pc = KL_discrete_log_unnormalized_weights(
-      #     importance_pc$log_unnormalized_weights_smoothed,
-      #     importance_not_pc$log_unnormalized_weights_smoothed
-      #   ),
-      #   KL_unsmoothed_pc_smoothed_pc = KL_discrete_log_unnormalized_weights(
-      #     importance_pc$log_unnormalized_weights,
-      #     importance_pc$log_unnormalized_weights_smoothed
-      #   ),
-      #   KL_unsmoothed_not_pc_smoothed_not_pc = KL_discrete_log_unnormalized_weights(
-      #     importance_not_pc$log_unnormalized_weights,
-      #     importance_not_pc$log_unnormalized_weights_smoothed
-      #   )
-      # )
 
       # CIs
       confidence_intervals_Gaussian_median_pc <- importance_pc$confidence_intervals_Gaussian_median
@@ -193,7 +174,7 @@ for (i in 1:number_of_loops) {
         true_parameter_within_c_interval_Gaussian_median = parameter_within_confidence_intervals_Gaussian_median_pc, # a 5d vector
         true_parameter_within_c_interval_importance = parameter_within_confidence_intervals_importance_pc,
         true_parameter_within_c_interval_importance_smoothed = parameter_within_confidence_intervals_importance_smoothed_pc,
-        importance_pc = importance_pc
+        importance = importance_pc
       )
       # Not-PC results
       not_pc_results <- list(
@@ -209,7 +190,7 @@ for (i in 1:number_of_loops) {
         true_parameter_within_c_interval_Gaussian_median = parameter_within_confidence_intervals_Gaussian_median_not_pc, # a 5d vector
         true_parameter_within_c_interval_importance = parameter_within_confidence_intervals_importance_not_pc,
         true_parameter_within_c_interval_importance_smoothed = parameter_within_confidence_intervals_importance_smoothed_not_pc,
-        importance_not_pc = importance_not_pc
+        importance = importance_not_pc
         # prob_MAP_greater = not_pc_prob_map                                      # a 5d vector
       )
 
@@ -336,10 +317,10 @@ for (i in seq_len(nrow(within_ci))) {
   text(x = midpoints, y = unlist(within_ci[i, ]) + 0.02, labels = round(unlist(within_ci[i, ]), 2), pos = 3, cex = 0.8)
 }
 KL <- data.frame(
-  KL_unsmoothed_pc_Gaussian_median = sort(unlist(sapply(results, function(x) x$pc$importance_pc$KL_divergence_importance_Gaussian_median))),
-  KL_unsmoothed_not_pc_Gaussian_median = sort(unlist(sapply(results, function(x) x$not_pc$importance_not_pc$KL_divergence_importance_Gaussian_median))),
-  KL_smoothed_pc_Gaussian_median = sort(unlist(sapply(results, function(x) x$pc$importance_pc$KL_divergence_smoothed_importance_Gaussian_median))),
-  KL_smoothed_not_pc_Gaussian_median = sort(unlist(sapply(results, function(x) x$not_pc$importance_not_pc$KL_divergence_smoothed_importance_Gaussian_median)))
+  KL_unsmoothed_pc_Gaussian_median = sort(unlist(sapply(results, function(x) x$pc$importance$KL_divergence_importance_Gaussian_median))),
+  KL_unsmoothed_not_pc_Gaussian_median = sort(unlist(sapply(results, function(x) x$not_pc$importance$KL_divergence_importance_Gaussian_median))),
+  KL_smoothed_pc_Gaussian_median = sort(unlist(sapply(results, function(x) x$pc$importance$KL_divergence_smoothed_importance_Gaussian_median))),
+  KL_smoothed_not_pc_Gaussian_median = sort(unlist(sapply(results, function(x) x$not_pc$importance$KL_divergence_smoothed_importance_Gaussian_median)))
 )
 
 ggplot(rbind(
@@ -363,16 +344,21 @@ all_probabilities <- data.frame()
 
 for (prior_type in prior_types) {
   for (approximation_type in approximation_types) {
-    probabilities <- sapply(results, function(x) x[[prior_type]][[paste0("importance_", prior_type)]][[paste0("probabilities_", approximation_type)]])
+    probabilities <- sapply(results, function(x) x[[prior_type]][["importance"]][[paste0("probabilities_", approximation_type)]])
     for (i in seq_along(parameter_names)) {
-      # If any element in probabilities[i, ] is numeric(0), replace it with 0
-      probabilities[i, ] <- sapply(probabilities[i, ], function(x) if (length(x) == 0) 0 else x)
+      # # If any element in probabilities[i, ] is numeric(0), replace it with 0
+      # probabilities[i, ] <- sapply(probabilities[i, ], function(x) if (length(x) == 0) 0 else x)
       # Create a data frame for the current probabilities and add it to all_probabilities
       df <- data.frame(prob = unlist(probabilities[i, ]), parameter = parameter_names[[i]], prior = prior_type, approximation = approximation_type)
       all_probabilities <- rbind(all_probabilities, df)
     }
   }
 }
+
+
+probabilities_importance <- calculate_probabilities(true_params, theta_sim_importance, weights_normalized)
+
+
 
 # Plot the ECDF for all probabilities
 ggplot(all_probabilities) +
@@ -417,9 +403,9 @@ ggplot(KS_results) +
 
 # We get the vector of k diagnostics and show the log weights are similar
 par(mfrow = c(1, 1))
-k_diagnostics <- sapply(results, function(x) x$pc$importance_pc$k_diagnostic)
+k_diagnostics <- sapply(results, function(x) x$pc$importance$k_diagnostic)
 hist(k_diagnostics, main = "Histogram of k diagnostics", xlab = "k diagnostic")
 par(mfrow = c(1, 2))
 j <- 1
-hist(results[[j]]$pc$importance_pc$log_unnormalized_weights_smoothed, main = "Log weights", xlab = "Log weight")
-hist(results[[j]]$pc$importance_pc$log_unnormalized_weights, main = "Log weights", xlab = "Log weight")
+hist(results[[j]]$pc$importance$log_unnormalized_weights_smoothed, main = "Log weights", xlab = "Log weight")
+hist(results[[j]]$pc$importance$log_unnormalized_weights, main = "Log weights", xlab = "Log weight")

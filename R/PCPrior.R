@@ -772,7 +772,7 @@ calculate_probabilities <- function(theta_0, theta, w) {
   }
 
   # Apply the function to each dimension of theta
-  sapply(1:seq_along(theta_0), function(i) probability(theta[, i], w, theta_0[i]))
+  sapply(seq_along(theta_0), function(i) probability(theta[, i], w, theta_0[i]))
 }
 #' @title Calculate confidence intervals for Gaussian
 #' @description Calculates the confidence intervals for a Gaussian distribution.
