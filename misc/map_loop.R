@@ -50,9 +50,9 @@ n <- mesh$n
 par(mfrow = c(1, 1))
 plot(mesh)
 
-number_of_loops <- 200 # number of iterations
+number_of_loops <- 2 # number of iterations
 maxit_MAP <- 600
-number_of_weights <- 20000
+number_of_weights <- 100
 confidence_level <- 0.05
 results <- vector("list", number_of_loops) # Pre-allocates a list for m iterations
 
@@ -214,7 +214,7 @@ for (i in 1:number_of_loops) {
   print(paste("Estimated time left:", seconds_to_hours_minutes_seconds(time_left)))
 }
 # Eliminates NULL results
-not_null_indices <- sapply(results, function(x) !is.null(x$pc$importance_pc$log_unnormalized_weights))
+not_null_indices <- sapply(results, function(x) !is.null(x$pc$importance$log_unnormalized_weights))
 results <- results[not_null_indices]
 prior_types <- c("pc", "not_pc")
 approximation_types <- c("Gaussian_median", "importance", "importance_smoothed")
@@ -356,7 +356,6 @@ for (prior_type in prior_types) {
 }
 
 
-probabilities_importance <- calculate_probabilities(true_params, theta_sim_importance, weights_normalized)
 
 
 
