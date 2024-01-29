@@ -41,9 +41,9 @@ The calculated log of the prior on  theta=(log(kappa),v, log(sigma_u), log(sigma
 }
 \description{
 Calculates  the log of the prior on the (log(kappa),v, log(sigma_u), log(sigma_epsilon))
-supposing log(|v|)~N(1,sigma_v^2) and log(kappa)~N(1,sigma_k^2)
+supposing log(|v|)~N(1,sigma_v^2) and kappa~Exp(lambda_k)
 and with PC priors on noise and variance of field, given certain quantiles.
-such that the anisotropy ratio exp(2|v|) is larger than a0 with probability alpha and the correlation range sqrt{8}/kappa is smaller than rho0 with probability alpha
+such that the anisotropy ratio exp(|v|) is larger than a0 with probability alpha and the correlation range sqrt{8}/kappa is smaller than rho0 with probability alpha
 }
 \examples{
 alpha_u <- 0.01

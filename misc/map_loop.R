@@ -44,7 +44,7 @@ log_not_pc_prior <- log_gaussian_prior_quantile(
 library(sf)
 boundary_sf <- st_sfc(st_polygon(list(rbind(c(0, 0.01), c(10, 0.01), c(10, 10), c(0, 10), c(0, 0.01)))))
 boundary <- fm_as_segm(boundary_sf)
-mesh <- fm_mesh_2d_inla(boundary = boundary, max.edge = c(3, 3))
+mesh <- fm_mesh_2d_inla(boundary = boundary, max.edge = c(2, 2))
 nodes <- mesh$loc
 n <- mesh$n
 par(mfrow = c(1, 1))
@@ -77,7 +77,7 @@ for (i in 1:number_of_loops) {
       # Sample from noisy data
       x <- fm_aniso_basis_weights_sample(x = mesh, aniso = aniso, log_sigma = log_sigma_u)
       # To only observe the field at some of the nodes we set A to be rectangular of size m x n
-      m <- round(n / 4)
+      m <- round(n / 10)
       A <- matrix(0, m, n)
       A[1:m, 1:m] <- diag(m)
       y <- A %*% x + rnorm(m, 0, exp(log_sigma_epsilon))
@@ -395,35 +395,12 @@ for (i in seq_along(parameter_names)) {
     }
   }
 }
-# Get the unique parameters
-unique_parameters <- unique(KS_results$parameter)
 
-# Loop over the unique parameters
-for (param in unique_parameters) {
-  # Subset the data for the current parameter
-  subset_data <- KS_results[KS_results$parameter == param, ]
-
-  # Plot the KS statistic for the current parameter
-  p1 <- ggplot(subset_data) +
-    geom_point(aes(x = prior, y = statistic, color = prior, shape = approximation)) +
-    labs(title = paste("KS Statistic for", param))
-
-  # Plot the p-value for the current parameter
-  p2 <- ggplot(subset_data) +
-    geom_point(aes(x = prior, y = p_value, color = prior, shape = approximation)) +
-    labs(title = paste("p-value for", param))
-
-  # Print the plots
-  print(p1)
-  print(p2)
-}
-
-# Plot the KS statistic for each parameter
 ggplot(KS_results) +
   geom_point(aes(x = parameter, y = statistic, color = prior, shape = approximation)) +
-  # facet_wrap(~parameter)
+  facet_wrap(~parameter)
 
-  ggplot(KS_results) +
+ggplot(KS_results) +
   geom_point(aes(x = parameter, y = p_value, color = prior, shape = approximation)) +
   facet_wrap(~parameter)
 

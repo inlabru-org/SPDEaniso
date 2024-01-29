@@ -120,9 +120,9 @@ lambda_quantile_kappa <- function(rho0, alpha_k = 0.01) {
 #'
 #' @description
 #' Calculates  the log of the prior on the (log(kappa),v, log(sigma_u), log(sigma_epsilon))
-#' supposing log(|v|)~N(1,sigma_v^2) and log(kappa)~N(1,sigma_k^2)
+#' supposing log(|v|)~N(1,sigma_v^2) and kappa~Exp(lambda_k)
 #' and with PC priors on noise and variance of field, given certain quantiles.
-#' such that the anisotropy ratio exp(2|v|) is larger than a0 with probability alpha and the correlation range sqrt{8}/kappa is smaller than rho0 with probability alpha
+#' such that the anisotropy ratio exp(|v|) is larger than a0 with probability alpha and the correlation range sqrt{8}/kappa is smaller than rho0 with probability alpha
 #'
 #' @param alpha A quantile in (0,1) for all the parameters. By default, alpha = 0.01
 #' @param alpha_u A quantile in (0,1) for the variance of the field. If NULL, alpha_u=alpha
@@ -210,6 +210,112 @@ log_gaussian_prior_quantile <- function(sigma_u0, sigma_epsilon0, a0, rho0, alph
   }
   return(log_prior)
 }
+
+#' @title Log uniform density
+#' @description Calculates the log of the uniform density on [a,b]
+#' @param a A number
+#' @param b A number
+#' @return The function for the log of the uniform density on [a,b]
+#' @export
+#' @examples
+#' a <- 0
+#' b <- 1
+#' log_uniform_density <- log_uniform_density(a = a, b = b)
+#' log_uniform_density(0.5)
+log_uniform_density <- function(a, b) {
+  log_uniform_density <- function(x) {
+    if (x < a || x > b) {
+      return(-Inf)
+    } else {
+      return(-log(b - a))
+    }
+  }
+  return(log_uniform_density)
+}
+
+#' @title Log uniform prior on anisotropy, noise and variance of field
+#' @description Calculates  the log of the prior on the (log(kappa),v, log(sigma_u), log(sigma_epsilon)) supposing:
+#' correlation range rho = sqrt(8)/kappa ~ Uniform(rho0/2,L),
+#' v1,v2 ~ Uniform(log(a0/2)/sqrt(2),log(2a0)/sqrt(2)), and with PC priors on noise and variance of field, given certain quantiles.
+#'
+#' @param rho0 A surprisingly small correlation range, correlation is not allowed to go below rho0/2
+#' @param L A surprisingly large correlation range (e.g. size of domain), correlation is not allowed to go above L
+#' @param a0 A surprisingly high ratio of anisotropy, in (1,infinity), anisotropy ratio is not allowed to go below a0/2 or above 2a0
+#' @param alpha A quantile in (0,1) for all the parameters. By default, alpha = 0.01
+#' @param alpha_u A quantile in (0,1) for the variance of the field. If NULL, alpha_u=alpha
+#' @param alpha_epsilon A quantile in (0,1) for the variance of the noise. If NULL, alpha_epsilon=alpha
+#' @param sigma_u0 A surprisingly high variance of field, in (0,infinity)
+#' @param sigma_epsilon0 A surprisingly high variance of noise, in (0,infinity)
+#'
+#' @return The calculated log of the prior on  theta=(log(kappa),v, log(sigma_u), log(sigma_epsilon))
+#' @export
+#' @examples
+#' alpha_u <- 0.01
+#' alpha_epsilon <- 0.01
+#' sigma_u0 <- 10
+#' sigma_epsilon0 <- 1
+#' a0 <- 10
+#' rho0 <- 0.1
+#' L <- 100
+#'
+#' log_prior <- log_prior_uniform(alpha_u = alpha_u, alpha_epsilon = alpha_epsilon, sigma_u0 = sigma_u0, sigma_epsilon0 = sigma_epsilon0, a0 = a0, rho0 = rho0, L = L)
+log_prior_uniform <- function(sigma_u0, sigma_epsilon0, a0, rho0, L, alpha = 0.01, alpha_u = NULL, alpha_epsilon = NULL) {
+  # This sets the NULL values to alpha
+  if (is.null(alpha_u)) {
+    alpha_u <- alpha
+  }
+  if (is.null(alpha_epsilon)) {
+    alpha_epsilon <- alpha
+  }
+  # This warns the user if alpha is not in (0,1)
+  if (alpha <= 0 || alpha >= 1) {
+    warning("alpha should be in (0,1)")
+  }
+  if (alpha_u <= 0 || alpha_u >= 1) {
+    warning("alpha_u should be in (0,1)")
+  }
+  if (alpha_epsilon <= 0 || alpha_epsilon >= 1) {
+    warning("alpha_epsilon should be in (0,1)")
+  }
+  # This warns the user if a0 is not greater than 1
+  if (a0 <= 1) {
+    warning("a0 should be greater than 1")
+  }
+  # This warns the user if rho0 is not greater than 0
+  if (rho0 < 0) {
+    warning("rho0 should be greater than 0")
+  }
+  # This warns the user if sigma_u0 is not greater than 0
+  if (sigma_u0 <= 0) {
+    warning("sigma_u0 should be greater than 0")
+  }
+  # This warns the user if sigma_epsilon0 is not greater than 0
+  if (sigma_epsilon0 <= 0) {
+    warning("sigma_epsilon0 should be greater than 0")
+  }
+
+  lambda_u <- lambda_variance_quantile(alpha_sigma = alpha_u, sigma0 = sigma_u0)
+  lambda_epsilon <- lambda_variance_quantile(alpha_sigma = alpha_epsilon, sigma0 = sigma_epsilon0)
+
+  # Defines the log prior
+  log_prior <- function(log_kappa, v, log_sigma_u, log_sigma_epsilon) {
+    # Terms for anisotropy
+    rho <- sqrt(8) / exp(log_kappa)
+    log_uniform_density_rho <- log_uniform_density(rho0 / 2, b = L)
+    log_uniform_density_v <- log_uniform_density(a = log(a0 / 2 / sqrt(2)), b = log(2 * a0 / sqrt(2)))
+    log_kappa_term <- log_uniform_density_rho(rho)
+    v_term <- log_uniform_density_v(v[1]) + log_uniform_density_v(v[2])
+
+    # Terms for variance
+    lambda_u <- lambda_variance_quantile(alpha_sigma = alpha_u, sigma0 = sigma_u0)
+    lambda_epsilon <- lambda_variance_quantile(alpha_sigma = alpha_epsilon, sigma0 = sigma_epsilon0)
+    variance_term <- log_pc_prior_noise_variance(lambda_epsilon = lambda_epsilon, log_sigma_epsilon = log_sigma_epsilon)
+    +log_pc_prior_noise_variance(lambda_epsilon = lambda_u, log_sigma_epsilon = log_sigma_u)
+  }
+  return(log_prior)
+}
+
+
 #' @title Log PC prior on theta=(log(kappa),v, log(sigma_u), log(sigma_epsilon)) given certain quantiles.
 #' @description Calculates  the log of the PC prior on the (log(kappa),v, log(sigma_u), log(sigma_epsilon)) given certain quantiles.
 #'

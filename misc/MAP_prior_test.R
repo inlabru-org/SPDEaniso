@@ -73,11 +73,14 @@ log_pc_prior <- log_pc_prior_quantile(
   a0 = a0, rho0 = rho0, alpha = alpha
 )
 
-log_not_pc_prior <- log_gaussian_prior_quantile(
-  sigma_u0 = sigma_u0, sigma_epsilon0 = sigma_epsilon0,
-  a0 = a0, rho0 = rho0, alpha = alpha
-)
+# log_not_pc_prior <- log_gaussian_prior_quantile(
+#   sigma_u0 = sigma_u0, sigma_epsilon0 = sigma_epsilon0,
+#   a0 = a0, rho0 = rho0, alpha = alpha
+# )
 
+# Uniform prior
+L <- 10
+log_not_pc_prior <- log_prior_uniform(sigma_u0 = sigma_u0, sigma_epsilon0 = sigma_epsilon0, a0 = a0, rho0 = rho0, L = L)
 
 ### Testing value of priors ###
 print("Testing that log_pc_prior is the same when using quantiles and hyper_parameters calculated by hand.")
@@ -106,7 +109,7 @@ log_pc_prior_theta(
 
 # Mesh definition
 library(sf)
-boundary_sf <- st_sfc(st_polygon(list(rbind(c(0, 0.01), c(10, 0.01), c(10, 10), c(0, 10), c(0, 0.01)))))
+boundary_sf <- st_sfc(st_polygon(list(rbind(c(0, 0.01), c(L, 0.01), c(L, L), c(0, L), c(0, 0.01)))))
 boundary <- fm_as_segm(boundary_sf)
 mesh <- fm_mesh_2d_inla(boundary = boundary, max.edge = c(2, 2))
 nodes <- mesh$loc
