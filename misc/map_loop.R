@@ -34,7 +34,14 @@ log_pc_prior <- log_pc_prior_quantile(
   a0 = a0, rho0 = rho0, alpha = alpha
 )
 
-prior_types <- c("pc", "not_pc", "uniform")
+log_priors <- list(
+  pc = log_pc_prior,
+  not_pc = log_not_pc_prior,
+  uniform = log_uniform_prior
+)
+prior_types <- setNames(as.list(names(log_priors)), names(log_priors))
+approximation_types <- list("Gaussian_median", "importance", "importance_smoothed")
+approximation_types <- setNames(approximation_types, approximation_types)
 
 log_not_pc_prior <- log_gaussian_prior_quantile(
   sigma_u0 = sigma_u0, sigma_epsilon0 = sigma_epsilon0,
@@ -53,7 +60,7 @@ n <- mesh$n
 par(mfrow = c(1, 1))
 plot(mesh)
 
-number_of_loops <- 10 # number of iterations
+number_of_loops <- 500 # number of iterations
 maxit_MAP <- 600
 number_of_weights <- 1000
 confidence_level <- 0.05
@@ -90,126 +97,90 @@ for (i in 1:number_of_loops) {
       # Calculating the MAP under each prior knowing simulated data
       # Takes around 20s with mesh size 1 (554 degrees of freedom) and scales linearly in degrees of freedom
       delta <- rnorm(5, 0, 1) # Used to randomize starting point of MAP
-      map_pc <- MAP_prior(
-        log_prior = log_pc_prior, mesh = mesh,
-        y = y, A = A, m_u = m_u, max_iterations = maxit_MAP,
-        theta0 = unlist(true_params) + delta
-      )
-
-      map_not_pc <- MAP_prior(
-        log_prior = log_not_pc_prior, mesh = mesh,
-        y = y, A = A, m_u = m_u, max_iterations = maxit_MAP,
-        theta0 = unlist(true_params) + delta
-      )
-
-      map_uniform <- MAP_prior(
-        log_prior = log_uniform_prior, mesh = mesh,
-        y = y, A = A, m_u = m_u, max_iterations = maxit_MAP,
-        theta0 = unlist(true_params) + delta
-      )
+      maps <- lapply(log_priors, function(log_prior) {
+        MAP_prior(
+          log_prior = log_prior, mesh = mesh,
+          y = y, A = A, m_u = m_u, max_iterations = maxit_MAP,
+          theta0 = unlist(true_params) + delta
+        )
+      })
 
 
-      # Gaussian_median approximation
-      mu_Gaussian_median_pc <- map_pc$par
-      mu_Gaussian_median_not_pc <- map_not_pc$par
-      Q_Gaussian_median_pc <- -map_pc$hessian
-      Q_Gaussian_median_not_pc <- -map_not_pc$hessian
-      Covariance_Gaussian_median_pc <- solve(Q_Gaussian_median_pc)
-      Covariance_Gaussian_median_not_pc <- solve(Q_Gaussian_median_not_pc)
-      std_dev_estimates_Gaussian_median_pc <- sqrt(diag(Covariance_Gaussian_median_pc))
-      std_dev_estimates_Gaussian_median_not_pc <- sqrt(diag(Covariance_Gaussian_median_not_pc))
+      # Gaussian_median approximations
+      mus_Gaussian_median <- lapply(maps, function(map) map$par)
+      Qs_Gaussian_median <- lapply(maps, function(map) -map$hessian)
+      Covariances_Gaussian_median <- lapply(Qs_Gaussian_median, function(Q) solve(Q))
+      std_dev_estimates_Gaussian_median <- lapply(Covariances_Gaussian_median, function(Covariance) sqrt(diag(Covariance)))
+
       m_u <- 0
-      log_posterior_pc <- function(theta) {
-        log_kappa <- theta[1]
-        v <- theta[2:3]
-        log_sigma_u <- theta[4]
-        log_sigma_epsilon <- theta[5]
-        log_posterior_prior(
-          log_prior = log_pc_prior,
-          mesh = mesh, log_kappa = log_kappa, v = v,
-          log_sigma_epsilon = log_sigma_epsilon, log_sigma_u = log_sigma_u,
-          y = y, A = A, m_u = m_u
-        )
-      }
-      log_posterior_not_pc <- function(theta) {
-        log_kappa <- theta[1]
-        v <- theta[2:3]
-        log_sigma_u <- theta[4]
-        log_sigma_epsilon <- theta[5]
-        log_posterior_prior(
-          log_prior = log_not_pc_prior,
-          mesh = mesh, log_kappa = log_kappa, v = v,
-          log_sigma_epsilon = log_sigma_epsilon, log_sigma_u = log_sigma_u,
-          y = y, A = A, m_u = m_u
-        )
-      }
 
-      importance_pc <- log_unnormalized_importance_weights_and_integrals(
-        log_posterior_density = log_posterior_pc,
-        mu_Gaussian_median = mu_Gaussian_median_pc, Q_Gaussian_median = Q_Gaussian_median_pc,
-        n_weights = number_of_weights, q = confidence_level, true_params = unlist(true_params)
-      )
-      importance_not_pc <- log_unnormalized_importance_weights_and_integrals(
-        log_posterior_density = log_posterior_not_pc,
-        mu_Gaussian_median = mu_Gaussian_median_not_pc, Q_Gaussian_median = Q_Gaussian_median_not_pc,
-        n_weights = number_of_weights, q = confidence_level, true_params = unlist(true_params)
-      )
+      log_posteriors <- lapply(log_priors, function(log_prior) {
+        function(theta) {
+          log_kappa <- theta[1]
+          v <- theta[2:3]
+          log_sigma_u <- theta[4]
+          log_sigma_epsilon <- theta[5]
+          log_posterior_prior(
+            log_prior = log_prior,
+            mesh = mesh, log_kappa = log_kappa, v = v,
+            log_sigma_epsilon = log_sigma_epsilon, log_sigma_u = log_sigma_u,
+            y = y, A = A, m_u = m_u
+          )
+        }
+      })
+
+      # Importance sampling
+      importances <- lapply(prior_types, function(prior_type) {
+        log_posterior <- log_posteriors[[prior_type]]
+        mu_Gaussian_median <- mus_Gaussian_median[[prior_type]]
+        Q_Gaussian_median <- Qs_Gaussian_median[[prior_type]]
+        log_unnormalized_importance_weights_and_integrals(
+          log_posterior_density = log_posteriors[[prior_type]],
+          mu_Gaussian_median = mu_Gaussian_median, Q_Gaussian_median = Q_Gaussian_median,
+          n_weights = number_of_weights, q = confidence_level, true_params = unlist(true_params)
+        )
+      })
 
       # CIs
-      confidence_intervals_Gaussian_median_pc <- importance_pc$confidence_intervals_Gaussian_median
-      confidence_intervals_importance_pc <- importance_pc$confidence_intervals_importance
-      confidence_intervals_importance_smoothed_pc <- importance_pc$confidence_intervals_importance_smoothed
-      confidence_intervals_Gaussian_median_not_pc <- importance_not_pc$confidence_intervals_Gaussian_median
-      confidence_intervals_importance_not_pc <- importance_not_pc$confidence_intervals_importance
-      confidence_intervals_importance_smoothed_not_pc <- importance_not_pc$confidence_intervals_importance_smoothed
-      parameter_within_confidence_intervals_Gaussian_median_pc <- parameter_within_confidence_intervals(true_params, confidence_intervals_Gaussian_median_pc)
-      parameter_within_confidence_intervals_importance_pc <- parameter_within_confidence_intervals(true_params, confidence_intervals_importance_pc)
-      parameter_within_confidence_intervals_importance_smoothed_pc <- parameter_within_confidence_intervals(true_params, confidence_intervals_importance_smoothed_pc)
-      parameter_within_confidence_intervals_Gaussian_median_not_pc <- parameter_within_confidence_intervals(true_params, confidence_intervals_Gaussian_median_not_pc)
-      parameter_within_confidence_intervals_importance_not_pc <- parameter_within_confidence_intervals(true_params, confidence_intervals_importance_not_pc)
-      parameter_within_confidence_intervals_importance_smoothed_not_pc <- parameter_within_confidence_intervals(true_params, confidence_intervals_importance_smoothed_not_pc)
+      confidence_intervals <- lapply(prior_types, function(prior_type) {
+        lapply(approximation_types, function(approximation_type) {
+          importances[[prior_type]][[paste0("confidence_intervals_", approximation_type)]]
+        })
+      })
+
+      true_parameter_is_within_CI <- lapply(prior_types, function(prior_type) {
+        lapply(approximation_types, function(approximation_type) {
+          parameter_within_confidence_intervals(true_params, confidence_intervals[[prior_type]][[approximation_type]])
+        })
+      })
 
 
       # Accumulate results
-      pc_results <- list(
-        MAP_estimate = map_pc$par, # a 5d vector
-        MAP_value = map_pc$value,
-        convergence = map_pc$convergence, # convergence = 0 no convergence =1
-        distance_vector = abs(map_pc$par - unlist(true_params)), # a 5d vector
-        covariance_estimate = Covariance_Gaussian_median_pc, # a 5x5 matrix
-        std_dev_estimates_Gaussian_median = std_dev_estimates_Gaussian_median_pc, # a 5d vector
-        confidence_intervals_Gaussian_median = confidence_intervals_Gaussian_median_pc,
-        confidence_intervals_importance = confidence_intervals_importance_pc,
-        confidence_intervals_importance_smoothed = confidence_intervals_importance_smoothed_pc,
-        true_parameter_within_c_interval_Gaussian_median = parameter_within_confidence_intervals_Gaussian_median_pc, # a 5d vector
-        true_parameter_within_c_interval_importance = parameter_within_confidence_intervals_importance_pc,
-        true_parameter_within_c_interval_importance_smoothed = parameter_within_confidence_intervals_importance_smoothed_pc,
-        importance = importance_pc
-      )
-      # Not-PC results
-      not_pc_results <- list(
-        MAP_estimate = map_not_pc$par, # a 5d vector
-        MAP_value = map_not_pc$value,
-        convergence = map_not_pc$convergence, # convergence = 0 no convergence =1
-        distance_vector = abs(map_not_pc$par - unlist(true_params)), # a 5d vector
-        covariance_estimate = Covariance_Gaussian_median_not_pc, # a 5x5 matrix
-        std_dev_estimates_Gaussian_median = sqrt(diag(Covariance_Gaussian_median_not_pc)), # a 5d vector
-        confidence_intervals_Gaussian_median = confidence_intervals_Gaussian_median_not_pc,
-        confidence_intervals_importance = confidence_intervals_importance_not_pc,
-        confidence_intervals_importance_smoothed = confidence_intervals_importance_smoothed_not_pc,
-        true_parameter_within_c_interval_Gaussian_median = parameter_within_confidence_intervals_Gaussian_median_not_pc, # a 5d vector
-        true_parameter_within_c_interval_importance = parameter_within_confidence_intervals_importance_not_pc,
-        true_parameter_within_c_interval_importance_smoothed = parameter_within_confidence_intervals_importance_smoothed_not_pc,
-        importance = importance_not_pc
-        # prob_MAP_greater = not_pc_prob_map                                      # a 5d vector
-      )
+      results_accumulator <- function(prior_type) {
+        # Return a list of the calculated values
+        list(
+          MAP_estimate = maps[[prior_type]]$par,
+          MAP_value = maps[[prior_type]]$value,
+          convergence = maps[[prior_type]]$convergence,
+          distance_vector = abs(maps[[prior_type]]$par - unlist(true_params)),
+          covariance_estimate = Covariances_Gaussian_median[[prior_type]],
+          std_dev_estimates_Gaussian_median = std_dev_estimates_Gaussian_median[[prior_type]],
+          confidence_intervals = lapply(approximation_types, function(approximation_type) {
+            confidence_intervals[[prior_type]][[approximation_type]]
+          }),
+          true_parameter_within_c_interval = lapply(approximation_types, function(approximation_type) {
+            true_parameter_is_within_CI[[prior_type]][[approximation_type]]
+          }),
+          importance = importances[[prior_type]]
+        )
+      }
+
 
       # Store results
-      results[[i]] <- list(
-        true_params = true_params,
-        pc = pc_results,
-        not_pc = not_pc_results
-        # ,KL = KL
+      partial_results <- lapply(prior_types, results_accumulator)
+      results[[i]] <- c(
+        list(true_params = true_params),
+        partial_results, prior_types
       )
     },
     error = function(e) {
@@ -226,7 +197,6 @@ for (i in 1:number_of_loops) {
 # Eliminates NULL results
 not_null_indices <- sapply(results, function(x) !is.null(x$pc$importance$log_unnormalized_weights))
 results <- results[not_null_indices]
-approximation_types <- c("Gaussian_median", "importance", "importance_smoothed")
 parameter_names <- rownames(results[[1]]$pc$confidence_intervals_Gaussian_median)
 
 mean_distances <- list()
@@ -295,7 +265,7 @@ for (prior_type in prior_types) {
 
 # Percentage of times the true parameter is within the confidence interval
 
-within_ci <- data.frame()
+within_ci <- data.flog_priors
 
 within_ci <- data.frame(matrix(ncol = 0, nrow = 5))
 for (prior_type in prior_types) {
@@ -348,7 +318,7 @@ KL_Gaussian_median_mean <- data.frame(
 )
 print(KL_Gaussian_median_mean)
 
-
+log_priors
 all_probabilities <- data.frame()
 
 for (prior_type in prior_types) {
@@ -378,7 +348,7 @@ ggplot(all_probabilities) +
 KS_results <- data.frame()
 
 for (i in seq_along(parameter_names)) {
-  # Get the probabilities for the current parameter
+  # Get the probabililog_priorse current parameter
   probabilities <- all_probabilities[all_probabilities$parameter == parameter_names[[i]], ]
   # Calculate the KS statistic for each prior and approximation type
   for (prior_type in prior_types) {
