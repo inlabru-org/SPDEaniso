@@ -9,7 +9,6 @@ library(future)
 library(future.apply)
 library(loo)
 library(dplyr)
-library(tidyverse)
 document()
 
 # Set the parallel plan to use all local cores (currently not used as future package doesn't recognize functions in prior.R)
@@ -35,14 +34,18 @@ log_pc_prior <- log_pc_prior_quantile(
   a0 = a0, rho0 = rho0, alpha = alpha
 )
 
+prior_types <- c("pc", "not_pc", "uniform")
+
 log_not_pc_prior <- log_gaussian_prior_quantile(
   sigma_u0 = sigma_u0, sigma_epsilon0 = sigma_epsilon0,
   a0 = a0, rho0 = rho0, alpha = alpha
 )
+L <- 10 # Length of domain
+log_uniform_prior <- log_prior_uniform(sigma_u0 = sigma_u0, sigma_epsilon0 = sigma_epsilon0, a0 = a0, rho0 = rho0, L = L)
 
 # Mesh definition
 library(sf)
-boundary_sf <- st_sfc(st_polygon(list(rbind(c(0, 0.01), c(10, 0.01), c(10, 10), c(0, 10), c(0, 0.01)))))
+boundary_sf <- st_sfc(st_polygon(list(rbind(c(0, 0.01), c(L, 0.01), c(L, L), c(0, L), c(0, 0.01)))))
 boundary <- fm_as_segm(boundary_sf)
 mesh <- fm_mesh_2d_inla(boundary = boundary, max.edge = c(2, 2))
 nodes <- mesh$loc
@@ -50,9 +53,9 @@ n <- mesh$n
 par(mfrow = c(1, 1))
 plot(mesh)
 
-number_of_loops <- 2 # number of iterations
+number_of_loops <- 10 # number of iterations
 maxit_MAP <- 600
-number_of_weights <- 100
+number_of_weights <- 1000
 confidence_level <- 0.05
 results <- vector("list", number_of_loops) # Pre-allocates a list for m iterations
 
@@ -98,6 +101,13 @@ for (i in 1:number_of_loops) {
         y = y, A = A, m_u = m_u, max_iterations = maxit_MAP,
         theta0 = unlist(true_params) + delta
       )
+
+      map_uniform <- MAP_prior(
+        log_prior = log_uniform_prior, mesh = mesh,
+        y = y, A = A, m_u = m_u, max_iterations = maxit_MAP,
+        theta0 = unlist(true_params) + delta
+      )
+
 
       # Gaussian_median approximation
       mu_Gaussian_median_pc <- map_pc$par
@@ -216,7 +226,6 @@ for (i in 1:number_of_loops) {
 # Eliminates NULL results
 not_null_indices <- sapply(results, function(x) !is.null(x$pc$importance$log_unnormalized_weights))
 results <- results[not_null_indices]
-prior_types <- c("pc", "not_pc")
 approximation_types <- c("Gaussian_median", "importance", "importance_smoothed")
 parameter_names <- rownames(results[[1]]$pc$confidence_intervals_Gaussian_median)
 
