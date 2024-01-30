@@ -319,14 +319,6 @@ ggplot(df, aes(x = approximation_type, y = value, color = prior_type)) +
 
 
 
-# Create a bar plot for each parameter
-
-layout(layout_matrix)
-
-for (i in seq_len(nrow(within_ci))) {
-  midpoints <- barplot(unlist(within_ci[i, ]), main = rownames(within_ci)[i], ylab = "Proportion within CI", ylim = c(0, 1))
-  text(x = midpoints, y = unlist(within_ci[i, ]) + 0.02, labels = round(unlist(within_ci[i, ]), 2), pos = 3, cex = 0.8)
-}
 KL <- data.frame(
   KL_unsmoothed_pc_Gaussian_median = sort(unlist(sapply(results, function(x) x$pc$importance$KL_divergence_importance_Gaussian_median))),
   KL_unsmoothed_not_pc_Gaussian_median = sort(unlist(sapply(results, function(x) x$not_pc$importance$KL_divergence_importance_Gaussian_median))),
