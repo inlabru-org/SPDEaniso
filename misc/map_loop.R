@@ -202,6 +202,28 @@ parameter_names <- rownames(results[[1]]$pc$confidence_intervals_Gaussian_median
 mean_distances <- list()
 mean_std_dev <- list()
 
+# Plots ecdf of distances to MAP using ggplot
+plot_distances_to_MAP <- function(results, prior_types) {
+  all_distances <- data.frame()
+
+  for (prior_type in prior_types) {
+    distances_to_MAP <- lapply(results, function(x) x[[prior_type]]$distance_vector)
+    distances_to_MAP <- do.call(rbind, distances_to_MAP)
+    distances_to_MAP <- as.data.frame(distances_to_MAP)
+    distances_to_MAP$iteration <- seq_len(nrow(distances_to_MAP))
+    distances_to_MAP <- reshape2::melt(distances_to_MAP, id.vars = "iteration")
+    distances_to_MAP$prior_type <- prior_type
+    all_distances <- rbind(all_distances, distances_to_MAP)
+  }
+
+  ggplot(all_distances) +
+    stat_ecdf(aes(value, color = prior_type)) +
+    facet_wrap(~variable)
+}
+
+plot_distances_to_MAP(results, prior_types)
+
+
 for (prior_type in prior_types) {
   par(mfrow = c(3, 2))
   mean_distances[[prior_type]] <- c()
