@@ -13,6 +13,21 @@ fdist <- function(r) {
   return(sqrt((1 / (48 * pi)) * (3 * cosh(2 * r) + 1)))
 }
 
+#' @title Complexity
+#' @description Calculates the complexity of the model
+#' @param log_kappa Logarithm of kappa
+#' @param v A two dimensional vector that controls the direction and magnitude of anisotropy
+#' @return The calculated complexity of the model
+#' @export
+#' @examples
+#' log_kappa <- -0.3
+#' v <- c(1, 2)
+#' complexity(log_kappa, v)
+complexity <- function(log_kappa, v) {
+  kappa <- exp(log_kappa)
+  v_norm <- sqrt(sum(v^2))
+  fdist(v_norm) * kappa
+}
 
 #' @title fdist_prime
 #' @description Calculates the derivative of the component of the distance from the flexible to the base model depending on |v|
@@ -869,18 +884,23 @@ log_unnormalized_importance_weights_and_integrals <- function(log_posterior_dens
   psis_result <- psis(log_importance_ratios, r_eff = NA)
   log_weights_smoothed <- psis_result$log_weights
 
-  # Calculate the mean, variance and KL divergences with unsmoothed weights
+  # Calculate the mean, variance, KL divergences and complexity with unsmoothed weights
   weights_normalized <- normalize_log_weights(log_importance_ratios)
   n_eff <- 1 / sum(weights_normalized^2)
   mean_importance <- apply(theta_sim_importance, 2, weighted.mean, w = weights_normalized)
   cov_importance <- stats::cov.wt(theta_sim_importance, wt = weights_normalized)$cov
   marginal_variance_importance <- diag(cov_importance)
+  complexity_values <- apply(theta_sim_importance, 1, function(theta) complexity(theta[1], theta[2:3]))
+  complexity_importance <- weighted.mean(complexity_values, w = weights_normalized)
 
-  # Calculate mean and variance using smoothed weights
+
+  # Calculate with smoothed weights
   weights_smoothed_normalized <- normalize_log_weights(log_weights_smoothed)
   mean_smoothed_importance <- apply(theta_sim_importance, 2, weighted.mean, w = weights_smoothed_normalized)
   cov_smoothed_importance <- stats::cov.wt(theta_sim_importance, wt = weights_smoothed_normalized)$cov
   marginal_variance_smoothed_importance <- diag(cov_smoothed_importance)
+  complexity_importance_smoothed <- weighted.mean(complexity_values, w = weights_smoothed_normalized)
+
 
   # Calculate a 95% confidence interval for each component of the parameters around its mean
   std_dev_Gaussian_median <- sqrt(diag(covariance_Gaussian_median))
@@ -907,8 +927,10 @@ log_unnormalized_importance_weights_and_integrals <- function(log_posterior_dens
     n_eff_smoothed = psis_result$diagnostics$n_eff,
     mean_importance = mean_importance,
     marginal_variance_importance = marginal_variance_importance,
+    complexity_importance = complexity_importance,
     mean_smoothed_importance = mean_smoothed_importance,
     marginal_variance_smoothed_importance = marginal_variance_smoothed_importance,
+    complexity_importance_smoothed = complexity_importance_smoothed,
     confidence_intervals_Gaussian_median = confidence_intervals_Gaussian_median,
     confidence_intervals_importance = confidence_intervals_importance,
     confidence_intervals_importance_smoothed = confidence_intervals_importance_smoothed,
