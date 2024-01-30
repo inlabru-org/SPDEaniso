@@ -292,27 +292,32 @@ plot_CI_lengths(lengths_df, prior_types, approximation_types)
 
 # Percentage of times the true parameter is within the confidence interval
 
-within_ci <- data.flog_priors
+within_ci <- lapply(prior_types, function(prior_type) {
+  lapply(approximation_types, function(approximation_type) {
+    rowMeans(sapply(results, function(x) x[[prior_type]][["true_parameter_within_c_interval"]][[approximation_type]]))
+  })
+})
+# Convert the list to a data frame
+df <- do.call(rbind, lapply(names(within_ci), function(prior_type) {
+  do.call(rbind, lapply(names(within_ci[[prior_type]]), function(approximation_type) {
+    data.frame(
+      prior_type = prior_type,
+      approximation_type = approximation_type,
+      parameter = factor(names(within_ci[[prior_type]][[approximation_type]]), levels = c("log_kappa", "v1", "v2", "log_sigma_u", "log_sigma_epsilon")),
+      value = c(within_ci[[prior_type]][[approximation_type]])
+    )
+  }))
+}))
 
-within_ci <- data.frame(matrix(ncol = 0, nrow = 5))
-for (prior_type in prior_types) {
-  for (approximation_type in approximation_types) {
-    prior_type_results <- c()
-    for (i in 1:5) {
-      all_results <- c()
-      for (j in seq_along(results)) {
-        within <- unlist(results[[j]][[prior_type]][paste0("true_parameter_within_c_interval_", approximation_type)])[i] * 1
-        all_results <- c(all_results, within)
-      }
-      proportion_within <- mean(all_results)
-      prior_type_results <- c(prior_type_results, proportion_within)
-    }
-    # Add the prior_type results as a new column in the data frame
-    within_ci[paste(prior_type, approximation_type, sep = "_")] <- prior_type_results
-  }
-}
-# Set the row names of the data frame to the parameter names
-rownames(within_ci) <- rownames(results[[1]]$pc$confidence_intervals_Gaussian_median)
+# Plot the points using ggplot
+ggplot(df, aes(x = approximation_type, y = value, color = prior_type)) +
+  geom_point() +
+  geom_text(aes(label = round(value, 2)), vjust = -0.5) +
+  facet_wrap(~parameter) +
+  labs(x = "Approximation Type", y = "Value") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+
 
 # Create a bar plot for each parameter
 
