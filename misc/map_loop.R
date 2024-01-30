@@ -197,10 +197,8 @@ for (i in 1:number_of_loops) {
 # Eliminates NULL results
 not_null_indices <- sapply(results, function(x) !is.null(x$pc$importance$log_unnormalized_weights))
 results <- results[not_null_indices]
-parameter_names <- rownames(results[[1]]$pc$confidence_intervals_Gaussian_median)
+parameter_names <- rownames(results[[1]]$pc$confidence_intervals$Gaussian_median)
 
-mean_distances <- list()
-mean_std_dev <- list()
 
 # Plots ecdf of distances to MAP using ggplot
 plot_distances_to_MAP <- function(results, prior_types) {
@@ -223,67 +221,74 @@ plot_distances_to_MAP <- function(results, prior_types) {
 
 plot_distances_to_MAP(results, prior_types)
 
-
-for (prior_type in prior_types) {
-  par(mfrow = c(3, 2))
-  mean_distances[[prior_type]] <- c()
-  for (i in seq_len(length(results[[1]][[prior_type]]$distance_vector))) {
-    all_distances <- c()
-    for (j in seq_along(results)) {
-      distance <- results[[j]][[prior_type]]$distance_vector[i]
-      all_distances <- c(all_distances, distance)
-    }
-    mean_distance <- mean(all_distances)
-    mean_distances[[prior_type]] <- c(mean_distances[[prior_type]], mean_distance)
-    hist(all_distances, main = paste("Distance to MAP for", parameter_names[[i]], prior_type), xlab = "Distance")
-  }
+# Mean distances and standard deviation estimates
+mean_distances <- lapply(prior_types, function(prior_type) {
+  mean_distances <- sapply(1:5, function(i) {
+    all_distances <- sapply(seq_along(results), function(j) {
+      results[[j]][[prior_type]]$distance_vector[i]
+    })
+    mean(all_distances)
+  })
 
   std_dev_estimates_Gaussian_median <- do.call(rbind, lapply(results, function(x) x[[prior_type]]$std_dev_estimates_Gaussian_median))
-  mean_std_dev[[prior_type]] <- colMeans(std_dev_estimates_Gaussian_median)
+  mean_std_dev <- colMeans(std_dev_estimates_Gaussian_median)
 
-  names(mean_distances[[prior_type]]) <- names(results[[1]][[prior_type]]$distance_vector)
+  names(mean_distances) <- parameter_names
   print(paste("Mean distances for", prior_type))
-  print(mean_distances[[prior_type]])
+  print(mean_distances)
   print(paste("Mean standard deviations for", prior_type))
-  print(mean_std_dev[[prior_type]])
-}
+  print(mean_std_dev)
+})
 
 
+# THere we test how to get the dataframe of confidence interval lengths using lapplyand for each approximation type
 
-# Credible intervals. Histogram of lengths.
+lengths_df <- lapply(prior_types, function(prior_type) {
+  lapply(approximation_types, function(approximation_type) {
+    lengths <- lapply(parameter_names, function(parameter_name) {
+      all_lengths <- sapply(seq_along(results), function(j) {
+        length <- diff(results[[j]][[prior_type]]$confidence_intervals[[approximation_type]][parameter_name, ])
+        length
+      })
+      all_lengths
+    })
+    lengths <- do.call(cbind, lengths)
+    colnames(lengths) <- parameter_names
+    lengths
+  })
+})
 
+mean_lengths_df <- lapply(lengths_df, function(prior_type) {
+  lapply(prior_type, function(approximation_type) {
+    colMeans(approximation_type)
+  })
+})
+print(mean_lengths_df)
 
-calculate_lengths <- function(results, prior_type, approximation_type) {
-  ci_type <- paste0("confidence_intervals_", approximation_type)
-  mean_lengths <- c()
+# We show a cdf of lengths_df using ggplot
+plot_CI_lengths <- function(lengths_df, prior_types, approximation_types) {
+  all_lengths <- data.frame()
 
-  for (i in seq_along(parameter_names)) {
-    all_lengths <- c()
-
-    for (j in seq_along(results)) {
-      length <- diff(results[[j]][[prior_type]][[ci_type]][i, ])
-      all_lengths <- c(all_lengths, length)
+  for (prior_type in prior_types) {
+    for (approximation_type in approximation_types) {
+      lengths <- lengths_df[[prior_type]][[approximation_type]]
+      lengths <- as.data.frame(lengths)
+      lengths$iteration <- seq_len(nrow(lengths))
+      lengths <- reshape2::melt(lengths, id.vars = "iteration") # Necessary to use ggplot as it expects a data frame in long format
+      lengths$prior_type <- prior_type
+      lengths$approximation_type <- approximation_type
+      all_lengths <- rbind(all_lengths, lengths)
     }
-
-    mean_length <- mean(all_lengths)
-    mean_lengths <- c(mean_lengths, mean_length)
-    hist(all_lengths, main = paste("Length of", ci_type, "of", parameter_names[[i]], "for", prior_type), xlab = "Length")
   }
 
-  print(paste("Mean lengths for", prior_type, ci_type))
-  print(mean_lengths)
+  ggplot(all_lengths) +
+    stat_ecdf(aes(value, color = prior_type, linetype = approximation_type)) +
+    facet_wrap(~variable)
 }
 
+plot_CI_lengths(lengths_df, prior_types, approximation_types)
 
-# Set layout
-layout_matrix <- rbind(c(1, 2, 3), c(4, 5, 0))
-layout(layout_matrix)
 
-for (prior_type in prior_types) {
-  for (approximation_type in approximation_types) {
-    calculate_lengths(results, prior_type, approximation_type)
-  }
-}
 
 # Percentage of times the true parameter is within the confidence interval
 
