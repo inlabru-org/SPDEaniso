@@ -135,7 +135,7 @@ for (i in 1:number_of_loops) {
         mu_Gaussian_median <- mus_Gaussian_median[[prior_type]]
         Q_Gaussian_median <- Qs_Gaussian_median[[prior_type]]
         log_unnormalized_importance_weights_and_integrals(
-          log_posterior_density = log_posteriors[[prior_type]],
+          log_posterior_density = log_posterior,
           mu_Gaussian_median = mu_Gaussian_median, Q_Gaussian_median = Q_Gaussian_median,
           n_weights = number_of_weights, q = confidence_level, true_params = unlist(true_params)
         )
@@ -298,7 +298,7 @@ within_ci <- lapply(prior_types, function(prior_type) {
   })
 })
 # Convert the list to a data frame
-df <- do.call(rbind, lapply(names(within_ci), function(prior_type) {
+within_ci <- do.call(rbind, lapply(names(within_ci), function(prior_type) {
   do.call(rbind, lapply(names(within_ci[[prior_type]]), function(approximation_type) {
     data.frame(
       prior_type = prior_type,
@@ -310,7 +310,7 @@ df <- do.call(rbind, lapply(names(within_ci), function(prior_type) {
 }))
 
 # Plot the points using ggplot
-ggplot(df, aes(x = approximation_type, y = value, color = prior_type)) +
+ggplot(within_ci, aes(x = approximation_type, y = value, color = prior_type)) +
   geom_point() +
   geom_text(aes(label = round(value, 2)), vjust = -0.5) +
   facet_wrap(~parameter) +
@@ -318,40 +318,55 @@ ggplot(df, aes(x = approximation_type, y = value, color = prior_type)) +
   theme(axis.text.x = element_text(angle = 90, hjust = 1))
 
 
+KL_approx_types <- list(importance = "importance", smoothed_importance = "smoothed_importance")
+KL <- lapply(prior_types, function(prior_type) {
+  lapply(KL_approx_types, function(approximation_type) {
+    sapply(results, function(x) {
+      kl_values <- x[[prior_type]]$importance[[paste0("KL_divergence_", approximation_type, "_Gaussian_median")]]
+      kl_values <- replace(kl_values, is.na(kl_values), Inf) # Replace NA values with Inf
+      kl_values
+    })
+  })
+})
 
-KL <- data.frame(
-  KL_unsmoothed_pc_Gaussian_median = sort(unlist(sapply(results, function(x) x$pc$importance$KL_divergence_importance_Gaussian_median))),
-  KL_unsmoothed_not_pc_Gaussian_median = sort(unlist(sapply(results, function(x) x$not_pc$importance$KL_divergence_importance_Gaussian_median))),
-  KL_smoothed_pc_Gaussian_median = sort(unlist(sapply(results, function(x) x$pc$importance$KL_divergence_smoothed_importance_Gaussian_median))),
-  KL_smoothed_not_pc_Gaussian_median = sort(unlist(sapply(results, function(x) x$not_pc$importance$KL_divergence_smoothed_importance_Gaussian_median)))
-)
+# ggplot of ecdf of KL divergences
+plot_KL_divergences <- function(KL, prior_types, approximation_types) {
+  all_KL <- data.frame()
+  for (prior_type in prior_types) {
+    for (approximation_type in KL_approx_types) {
+      KL_divergences <- KL[[prior_type]][[approximation_type]]
+      KL_divergences <- as.data.frame(KL_divergences)
+      KL_divergences$iteration <- seq_len(nrow(KL_divergences))
+      KL_divergences <- reshape2::melt(KL_divergences, id.vars = "iteration") # Necessary to use ggplot as it expects a data frame in long format
+      KL_divergences$prior_type <- prior_type
+      KL_divergences$approximation_type <- approximation_type
+      all_KL <- rbind(all_KL, KL_divergences)
+    }
+  }
 
-ggplot(rbind(
-  data.frame(model = "PC", generator = "Gaussian_median", IS = "unsmoothed", KL = KL$KL_unsmoothed_pc_Gaussian_median),
-  data.frame(model = "PC", generator = "Gaussian_median", IS = "smoothed", KL = KL$KL_smoothed_pc_Gaussian_median),
-  data.frame(model = "NOT_PC", generator = "Gaussian_median", IS = "unsmoothed", KL = KL$KL_unsmoothed_not_pc_Gaussian_median),
-  data.frame(model = "NOT_PC", generator = "Gaussian_median", IS = "smoothed", KL = KL$KL_smoothed_not_pc_Gaussian_median)
-)) +
-  stat_ecdf(aes(KL, col = model, linetype = IS))
-# We also store the mean of the KL divergences
-KL_Gaussian_median_mean <- data.frame(
-  KL_unsmoothed_pc_Gaussian_median = mean(KL$KL_unsmoothed_pc_Gaussian_median),
-  KL_unsmoothed_not_pc_Gaussian_median = mean(KL$KL_unsmoothed_not_pc_Gaussian_median),
-  KL_smoothed_pc_Gaussian_median = mean(KL$KL_smoothed_pc_Gaussian_median),
-  KL_smoothed_not_pc_Gaussian_median = mean(KL$KL_smoothed_not_pc_Gaussian_median)
-)
+  ggplot(all_KL) +
+    stat_ecdf(aes(value, color = prior_type, linetype = approximation_type)) +
+    facet_wrap(~variable)
+}
+
+plot_KL_divergences(KL, prior_types, approximation_types)
+
+# We calculate the mean of the KL divergences
+KL_Gaussian_median_mean <- lapply(prior_types, function(prior_type) {
+  lapply(KL_approx_types, function(approximation_type) {
+    mean(KL[[prior_type]][[approximation_type]])
+  })
+})
 print(KL_Gaussian_median_mean)
 
-log_priors
+
+# Probabilities that marginal posterior is smaller than true parameter
 all_probabilities <- data.frame()
 
 for (prior_type in prior_types) {
   for (approximation_type in approximation_types) {
     probabilities <- sapply(results, function(x) x[[prior_type]][["importance"]][[paste0("probabilities_", approximation_type)]])
     for (i in seq_along(parameter_names)) {
-      # # If any element in probabilities[i, ] is numeric(0), replace it with 0
-      # probabilities[i, ] <- sapply(probabilities[i, ], function(x) if (length(x) == 0) 0 else x)
-      # Create a data frame for the current probabilities and add it to all_probabilities
       df <- data.frame(prob = unlist(probabilities[i, ]), parameter = parameter_names[[i]], prior = prior_type, approximation = approximation_type)
       all_probabilities <- rbind(all_probabilities, df)
     }
@@ -393,14 +408,45 @@ ggplot(KS_results) +
   facet_wrap(~parameter)
 
 
+# Now we do the CDF of the complexity of the model
+complexity <- lapply(prior_types, function(prior_type) {
+  lapply(approximation_types[2:3], function(approximation_type) {
+    sapply(results, function(x) {
+      complexity <- x[[prior_type]]$importance[[paste0("complexity_", approximation_type)]]
+      complexity
+    })
+  })
+})
 
+# ggplot of ecdf of complexity
+plot_complexity <- function(complexity, prior_types, approximation_types) {
+  all_complexity <- data.frame()
+  for (prior_type in prior_types) {
+    for (approximation_type in approximation_types) {
+      complexity_values <- complexity[[prior_type]][[approximation_type]]
+      complexity_values <- as.data.frame(complexity_values)
+      complexity_values$iteration <- seq_len(nrow(complexity_values))
+      complexity_values <- reshape2::melt(complexity_values, id.vars = "iteration") # Necessary to use ggplot as it expects a data frame in long format
+      complexity_values$prior_type <- prior_type
+      complexity_values$approximation_type <- approximation_type
+      all_complexity <- rbind(all_complexity, complexity_values)
+    }
+  }
 
-# # Average variance of log unnormalized weights
-# var_weights <- sapply(results, function(x) var(normalize_log_weights(x$pc$importance_pc$log_unnormalized_weights)))
-# hist(var_weights, main = "Histogram of variances for PC", xlab = "Variance")
-#
-# var_weights_smoothed <- sapply(results, function(x) var(normalize_log_weights(x$pc$importance_pc$log_unnormalized_weights_smoothed)))
-# hist(var_weights_smoothed, main = "Histogram of variances for PC smoothed", xlab = "Variance")
+  ggplot(all_complexity) +
+    stat_ecdf(aes(value, color = prior_type, linetype = approximation_type)) +
+    facet_wrap(~variable)
+}
+
+plot_complexity(complexity, prior_types[2:3], approximation_types[2:3])
+
+# We calculate the mean of the complexity
+complexity_mean <- lapply(prior_types, function(prior_type) {
+  lapply(approximation_types[2:3], function(approximation_type) {
+    mean(complexity[[prior_type]][[approximation_type]])
+  })
+})
+print(complexity_mean)
 
 
 # We get the vector of k diagnostics and show the log weights are similar

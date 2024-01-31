@@ -73,14 +73,21 @@ log_pc_prior <- log_pc_prior_quantile(
   a0 = a0, rho0 = rho0, alpha = alpha
 )
 
-# log_not_pc_prior <- log_gaussian_prior_quantile(
-#   sigma_u0 = sigma_u0, sigma_epsilon0 = sigma_epsilon0,
-#   a0 = a0, rho0 = rho0, alpha = alpha
-# )
+log_not_pc_prior <- log_gaussian_prior_quantile(
+  sigma_u0 = sigma_u0, sigma_epsilon0 = sigma_epsilon0,
+  a0 = a0, rho0 = rho0, alpha = alpha
+)
 
 # Uniform prior
 L <- 10
-log_not_pc_prior <- log_prior_uniform(sigma_u0 = sigma_u0, sigma_epsilon0 = sigma_epsilon0, a0 = a0, rho0 = rho0, L = L)
+log_uniform_prior <- log_prior_uniform(sigma_u0 = sigma_u0, sigma_epsilon0 = sigma_epsilon0, a0 = a0, rho0 = rho0, L = L)
+
+log_priors <- list(
+  pc = log_pc_prior,
+  not_pc = log_not_pc_prior,
+  uniform = log_uniform_prior
+)
+prior_types <- setNames(as.list(names(log_priors)), names(log_priors))
 
 ### Testing value of priors ###
 print("Testing that log_pc_prior is the same when using quantiles and hyper_parameters calculated by hand.")
@@ -138,33 +145,29 @@ tryCatch({
 })
 #### TESTING MAP_prior ####
 
-# Defining the log posterior density as a function of the parameters using the log_pc_prior
-log_posterior_pc <- function(log_kappa, v, log_sigma_u, log_sigma_epsilon) {
-  log_posterior_prior(
-    log_prior = log_pc_prior,
-    mesh = mesh, log_kappa = log_kappa, v = v,
-    log_sigma_epsilon = log_sigma_epsilon, log_sigma_u = log_sigma_u,
-    y = y, A = A, m_u = m_u
-  )
-}
+# Defining the log posterior
+log_posteriors <- lapply(log_priors, function(log_prior) {
+  function(log_kappa, v, log_sigma_u, log_sigma_epsilon) {
+    log_posterior_prior(
+      log_prior = log_prior,
+      mesh = mesh, log_kappa = log_kappa, v = v,
+      log_sigma_epsilon = log_sigma_epsilon, log_sigma_u = log_sigma_u,
+      y = y, A = A, m_u = m_u
+    )
+  }
+})
 
 print("Checking if map is larger than posterior value at true parameters. ")
-map_pc$value > log_posterior_pc(
-  log_kappa = log_kappa, v = v, log_sigma_u = log_sigma_u,
-  log_sigma_epsilon = log_sigma_epsilon
-)
+map_pc$value > log_posteriors$pc(log_kappa, v, log_sigma_u, log_sigma_epsilon)
 
 print("Checking if value for map is the same as posterior value at map parameters. ")
-map_pc$value == log_posterior_pc(
-  log_kappa = map_pc$par[1], v = map_pc$par[2:3],
-  log_sigma_u = map_pc$par[4], log_sigma_epsilon = map_pc$par[5]
-)
+map_pc$value == log_posteriors$pc(map_pc$par[1], map_pc$par[2:3], map_pc$par[4], map_pc$par[5])
 
 print("Checking if MAP_prior with PC priors returns the same thing as MAP using PC priors defined through hyperparameters")
 
 map_hyper <- MAP_pc(mesh, lambda, lambda1, lambda_epsilon, lambda_u,
   y, A, m_u,
-  max_iterations = maxit, theta0 = unlist(true_params)
+  max_iterations = maxit, theta0 = unlist(true_params) + delta
 )
 map_hyper$value == map_pc$value & map_hyper$par == map_pc$par
 
@@ -182,228 +185,136 @@ log_Gaussian_median <- function(theta) {
   )
 }
 ### UNNORMALIZED LOG PRIOR###
-log_pc_prior_unnormalized <- function(log_kappa, v, log_sigma_u, log_sigma_epsilon) {
-  log_pc_prior(
-    log_kappa = log_kappa, v = v,
-    log_sigma_u = log_sigma_u, log_sigma_epsilon = log_sigma_epsilon
-  ) + map_pc$value - log_pc_prior(
-    log_kappa = map_pc$par[1], v = map_pc$par[2:3],
-    log_sigma_u = map_pc$par[4], log_sigma_epsilon = map_pc$par[5]
-  )
+unnormalize_prior_and_posterior <- function(log_prior) {
+  function(log_kappa, v1, v2, log_sigma_u, log_sigma_epsilon) {
+    log_prior(
+      log_kappa = log_kappa, v = c(v1, v2),
+      log_sigma_u = log_sigma_u, log_sigma_epsilon = log_sigma_epsilon
+    ) + map_pc$value - log_prior(
+      log_kappa = map_pc$par[1], v = map_pc$par[2:3],
+      log_sigma_u = map_pc$par[4], log_sigma_epsilon = map_pc$par[5]
+    )
+  }
 }
-log_not_pc_prior_unnormalized <- function(log_kappa, v, log_sigma_u, log_sigma_epsilon) {
-  log_not_pc_prior(
-    log_kappa = log_kappa, v = v,
-    log_sigma_u = log_sigma_u, log_sigma_epsilon = log_sigma_epsilon
-  ) + map_pc$value - log_not_pc_prior(
-    log_kappa = map_pc$par[1], v = map_pc$par[2:3],
-    log_sigma_u = map_pc$par[4], log_sigma_epsilon = map_pc$par[5]
-  )
+function_type <- list(prior = "prior", posterior = "posterior")
+
+unnormalized_priors <- lapply(log_priors, unnormalize_prior_and_posterior)
+unnormalized_posteriors <- lapply(log_posteriors, unnormalize_prior_and_posterior)
+unnormalized_priors_and_posteriors <- list(prior = unnormalized_priors, posterior = unnormalized_posteriors)
+restricting_function_to_one_parameter <- function(f, x0) {
+  f_list <- lapply(seq_along(x0), function(i) {
+    function(x) {
+      x0_copy <- x0
+      x0_copy[i] <- x
+      unname(do.call(f, as.list(x0_copy)))
+    }
+  })
+  names(f_list) <- names(x0)
+  f_list
+}
+  # Mapping over list of priors and posteriors
+  # Gives a list of functions that take one parameter and return the unnormalized prior or posterior
+  # can access as unnormalized_priors_and_posteriors$function_type$prior_type$parameter_name
+  restricted_priors_and_posteriors <- lapply(unnormalized_priors_and_posteriors, function(prior_or_posterior) {
+    lapply(prior_or_posterior, restricting_function_to_one_parameter, map_pc$par)
+  })
+  
+  #We plot the unnormalized priors and posteriors using ggplot2
+  #One figure for each parameter
+  #Color determined by prior_type
+  #Line type determined by prior or posterior
+
+# Create a data frame for plotting
+plot_data <- do.call(rbind, lapply(names(restricted_priors_and_posteriors), function(function_type) {
+  do.call(rbind, lapply(names(restricted_priors_and_posteriors[[function_type]]), function(prior_type) {
+    do.call(rbind, lapply(names(restricted_priors_and_posteriors[[function_type]][[prior_type]]), function(parameter_name) {
+      data.frame(
+        Function = I(list(restricted_priors_and_posteriors[[function_type]][[prior_type]][[parameter_name]])),
+        Parameter = parameter_name,
+        FunctionType = function_type,
+        PriorType = prior_type,
+        stringsAsFactors = FALSE
+      )
+    }))
+  }))
+}))
+
+# Define a sequence of x values to evaluate the functions at
+x_seq <- seq(from = min(map_pc$par), to = max(map_pc$par), length.out = 100)
+
+# Create a list to store the ggplot objects
+plots <- list()
+
+# For each parameter, create a ggplot of the functions
+for (parameter in unique(plot_data$Parameter)) {
+  # Subset the data for the current parameter
+  parameter_data <- subset(plot_data, Parameter == parameter)
+  
+  # Create a ggplot
+  p <- ggplot() +
+    labs(title = paste("Unnormalized Priors and Posteriors for", parameter), x = "x", y = "Value") +
+    theme_minimal()
+  
+  # For each row in the data, add a line to the plot
+  for (i in seq_len(nrow(parameter_data))) {
+    p <- p + stat_function(fun = parameter_data$Function[[i]], 
+                           aes(color = parameter_data$PriorType[i], linetype = parameter_data$FunctionType[i]))
+  }
+  
+  # Add the plot to the list
+  plots[[parameter]] <- p
 }
 
-print("Plotting the posterior distribution of the parameters")
-
-plotter <- function(map) {
-  # Defines the log_pc_posterior density as a function of log_kappa keeping the other parameters fixed at the MAP
-  log_posterior_pc_log_kappa <- function(log_kappa) {
-    log_posterior_pc(
-      log_kappa = log_kappa, v = map$par[2:3],
-      log_sigma_u = map$par[4], log_sigma_epsilon = map$par[5]
-    )
-  }
-  # Defines the log_pc_posterior density as a function of v1 keeping the other parameters fixed at the MAP
-  log_posterior_pc_v1 <- function(v1) {
-    log_posterior_pc(
-      log_kappa = map$par[1], v = c(v1, map$par[3]),
-      log_sigma_u = map$par[4], log_sigma_epsilon = map$par[5]
-    )
-  }
-  # Defines the log_pc_posterior density as a function of v2 keeping the other parameters fixed at the MAP
-  log_posterior_pc_v2 <- function(v2) {
-    log_posterior_pc(
-      log_kappa = map$par[1], v = c(map$par[2], v2),
-      log_sigma_u = map$par[4], log_sigma_epsilon = map$par[5]
-    )
-  }
-  # Defines the log_pc_posterior density as a function of log_sigma_u keeping the other parameters fixed at the MAP
-  log_posterior_pc_log_sigma_u <- function(log_sigma_u) {
-    log_posterior_pc(
-      log_kappa = map$par[1], v = map$par[2:3],
-      log_sigma_u = log_sigma_u, log_sigma_epsilon = map$par[5]
-    )
-  }
-  # Defines the log_pc_posterior density as a function of log_sigma_epsilon keeping the other parameters fixed at the MAP
-  log_posterior_pc_log_sigma_epsilon <- function(log_sigma_epsilon) {
-    log_posterior_pc(
-      log_kappa = map$par[1], v = map$par[2:3],
-      log_sigma_u = map$par[4], log_sigma_epsilon = log_sigma_epsilon
-    )
-  }
-  log_Gaussian_median_log_kappa <- function(log_kappa) {
-    log_Gaussian_median(
-      theta = c(log_kappa, map$par[2:5])
-    )
-  }
-
-  log_Gaussian_median_v1 <- function(v1) {
-    log_Gaussian_median(
-      theta = c(map$par[1], v1, map$par[3:5])
-    )
-  }
-
-  log_Gaussian_median_v2 <- function(v2) {
-    log_Gaussian_median(
-      theta = c(map$par[1:2], v2, map$par[4:5])
-    )
-  }
-
-  log_Gaussian_median_log_sigma_u <- function(log_sigma_u) {
-    log_Gaussian_median(
-      theta = c(map$par[1:3], log_sigma_u, map$par[5])
-    )
-  }
-
-  log_Gaussian_median_log_sigma_epsilon <- function(log_sigma_epsilon) {
-    log_Gaussian_median(
-      theta = c(map$par[1:4], log_sigma_epsilon)
-    )
-  }
-  log_pc_log_kappa <- function(log_kappa) {
-    log_pc_prior_unnormalized(
-      log_kappa = log_kappa, v = map$par[2:3],
-      log_sigma_u = map$par[4], log_sigma_epsilon = map$par[5]
-    )
-  }
-  log_pc_v1 <- function(v1) {
-    log_pc_prior_unnormalized(
-      log_kappa = map$par[1], v = c(v1, map$par[3]),
-      log_sigma_u = map$par[4], log_sigma_epsilon = map$par[5]
-    )
-  }
-  log_pc_v2 <- function(v2) {
-    log_pc_prior_unnormalized(
-      log_kappa = map$par[1], v = c(map$par[2], v2),
-      log_sigma_u = map$par[4], log_sigma_epsilon = map$par[5]
-    )
-  }
-  log_pc_log_sigma_u <- function(log_sigma_u) {
-    log_pc_prior_unnormalized(
-      log_kappa = map$par[1], v = map$par[2:3],
-      log_sigma_u = log_sigma_u, log_sigma_epsilon = map$par[5]
-    )
-  }
-  log_pc_log_sigma_epsilon <- function(log_sigma_epsilon) {
-    log_pc_prior_unnormalized(
-      log_kappa = map$par[1], v = map$par[2:3],
-      log_sigma_u = map$par[4], log_sigma_epsilon = log_sigma_epsilon
-    )
-  }
-  log_not_pc_log_kappa <- function(log_kappa) {
-    log_not_pc_prior_unnormalized(
-      log_kappa = log_kappa, v = map$par[2:3],
-      log_sigma_u = map$par[4], log_sigma_epsilon = map$par[5]
-    )
-  }
-  log_not_pc_v1 <- function(v1) {
-    log_not_pc_prior_unnormalized(
-      log_kappa = map$par[1], v = c(v1, map$par[3]),
-      log_sigma_u = map$par[4], log_sigma_epsilon = map$par[5]
-    )
-  }
-  log_not_pc_v2 <- function(v2) {
-    log_not_pc_prior_unnormalized(
-      log_kappa = map$par[1], v = c(map$par[2], v2),
-      log_sigma_u = map$par[4], log_sigma_epsilon = map$par[5]
-    )
-  }
-  log_not_pc_log_sigma_u <- function(log_sigma_u) {
-    log_not_pc_prior_unnormalized(
-      log_kappa = map$par[1], v = map$par[2:3],
-      log_sigma_u = log_sigma_u, log_sigma_epsilon = map$par[5]
-    )
-  }
-  log_not_pc_log_sigma_epsilon <- function(log_sigma_epsilon) {
-    log_not_pc_prior_unnormalized(
-      log_kappa = map$par[1], v = map$par[2:3],
-      log_sigma_u = map$par[4], log_sigma_epsilon = log_sigma_epsilon
-    )
-  }
-
-  l <- 4 # l of the partition
-  # Defines the partitions for plotting
-  n_points <- 51 # Number of points in the partition centred at MAP_prior value of kappa
-
-  partition_log_kappa <- seq(map$par[1] - l, map$par[1] + l, length.out = n_points)
-  partition_v1 <- seq(map$par[2] - l, map$par[2] + l, length.out = n_points)
-  partition_v2 <- seq(map$par[3] - l, map$par[3] + l, length.out = n_points)
-  partition_log_sigma_u <- seq(map$par[4] - l, map$par[4] + l, length.out = n_points)
-  partition_log_sigma_epsilon <- seq(map$par[5] - l, map$par[5] + l, length.out = n_points)
-
-  # Apply the function to each point in the partition
-  posterior_values_log_kappa <- sapply(partition_log_kappa, log_posterior_pc_log_kappa)
-  posterior_values_v1 <- sapply(partition_v1, log_posterior_pc_v1)
-  posterior_values_v2 <- sapply(partition_v2, log_posterior_pc_v2)
-  posterior_values_log_sigma_u <- sapply(partition_log_sigma_u, log_posterior_pc_log_sigma_u)
-  posterior_values_log_sigma_epsilon <- sapply(partition_log_sigma_epsilon, log_posterior_pc_log_sigma_epsilon)
-  Gaussian_median_values_log_kappa <- sapply(partition_log_kappa, log_Gaussian_median_log_kappa)
-  Gaussian_median_values_v1 <- sapply(partition_v1, log_Gaussian_median_v1)
-  Gaussian_median_values_v2 <- sapply(partition_v2, log_Gaussian_median_v2)
-  Gaussian_median_values_log_sigma_u <- sapply(partition_log_sigma_u, log_Gaussian_median_log_sigma_u)
-  Gaussian_median_values_log_sigma_epsilon <- sapply(partition_log_sigma_epsilon, log_Gaussian_median_log_sigma_epsilon)
-  pc_prior_values_log_kappa <- sapply(partition_log_kappa, log_pc_log_kappa)
-  pc_prior_values_v1 <- sapply(partition_v1, log_pc_v1)
-  pc_prior_values_v2 <- sapply(partition_v2, log_pc_v2)
-  pc_prior_values_log_sigma_u <- sapply(partition_log_sigma_u, log_pc_log_sigma_u)
-  pc_prior_values_log_sigma_epsilon <- sapply(partition_log_sigma_epsilon, log_pc_log_sigma_epsilon)
-  not_pc_prior_values_log_kappa <- sapply(partition_log_kappa, log_not_pc_log_kappa)
-  not_pc_prior_values_v1 <- sapply(partition_v1, log_not_pc_v1)
-  not_pc_prior_values_v2 <- sapply(partition_v2, log_not_pc_v2)
-  not_pc_prior_values_log_sigma_u <- sapply(partition_log_sigma_u, log_not_pc_log_sigma_u)
-  not_pc_prior_values_log_sigma_epsilon <- sapply(partition_log_sigma_epsilon, log_not_pc_log_sigma_epsilon)
+# Print the plots
+plots
 
 
 
 
 
-  # Plot the results with a vertical line at the MAP_prior value of kappa
-  plot(partition_log_kappa, posterior_values_log_kappa, type = "l", xlab = "log_kappa", ylab = "log density")
-  points(partition_log_kappa, Gaussian_median_values_log_kappa, type = "l", col = "blue")
-  points(partition_log_kappa, pc_prior_values_log_kappa, type = "l", col = "green")
-  points(partition_log_kappa, not_pc_prior_values_log_kappa, type = "l", col = "purple")
-  abline(v = map$par[1], col = "red")
-  legend("bottomleft", legend = c("posterior", "Gaussian_median", "pc_prior", "not_pc_prior"), col = c("black", "blue", "green", "purple"), pch = 1)
+#Below code is alternative worse way of dong it
 
-  # Plot the results with a vertical line at the MAP_prior value of v1
-  plot(partition_v1, posterior_values_v1, type = "l", xlab = "v1", ylab = "log density")
-  points(partition_v1, Gaussian_median_values_v1, type = "l", col = "blue")
-  points(partition_v1, pc_prior_values_v1, type = "l", col = "green")
-  points(partition_v1, not_pc_prior_values_v1, type = "l", col = "purple")
-  abline(v = map$par[2], col = "red")
-  legend("bottomleft", legend = c("posterior", "Gaussian_median", "pc_prior", "not_pc_prior"), col = c("black", "blue", "green", "purple"), pch = 1)
 
-  # Plot the results with a vertical line at the MAP_prior value of v2
-  plot(partition_v2, posterior_values_v2, type = "l", xlab = "v2", ylab = "log density")
-  points(partition_v2, Gaussian_median_values_v2, type = "l", col = "blue")
-  points(partition_v2, pc_prior_values_v2, type = "l", col = "green")
-  points(partition_v2, not_pc_prior_values_v2, type = "l", col = "purple")
-  abline(v = map$par[3], col = "red")
-  legend("bottomleft", legend = c("posterior", "Gaussian_median", "pc_prior", "not_pc_prior"), col = c("black", "blue", "green", "purple"), pch = 1)
+      # Plot the results with a vertical line at the MAP_prior value of kappa
+      plot(partition_log_kappa, posterior_values_log_kappa, type = "l", xlab = "log_kappa", ylab = "log density")
+      points(partition_log_kappa, Gaussian_median_values_log_kappa, type = "l", col = "blue")
+      points(partition_log_kappa, pc_prior_values_log_kappa, type = "l", col = "green")
+      points(partition_log_kappa, not_pc_prior_values_log_kappa, type = "l", col = "purple")
+      abline(v = map$par[1], col = "red")
+      legend("bottomleft", legend = c("posterior", "Gaussian_median", "pc_prior", "not_pc_prior"), col = c("black", "blue", "green", "purple"), pch = 1)
 
-  # Plot the results with a vertical line at the MAP_prior value of log_sigma_u
-  plot(partition_log_sigma_u, posterior_values_log_sigma_u, type = "l", xlab = "log_sigma_u", ylab = "log density")
-  points(partition_log_sigma_u, Gaussian_median_values_log_sigma_u, type = "l", col = "blue")
-  points(partition_log_sigma_u, pc_prior_values_log_sigma_u, type = "l", col = "green")
-  points(partition_log_sigma_u, not_pc_prior_values_log_sigma_u, type = "l", col = "purple")
-  abline(v = map$par[4], col = "red")
-  legend("bottomleft", legend = c("posterior", "Gaussian_median", "pc_prior", "not_pc_prior"), col = c("black", "blue", "green", "purple"), pch = 1)
+      # Plot the results with a vertical line at the MAP_prior value of v1
+      plot(partition_v1, posterior_values_v1, type = "l", xlab = "v1", ylab = "log density")
+      points(partition_v1, Gaussian_median_values_v1, type = "l", col = "blue")
+      points(partition_v1, pc_prior_values_v1, type = "l", col = "green")
+      points(partition_v1, not_pc_prior_values_v1, type = "l", col = "purple")
+      abline(v = map$par[2], col = "red")
+      legend("bottomleft", legend = c("posterior", "Gaussian_median", "pc_prior", "not_pc_prior"), col = c("black", "blue", "green", "purple"), pch = 1)
 
-  # Plot the results with a vertical line at the MAP_prior value of log_sigma_epsilon
-  plot(partition_log_sigma_epsilon, posterior_values_log_sigma_epsilon, type = "l", xlab = "log_sigma_epsilon", ylab = "log density")
-  points(partition_log_sigma_epsilon, Gaussian_median_values_log_sigma_epsilon, type = "l", col = "blue")
-  points(partition_log_sigma_epsilon, pc_prior_values_log_sigma_epsilon, type = "l", col = "green")
-  points(partition_log_sigma_epsilon, not_pc_prior_values_log_sigma_epsilon, type = "l", col = "purple")
-  abline(v = map$par[5], col = "red")
-  legend("bottomleft", legend = c("posterior", "Gaussian_median", "pc_prior", "not_pc_prior"), col = c("black", "blue", "green", "purple"), pch = 1)
+      # Plot the results with a vertical line at the MAP_prior value of v2
+      plot(partition_v2, posterior_values_v2, type = "l", xlab = "v2", ylab = "log density")
+      points(partition_v2, Gaussian_median_values_v2, type = "l", col = "blue")
+      points(partition_v2, pc_prior_values_v2, type = "l", col = "green")
+      points(partition_v2, not_pc_prior_values_v2, type = "l", col = "purple")
+      abline(v = map$par[3], col = "red")
+      legend("bottomleft", legend = c("posterior", "Gaussian_median", "pc_prior", "not_pc_prior"), col = c("black", "blue", "green", "purple"), pch = 1)
+
+      # Plot the results with a vertical line at the MAP_prior value of log_sigma_u
+      plot(partition_log_sigma_u, posterior_values_log_sigma_u, type = "l", xlab = "log_sigma_u", ylab = "log density")
+      points(partition_log_sigma_u, Gaussian_median_values_log_sigma_u, type = "l", col = "blue")
+      points(partition_log_sigma_u, pc_prior_values_log_sigma_u, type = "l", col = "green")
+      points(partition_log_sigma_u, not_pc_prior_values_log_sigma_u, type = "l", col = "purple")
+      abline(v = map$par[4], col = "red")
+      legend("bottomleft", legend = c("posterior", "Gaussian_median", "pc_prior", "not_pc_prior"), col = c("black", "blue", "green", "purple"), pch = 1)
+
+      # Plot the results with a vertical line at the MAP_prior value of log_sigma_epsilon
+      plot(partition_log_sigma_epsilon, posterior_values_log_sigma_epsilon, type = "l", xlab = "log_sigma_epsilon", ylab = "log density")
+      points(partition_log_sigma_epsilon, Gaussian_median_values_log_sigma_epsilon, type = "l", col = "blue")
+      points(partition_log_sigma_epsilon, pc_prior_values_log_sigma_epsilon, type = "l", col = "green")
+      points(partition_log_sigma_epsilon, not_pc_prior_values_log_sigma_epsilon, type = "l", col = "purple")
+      abline(v = map$par[5], col = "red")
+      legend("bottomleft", legend = c("posterior", "Gaussian_median", "pc_prior", "not_pc_prior"), col = c("black", "blue", "green", "purple"), pch = 1)
+    }
 }
 
 plotter(map = map_pc)
