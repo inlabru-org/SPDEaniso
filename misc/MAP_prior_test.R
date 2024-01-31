@@ -171,113 +171,96 @@ map_pc$value == log_posteriors$pc(map_pc$par[1], map_pc$par[2:3], map_pc$par[4],
 # )
 # map_hyper$value == map_pc$value & map_hyper$par == map_pc$par
 
-print("Checking if Hessian of MAP_prior is invertible and calculating marginal standard deviation")
-hessian <- map_pc$hessian
-hessian_inv <- solve(hessian)
-sqrt(-diag(hessian_inv))
 
-########## UNNORMALIZED Gaussian_median APPROXIMATION TO THE POSTERIOR############
-log_Gaussian_median <- function(theta) {
-  logGdensity(
-    x = theta, mu = map_pc$par, Q = -hessian
-  ) - logGdensity(
-    x = map_pc$par, mu = map_pc$par, Q = -hessian
-  )
-}
-### UNNORMALIZED LOG PRIOR###
-unnormalize_prior_and_posterior <- function(log_prior) {
-  function(log_kappa, v1, v2, log_sigma_u, log_sigma_epsilon) {
-    log_prior(
-      log_kappa = log_kappa, v = c(v1, v2),
-      log_sigma_u = log_sigma_u, log_sigma_epsilon = log_sigma_epsilon
-    ) - log_prior(
-      log_kappa = map_pc$par[1], v = map_pc$par[2:3],
-      log_sigma_u = map_pc$par[4], log_sigma_epsilon = map_pc$par[5]
+
+plotter<- function(map = map_pc, log_priors = log_priors, log_posteriors = log_posteriors, l = 2, n_points = 10){
+  function_types <- list(prior = "prior", posterior = "posterior")
+  ########## UNNORMALIZED Gaussian_median APPROXIMATION TO THE POSTERIOR############
+  log_Gaussian_median <- function(theta) {
+    logGdensity(
+      x = theta, mu = map_pc$par, Q = -map_pc$hessian
+    ) - logGdensity(
+      x = map_pc$par, mu = map_pc$par, Q = -map_pc$hessian
     )
   }
-}
-function_type <- list(prior = "prior", posterior = "posterior")
-
-unnormalized_priors <- lapply(log_priors, unnormalize_prior_and_posterior)
-unnormalized_posteriors <- lapply(log_posteriors, unnormalize_prior_and_posterior)
-unnormalized_priors_and_posteriors <- list(prior = unnormalized_priors, posterior = unnormalized_posteriors)
-restricting_function_to_one_parameter <- function(f, x0) {
-  f_list <- lapply(seq_along(x0), function(i) {
-    function(x) {
-      x0_copy <- x0
-      x0_copy[i] <- x
-      unname(do.call(f, as.list(x0_copy)))
-    }
-  })
-  names(f_list) <- names(x0)
-  f_list
-}
-# Mapping over list of priors and posteriors
-# Gives a list of functions that take one parameter and return the unnormalized prior or posterior
-# can access as unnormalized_priors_and_posteriors$function_type$prior_type$parameter_name
-restricted_priors_and_posteriors <- lapply(unnormalized_priors_and_posteriors, function(prior_or_posterior) {
-  lapply(prior_or_posterior, restricting_function_to_one_parameter, map_pc$par)
-})
-
-# We plot the unnormalized priors and posteriors using ggplot2
-# One figure for each parameter
-# Color determined by prior_type
-# Line type determined by prior or posterior
-l <- 2
-n_points <- 10
-# We do loop to get partitions alternatively
-partitions <- lapply(seq_along(map_pc$par), function(i) {
-  seq(map_pc$par[i] - l, map_pc$par[i] + l, length.out = n_points)
-})
-names(partitions) <- names(map_pc$par)
-partition_log_kappa <- seq(map_pc$par[1] - l, map_pc$par[1] + l, length.out = n_points)
-partition_v1 <- seq(map_pc$par[2] - l, map_pc$par[2] + l, length.out = n_points)
-partition_v2 <- seq(map_pc$par[3] - l, map_pc$par[3] + l, length.out = n_points)
-partition_log_sigma_u <- seq(map_pc$par[4] - l, map_pc$par[4] + l, length.out = n_points)
-partition_log_sigma_epsilon <- seq(map_pc$par[5] - l, map_pc$par[5] + l, length.out = n_points)
-partitions <- list(
-  log_kappa = partition_log_kappa,
-  v1 = partition_v1,
-  v2 = partition_v2,
-  log_sigma_u = partition_log_sigma_u,
-  log_sigma_epsilon = partition_log_sigma_epsilon
-)
-# Create a data frame for plotting
-plot_data <- do.call(rbind, lapply(names(restricted_priors_and_posteriors), function(function_type) {
-  do.call(rbind, lapply(names(restricted_priors_and_posteriors[[function_type]]), function(prior_type) {
-    do.call(rbind, lapply(names(restricted_priors_and_posteriors[[function_type]][[prior_type]]), function(parameter_name) {
-      # Calculate the function values
-      x_values <- partitions[[parameter_name]]
-      y_values <- sapply(x_values, restricted_priors_and_posteriors[[function_type]][[prior_type]][[parameter_name]])
-
-      data.frame(
-        x = x_values,
-        Value = y_values,
-        Parameter = parameter_name,
-        FunctionType = function_type,
-        PriorType = prior_type,
-        stringsAsFactors = FALSE
+  ### UNNORMALIZED LOG FUNCTION SO THEY ALL START AT 0###
+  unnormalize_prior_and_posterior <- function(log_prior) {
+    function(log_kappa, v1, v2, log_sigma_u, log_sigma_epsilon) {
+      log_prior(
+        log_kappa = log_kappa, v = c(v1, v2),
+        log_sigma_u = log_sigma_u, log_sigma_epsilon = log_sigma_epsilon
+      ) - log_prior(
+        log_kappa = map_pc$par[1], v = map_pc$par[2:3],
+        log_sigma_u = map_pc$par[4], log_sigma_epsilon = map_pc$par[5]
       )
+    }
+  }
+
+  unnormalized_priors <- lapply(log_priors, unnormalize_prior_and_posterior)
+  unnormalized_posteriors <- lapply(log_posteriors, unnormalize_prior_and_posterior)
+  unnormalized_priors_and_posteriors <- list(prior = unnormalized_priors, posterior = unnormalized_posteriors)
+
+  # Restricting the functions to one parameter
+  restricting_function_to_one_parameter <- function(f, x0) {
+    f_list <- lapply(seq_along(x0), function(i) {
+      function(x) {
+        x0_copy <- x0
+        x0_copy[i] <- x
+        unname(do.call(f, as.list(x0_copy)))
+      }
+    })
+    names(f_list) <- names(x0)
+    f_list
+  }
+  restricted_priors_and_posteriors <- lapply(unnormalized_priors_and_posteriors, function(f) {
+    lapply(f, restricting_function_to_one_parameter, map_pc$par)
+  })
+
+
+  # Getting data for plotting
+  partitions <- lapply(seq_along(map_pc$par), function(i) {
+    seq(map_pc$par[i] - l, map_pc$par[i] + l, length.out = n_points)
+  })
+  names(partitions) <- names(map_pc$par)
+
+  plot_data <- do.call(rbind, lapply(names(restricted_priors_and_posteriors), function(function_type) {
+    do.call(rbind, lapply(names(restricted_priors_and_posteriors[[function_type]]), function(prior_type) {
+      do.call(rbind, lapply(names(restricted_priors_and_posteriors[[function_type]][[prior_type]]), function(parameter_name) {
+        # Calculate the function values
+        x_values <- partitions[[parameter_name]]
+        y_values <- sapply(x_values, restricted_priors_and_posteriors[[function_type]][[prior_type]][[parameter_name]])
+
+        data.frame(
+          x = x_values,
+          Value = y_values,
+          Parameter = parameter_name,
+          FunctionType = function_type,
+          PriorType = prior_type,
+          stringsAsFactors = FALSE
+        )
+      }))
     }))
   }))
-}))
 
-# Create a list to store the ggplot objects
-plots <- list()
+  # Create a list to store the ggplot objects
+  plots <- list()
 
-# For each parameter, create a ggplot of the functions
-for (parameter in unique(plot_data$Parameter)) {
-  # Subset the data for the current parameter
-  parameter_data <- subset(plot_data, Parameter == parameter)
+  # For each parameter, create a ggplot of the functions
+  for (parameter in unique(plot_data$Parameter)) {
+    # Subset the data for the current parameter
+    parameter_data <- subset(plot_data, Parameter == parameter)
 
-  # Create a ggplot
-  p <- ggplot(parameter_data, aes(x = x, y = Value, color = PriorType, linetype = FunctionType)) +
-    geom_line() +
-    labs(title = paste("Unnormalized Priors and Posteriors for", parameter), x = "x", y = "Value") +
-    theme_minimal()
+    # Create a ggplot
+    p <- ggplot(parameter_data, aes(x = x, y = Value, color = PriorType, linetype = FunctionType)) +
+      geom_line() +
+      labs(title = paste("Unnormalized Priors and Posteriors for", parameter), x = "x", y = "Value") +
+      theme_minimal()
 
-  # Add the plot to the list
-  plots[[parameter]] <- p
+    # Add the plot to the list
+    plots[[parameter]] <- p
+  }
+
+  plots
 }
 
-plots
+plotter(map = map_pc, log_priors = log_priors, log_posteriors = log_posteriors, l = 2, n_points = 10)
