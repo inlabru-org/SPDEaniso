@@ -118,7 +118,7 @@ log_pc_prior_theta(
 library(sf)
 boundary_sf <- st_sfc(st_polygon(list(rbind(c(0, 0.01), c(L, 0.01), c(L, L), c(0, L), c(0, 0.01)))))
 boundary <- fm_as_segm(boundary_sf)
-mesh <- fm_mesh_2d_inla(boundary = boundary, max.edge = c(2, 2))
+mesh <- fm_mesh_2d_inla(boundary = boundary, max.edge = c(3, 3))
 nodes <- mesh$loc
 n <- mesh$n
 plot(mesh)
@@ -173,7 +173,7 @@ map_pc$value == log_posteriors$pc(map_pc$par[1], map_pc$par[2:3], map_pc$par[4],
 
 
 
-plotter<- function(map = map_pc, log_priors = log_priors, log_posteriors = log_posteriors, l = 2, n_points = 10){
+plotter <- function(map = map_pc, log_priors = log_priors, log_posteriors = log_posteriors, l = 2, n_points = 10, together = TRUE) {
   function_types <- list(prior = "prior", posterior = "posterior")
   ########## UNNORMALIZED Gaussian_median APPROXIMATION TO THE POSTERIOR############
   log_Gaussian_median <- function(theta) {
@@ -251,16 +251,23 @@ plotter<- function(map = map_pc, log_priors = log_priors, log_posteriors = log_p
     parameter_data <- subset(plot_data, Parameter == parameter)
 
     # Create a ggplot
+    # Create a ggplot
     p <- ggplot(parameter_data, aes(x = x, y = Value, color = PriorType, linetype = FunctionType)) +
       geom_line() +
-      labs(title = paste("Unnormalized Priors and Posteriors for", parameter), x = "x", y = "Value") +
+      geom_vline(xintercept = unlist(true_params)[parameter], color = "purple") + # Move xintercept outside of aes()
+      labs(title = paste("Unnormalized Priors and Posteriors for", parameter), x = parameter, y = "Log density") +
       theme_minimal()
 
     # Add the plot to the list
     plots[[parameter]] <- p
   }
-
-  plots
+  if (together) {
+    require(gridExtra)
+    do.call(grid.arrange, c(plots, ncol = 3))
+  } else {
+    # Print the plots
+    plots
+  }
 }
 
-plotter(map = map_pc, log_priors = log_priors, log_posteriors = log_posteriors, l = 2, n_points = 10)
+plotter(map = map_pc, log_priors = log_priors, log_posteriors = log_posteriors, l = 4, n_points = 20, together = FALSE)
