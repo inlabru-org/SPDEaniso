@@ -180,7 +180,7 @@ sqrt(-diag(hessian_inv))
 log_Gaussian_median <- function(theta) {
   logGdensity(
     x = theta, mu = map_pc$par, Q = -hessian
-  ) + map_pc$value - logGdensity(
+  ) - logGdensity(
     x = map_pc$par, mu = map_pc$par, Q = -hessian
   )
 }
@@ -190,7 +190,7 @@ unnormalize_prior_and_posterior <- function(log_prior) {
     log_prior(
       log_kappa = log_kappa, v = c(v1, v2),
       log_sigma_u = log_sigma_u, log_sigma_epsilon = log_sigma_epsilon
-    ) + map_pc$value - log_prior(
+    ) - log_prior(
       log_kappa = map_pc$par[1], v = map_pc$par[2:3],
       log_sigma_u = map_pc$par[4], log_sigma_epsilon = map_pc$par[5]
     )
@@ -212,24 +212,47 @@ restricting_function_to_one_parameter <- function(f, x0) {
   names(f_list) <- names(x0)
   f_list
 }
-  # Mapping over list of priors and posteriors
-  # Gives a list of functions that take one parameter and return the unnormalized prior or posterior
-  # can access as unnormalized_priors_and_posteriors$function_type$prior_type$parameter_name
-  restricted_priors_and_posteriors <- lapply(unnormalized_priors_and_posteriors, function(prior_or_posterior) {
-    lapply(prior_or_posterior, restricting_function_to_one_parameter, map_pc$par)
-  })
-  
-  #We plot the unnormalized priors and posteriors using ggplot2
-  #One figure for each parameter
-  #Color determined by prior_type
-  #Line type determined by prior or posterior
+# Mapping over list of priors and posteriors
+# Gives a list of functions that take one parameter and return the unnormalized prior or posterior
+# can access as unnormalized_priors_and_posteriors$function_type$prior_type$parameter_name
+restricted_priors_and_posteriors <- lapply(unnormalized_priors_and_posteriors, function(prior_or_posterior) {
+  lapply(prior_or_posterior, restricting_function_to_one_parameter, map_pc$par)
+})
 
+# We plot the unnormalized priors and posteriors using ggplot2
+# One figure for each parameter
+# Color determined by prior_type
+# Line type determined by prior or posterior
+l <- 2
+n_points <- 10
+# We do loop to get partitions alternatively
+partitions <- lapply(seq_along(map_pc$par), function(i) {
+  seq(map_pc$par[i] - l, map_pc$par[i] + l, length.out = n_points)
+})
+names(partitions) <- names(map_pc$par)
+partition_log_kappa <- seq(map_pc$par[1] - l, map_pc$par[1] + l, length.out = n_points)
+partition_v1 <- seq(map_pc$par[2] - l, map_pc$par[2] + l, length.out = n_points)
+partition_v2 <- seq(map_pc$par[3] - l, map_pc$par[3] + l, length.out = n_points)
+partition_log_sigma_u <- seq(map_pc$par[4] - l, map_pc$par[4] + l, length.out = n_points)
+partition_log_sigma_epsilon <- seq(map_pc$par[5] - l, map_pc$par[5] + l, length.out = n_points)
+partitions <- list(
+  log_kappa = partition_log_kappa,
+  v1 = partition_v1,
+  v2 = partition_v2,
+  log_sigma_u = partition_log_sigma_u,
+  log_sigma_epsilon = partition_log_sigma_epsilon
+)
 # Create a data frame for plotting
 plot_data <- do.call(rbind, lapply(names(restricted_priors_and_posteriors), function(function_type) {
   do.call(rbind, lapply(names(restricted_priors_and_posteriors[[function_type]]), function(prior_type) {
     do.call(rbind, lapply(names(restricted_priors_and_posteriors[[function_type]][[prior_type]]), function(parameter_name) {
+      # Calculate the function values
+      x_values <- partitions[[parameter_name]]
+      y_values <- sapply(x_values, restricted_priors_and_posteriors[[function_type]][[prior_type]][[parameter_name]])
+
       data.frame(
-        Function = I(list(restricted_priors_and_posteriors[[function_type]][[prior_type]][[parameter_name]])),
+        x = x_values,
+        Value = y_values,
         Parameter = parameter_name,
         FunctionType = function_type,
         PriorType = prior_type,
@@ -239,9 +262,6 @@ plot_data <- do.call(rbind, lapply(names(restricted_priors_and_posteriors), func
   }))
 }))
 
-# Define a sequence of x values to evaluate the functions at
-x_seq <- seq(from = min(map_pc$par), to = max(map_pc$par), length.out = 100)
-
 # Create a list to store the ggplot objects
 plots <- list()
 
@@ -249,77 +269,15 @@ plots <- list()
 for (parameter in unique(plot_data$Parameter)) {
   # Subset the data for the current parameter
   parameter_data <- subset(plot_data, Parameter == parameter)
-  
+
   # Create a ggplot
-  p <- ggplot() +
+  p <- ggplot(parameter_data, aes(x = x, y = Value, color = PriorType, linetype = FunctionType)) +
+    geom_line() +
     labs(title = paste("Unnormalized Priors and Posteriors for", parameter), x = "x", y = "Value") +
     theme_minimal()
-  
-  # For each row in the data, add a line to the plot
-  for (i in seq_len(nrow(parameter_data))) {
-    p <- p + stat_function(fun = parameter_data$Function[[i]], 
-                           aes(color = parameter_data$PriorType[i], linetype = parameter_data$FunctionType[i]))
-  }
-  
+
   # Add the plot to the list
   plots[[parameter]] <- p
 }
 
-# Print the plots
 plots
-
-
-
-
-
-#Below code is alternative worse way of dong it
-
-
-      # Plot the results with a vertical line at the MAP_prior value of kappa
-      plot(partition_log_kappa, posterior_values_log_kappa, type = "l", xlab = "log_kappa", ylab = "log density")
-      points(partition_log_kappa, Gaussian_median_values_log_kappa, type = "l", col = "blue")
-      points(partition_log_kappa, pc_prior_values_log_kappa, type = "l", col = "green")
-      points(partition_log_kappa, not_pc_prior_values_log_kappa, type = "l", col = "purple")
-      abline(v = map$par[1], col = "red")
-      legend("bottomleft", legend = c("posterior", "Gaussian_median", "pc_prior", "not_pc_prior"), col = c("black", "blue", "green", "purple"), pch = 1)
-
-      # Plot the results with a vertical line at the MAP_prior value of v1
-      plot(partition_v1, posterior_values_v1, type = "l", xlab = "v1", ylab = "log density")
-      points(partition_v1, Gaussian_median_values_v1, type = "l", col = "blue")
-      points(partition_v1, pc_prior_values_v1, type = "l", col = "green")
-      points(partition_v1, not_pc_prior_values_v1, type = "l", col = "purple")
-      abline(v = map$par[2], col = "red")
-      legend("bottomleft", legend = c("posterior", "Gaussian_median", "pc_prior", "not_pc_prior"), col = c("black", "blue", "green", "purple"), pch = 1)
-
-      # Plot the results with a vertical line at the MAP_prior value of v2
-      plot(partition_v2, posterior_values_v2, type = "l", xlab = "v2", ylab = "log density")
-      points(partition_v2, Gaussian_median_values_v2, type = "l", col = "blue")
-      points(partition_v2, pc_prior_values_v2, type = "l", col = "green")
-      points(partition_v2, not_pc_prior_values_v2, type = "l", col = "purple")
-      abline(v = map$par[3], col = "red")
-      legend("bottomleft", legend = c("posterior", "Gaussian_median", "pc_prior", "not_pc_prior"), col = c("black", "blue", "green", "purple"), pch = 1)
-
-      # Plot the results with a vertical line at the MAP_prior value of log_sigma_u
-      plot(partition_log_sigma_u, posterior_values_log_sigma_u, type = "l", xlab = "log_sigma_u", ylab = "log density")
-      points(partition_log_sigma_u, Gaussian_median_values_log_sigma_u, type = "l", col = "blue")
-      points(partition_log_sigma_u, pc_prior_values_log_sigma_u, type = "l", col = "green")
-      points(partition_log_sigma_u, not_pc_prior_values_log_sigma_u, type = "l", col = "purple")
-      abline(v = map$par[4], col = "red")
-      legend("bottomleft", legend = c("posterior", "Gaussian_median", "pc_prior", "not_pc_prior"), col = c("black", "blue", "green", "purple"), pch = 1)
-
-      # Plot the results with a vertical line at the MAP_prior value of log_sigma_epsilon
-      plot(partition_log_sigma_epsilon, posterior_values_log_sigma_epsilon, type = "l", xlab = "log_sigma_epsilon", ylab = "log density")
-      points(partition_log_sigma_epsilon, Gaussian_median_values_log_sigma_epsilon, type = "l", col = "blue")
-      points(partition_log_sigma_epsilon, pc_prior_values_log_sigma_epsilon, type = "l", col = "green")
-      points(partition_log_sigma_epsilon, not_pc_prior_values_log_sigma_epsilon, type = "l", col = "purple")
-      abline(v = map$par[5], col = "red")
-      legend("bottomleft", legend = c("posterior", "Gaussian_median", "pc_prior", "not_pc_prior"), col = c("black", "blue", "green", "purple"), pch = 1)
-    }
-}
-
-plotter(map = map_pc)
-
-# Showing true parameters, MAP, and standard deviation of the parameters
-unlist(true_params)
-map_pc$par
-sqrt(-diag(hessian_inv))
