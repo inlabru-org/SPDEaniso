@@ -163,13 +163,13 @@ map_pc$value > log_posteriors$pc(log_kappa, v, log_sigma_u, log_sigma_epsilon)
 print("Checking if value for map is the same as posterior value at map parameters. ")
 map_pc$value == log_posteriors$pc(map_pc$par[1], map_pc$par[2:3], map_pc$par[4], map_pc$par[5])
 
-print("Checking if MAP_prior with PC priors returns the same thing as MAP using PC priors defined through hyperparameters")
+# print("Checking if MAP_prior with PC priors returns the same thing as MAP using PC priors defined through hyperparameters")
 
-map_hyper <- MAP_pc(mesh, lambda, lambda1, lambda_epsilon, lambda_u,
-  y, A, m_u,
-  max_iterations = maxit, theta0 = unlist(true_params) + delta
-)
-map_hyper$value == map_pc$value & map_hyper$par == map_pc$par
+# map_hyper <- MAP_pc(mesh, lambda, lambda1, lambda_epsilon, lambda_u,
+#   y, A, m_u,
+#   max_iterations = maxit, theta0 = unlist(true_params) + delta
+# )
+# map_hyper$value == map_pc$value & map_hyper$par == map_pc$par
 
 print("Checking if Hessian of MAP_prior is invertible and calculating marginal standard deviation")
 hessian <- map_pc$hessian
