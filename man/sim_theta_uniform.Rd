@@ -51,6 +51,4 @@ rho0 <- 0.1
 L <- 100
 m <- 10
 result <- sim_theta_uniform(alpha_u = alpha_u, alpha_epsilon = alpha_epsilon, sigma_u0 = sigma_u0, sigma_epsilon0 = sigma_epsilon0, a0 = a0, rho0 = rho0, L = L, m = m)
-correlation range rho = sqrt(8)/kappa ~ Uniform(rho0/2,L),
-v1,v2 ~ Uniform(log(a0/2/sqrt(2)),log(2a0/sqrt(2)), and with PC priors on noise and variance of field, given certain quantiles.
 }

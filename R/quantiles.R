@@ -9,12 +9,8 @@
 #' a0 <- 10
 #' lambda1 <- lambda1_quantile(a0 = a0, alpha_a = alpha_a)
 lambda1_quantile <- function(a0, alpha_a = 0.01) {
-  if (alpha_a <= 0 || alpha_a >= 1) {
-    warning("alpha_a should be in (0,1)")
-  }
-  if (a0 <= 1) {
-    warning("a0 should be greater than 1")
-  }
+  check_range(alpha_a, "alpha_a", 0, 1)
+  check_range(a0, "a0", 1, Inf)
   r0 <- log(a0)
   lambda1 <- -log(alpha_a) / (fdist(r0) - fdist(0))
   return(lambda1)
@@ -31,10 +27,7 @@ lambda1_quantile <- function(a0, alpha_a = 0.01) {
 #' lambda1 <- 1
 #' lambda <- lambda_quantile(alpha = alpha, rho0 = rho0, lambda1 = lambda1)
 lambda_quantile <- function(rho0, lambda1, alpha = 0.01) {
-  # This warns the user if alpha is not in (0,1)
-  if (alpha <= 0 || alpha >= 1) {
-    warning("alpha should be in (0,1)")
-  }
+  check_range(alpha, "alpha", 0, 1)
   kappa0 <- sqrt(8) / rho0
   product <- lambda1 * fdist(0)
   lambert <- lamW::lambertW0(product * exp(product) / alpha)
@@ -58,12 +51,8 @@ lambda_quantile <- function(rho0, lambda1, alpha = 0.01) {
 #' lambda_sigma <- lambda_variance_quantile(alpha_sigma = alpha_sigma, sigma0 = sigma0)
 lambda_variance_quantile <- function(sigma0, alpha_sigma = 0.01) {
   # This warns the user if alpha is not in (0,1)
-  if (alpha_sigma <= 0 || alpha_sigma >= 1) {
-    warning("alpha_sigma should be in (0,1)")
-  }
-  if (sigma0 <= 0) {
-    warning("sigma0 should be greater than 0")
-  }
+  check_range(alpha_sigma, "alpha_sigma", 0, 1)
+  check_range(sigma0, "sigma0", 0, Inf)
   lambda_sigma <- -log(alpha_sigma) / sigma0
   return(lambda_sigma)
 }
@@ -80,12 +69,8 @@ lambda_variance_quantile <- function(sigma0, alpha_sigma = 0.01) {
 #' a0 <- 10
 #' sigma2_v <- sigma2_quantile_v(alpha_v = alpha_v, a0 = a0)
 sigma2_quantile_v <- function(a0, alpha_v = 0.01) {
-  if (alpha_v <= 0 || alpha_v >= 1) {
-    warning("alpha_v should be in (0,1)")
-  }
-  if (a0 <= 1) {
-    warning("a0 should be greater than 1")
-  }
+  check_range(alpha_v, "alpha_v", 0, 1)
+  check_range(a0, "a0", 1, Inf)
   r02 <- log(a0)^2
   # r^2 follows a exponential distribution with rate 1/2sigma^2
   sigma2_v <- -r02 / (2 * log(alpha_v))
@@ -104,12 +89,8 @@ sigma2_quantile_v <- function(a0, alpha_v = 0.01) {
 #' rho0 <- 0.1
 #' lambda_k <- lambda_quantile_kappa(alpha_k = alpha_k, rho0 = rho0)
 lambda_quantile_kappa <- function(rho0, alpha_k = 0.01) {
-  if (alpha_k <= 0 || alpha_k >= 1) {
-    warning("alpha_k should be in (0,1)")
-  }
-  if (rho0 < 0) {
-    warning("rho0 should be greater than 0")
-  }
+  check_range(alpha_k, "alpha_k", 0, 1)
+  check_range(rho0, "rho0", 0, Inf)
   kappa0 <- sqrt(8) / rho0
   lambda_k <- -log(alpha_k) / kappa0
   return(lambda_k)
@@ -160,39 +141,6 @@ log_gaussian_prior_quantile <- function(sigma_u0, sigma_epsilon0, a0, rho0, alph
   if (is.null(alpha_v)) {
     alpha_v <- alpha
   }
-  # This warns the user if alpha is not in (0,1)
-  if (alpha <= 0 || alpha >= 1) {
-    warning("alpha should be in (0,1)")
-  }
-  if (alpha_u <= 0 || alpha_u >= 1) {
-    warning("alpha_u should be in (0,1)")
-  }
-  if (alpha_epsilon <= 0 || alpha_epsilon >= 1) {
-    warning("alpha_epsilon should be in (0,1)")
-  }
-  if (alpha_k <= 0 || alpha_k >= 1) {
-    warning("alpha_k should be in (0,1)")
-  }
-  if (alpha_v <= 0 || alpha_v >= 1) {
-    warning("alpha_v should be in (0,1)")
-  }
-  # This warns the user if a0 is not greater than 1
-  if (a0 <= 1) {
-    warning("a0 should be greater than 1")
-  }
-  # This warns the user if rho0 is not greater than 0
-  if (rho0 < 0) {
-    warning("rho0 should be greater than 0")
-  }
-  # This warns the user if sigma_u0 is not greater than 0
-  if (sigma_u0 <= 0) {
-    warning("sigma_u0 should be greater than 0")
-  }
-  # This warns the user if sigma_epsilon0 is not greater than 0
-  if (sigma_epsilon0 <= 0) {
-    warning("sigma_epsilon0 should be greater than 0")
-  }
-
   # Calculate the hyperparameters of the priors
   sigma2_v <- sigma2_quantile_v(alpha_v = alpha_v, a0 = a0)
   lambda_k <- lambda_quantile_kappa(alpha_k = alpha_k, rho0 = rho0)
@@ -277,22 +225,12 @@ log_prior_uniform <- function(sigma_u0, sigma_epsilon0, a0, rho0, L, alpha = 0.0
   if (alpha_epsilon <= 0 || alpha_epsilon >= 1) {
     warning("alpha_epsilon should be in (0,1)")
   }
-  # This warns the user if a0 is not greater than 1
-  if (a0 <= 1) {
-    warning("a0 should be greater than 1")
-  }
-  # This warns the user if rho0 is not greater than 0
-  if (rho0 < 0) {
-    warning("rho0 should be greater than 0")
-  }
-  # This warns the user if sigma_u0 is not greater than 0
-  if (sigma_u0 <= 0) {
-    warning("sigma_u0 should be greater than 0")
-  }
-  # This warns the user if sigma_epsilon0 is not greater than 0
-  if (sigma_epsilon0 <= 0) {
-    warning("sigma_epsilon0 should be greater than 0")
-  }
+
+  check_range(a0, "a0", 1, Inf)
+  check_range(rho0, "rho0", 0, Inf)
+  check_range(sigma_u0, "sigma_u0", 0, Inf)
+  check_range(sigma_epsilon0, "sigma_epsilon0", 0, Inf)
+  check_range(L, "L", 0, Inf)
 
   lambda_u <- lambda_variance_quantile(alpha_sigma = alpha_u, sigma0 = sigma_u0)
   lambda_epsilon <- lambda_variance_quantile(alpha_sigma = alpha_epsilon, sigma0 = sigma_epsilon0)
@@ -304,13 +242,14 @@ log_prior_uniform <- function(sigma_u0, sigma_epsilon0, a0, rho0, L, alpha = 0.0
     log_uniform_density_rho <- log_uniform_density(rho0 / 2, b = L)
     log_uniform_density_v <- log_uniform_density(a = log(a0 / 2) / sqrt(2), b = log(2 * a0) / sqrt(2))
     log_kappa_term <- log_uniform_density_rho(rho)
-    v_term <- log_uniform_density_v(v[1]) + log_uniform_density_v(v[2])
+    v_term <- log_uniform_density_v(abs(v[1])) + log_uniform_density_v(abs(v[2]))
 
     # Terms for variance
     lambda_u <- lambda_variance_quantile(alpha_sigma = alpha_u, sigma0 = sigma_u0)
     lambda_epsilon <- lambda_variance_quantile(alpha_sigma = alpha_epsilon, sigma0 = sigma_epsilon0)
     variance_term <- log_pc_prior_noise_variance(lambda_epsilon = lambda_epsilon, log_sigma_epsilon = log_sigma_epsilon)
     +log_pc_prior_noise_variance(lambda_epsilon = lambda_u, log_sigma_epsilon = log_sigma_u)
+    return(log_kappa_term + v_term + variance_term)
   }
   return(log_prior)
 }
@@ -356,35 +295,15 @@ log_pc_prior_quantile <- function(sigma_u0, sigma_epsilon0, a0, rho0, alpha = 0.
   if (is.null(alpha_v)) {
     alpha_v <- alpha
   }
-  # This warns the user if alpha is not in (0,1)
-  if (alpha_u <= 0 || alpha_u >= 1) {
-    warning("alpha_u should be in (0,1)")
-  }
-  if (alpha_epsilon <= 0 || alpha_epsilon >= 1) {
-    warning("alpha_epsilon should be in (0,1)")
-  }
-  if (alpha_k <= 0 || alpha_k >= 1) {
-    warning("alpha_k should be in (0,1)")
-  }
-  if (alpha_v <= 0 || alpha_v >= 1) {
-    warning("alpha_v should be in (0,1)")
-  }
-  # This warns the user if a0 is not greater than 1
-  if (a0 <= 1) {
-    warning("a0 should be greater than 1")
-  }
-  # This warns the user if rho0 is not greater than 0
-  if (rho0 < 0) {
-    warning("rho0 should be greater than 0")
-  }
-  # This warns the user if sigma_u0 is not greater than 0
-  if (sigma_u0 <= 0) {
-    warning("sigma_u0 should be greater than 0")
-  }
-  # This warns the user if sigma_epsilon0 is not greater than 0
-  if (sigma_epsilon0 <= 0) {
-    warning("sigma_epsilon0 should be greater than 0")
-  }
+  check_range(alpha, "alpha", 0, 1)
+  check_range(alpha_u, "alpha_u", 0, 1)
+  check_range(alpha_epsilon, "alpha_epsilon", 0, 1)
+  check_range(alpha_k, "alpha_k", 0, 1)
+  check_range(alpha_v, "alpha_v", 0, 1)
+  check_range(a0, "a0", 1, Inf)
+  check_range(rho0, "rho0", 0, Inf)
+  check_range(sigma_u0, "sigma_u0", 0, Inf)
+  check_range(sigma_epsilon0, "sigma_epsilon0", 0, Inf)
 
   # Calculate the hyperparameters of the PC priors for anisotropy
   lambda1 <- lambda1_quantile(a0 = a0, alpha_a = alpha_v)
