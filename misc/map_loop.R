@@ -42,8 +42,9 @@ log_not_pc_prior <- log_gaussian_prior_quantile(
   a0 = a0, rho0 = rho0, alpha = alpha
 )
 L <- 10 # Length of domain
-log_uniform_prior <- log_prior_uniform(sigma_u0 = sigma_u0, sigma_epsilon0 = sigma_epsilon0, a0 = a0, rho0 = rho0, L = L)
-
+width_uniform <- 2
+log_uniform_prior <- log_prior_uniform(sigma_u0 = sigma_u0, sigma_epsilon0 = sigma_epsilon0, a0 = a0, a0_inf = a0_inf , rho0 = rho0, L = L, width_support_factor = width_uniform)
+# log_uniform_prior <- function(a,b,c,d){0}
 log_priors <- list(
   pc = log_pc_prior,
   not_pc = log_not_pc_prior,
@@ -56,15 +57,15 @@ approximation_types <- setNames(approximation_types, approximation_types)
 library(sf)
 boundary_sf <- st_sfc(st_polygon(list(rbind(c(0, 0.01), c(L, 0.01), c(L, L), c(0, L), c(0, 0.01)))))
 boundary <- fm_as_segm(boundary_sf)
-mesh <- fm_mesh_2d_inla(boundary = boundary, max.edge = c(3, 3))
+mesh <- fm_mesh_2d_inla(boundary = boundary, max.edge = c(1.5, 1.5))
 nodes <- mesh$loc
 n <- mesh$n
 par(mfrow = c(1, 1))
 plot(mesh)
 
-number_of_loops <- 400 # number of iterations
+number_of_loops <- 3 # number of iterations
 maxit_MAP <- 600
-number_of_weights <- 10000
+number_of_weights <- 500
 confidence_level <- 0.05
 results <- vector("list", number_of_loops) # Pre-allocates a list for m iterations
 
@@ -78,8 +79,8 @@ for (i in 1:number_of_loops) {
         sigma_epsilon0 = sigma_epsilon0,
         a0 = a0, rho0 = rho0, m = 1
       )
-      #Simulate parameters from uniform prior
-     # true_params <-sim_theta_uniform(sigma_u0 = sigma_u0, sigma_epsilon0 = sigma_epsilon0, a0 = a0, rho0 = rho0, L = L)
+      # Simulate parameters from uniform prior
+      # true_params <-sim_theta_uniform(sigma_u0 = sigma_u0, sigma_epsilon0 = sigma_epsilon0, a0 = a0, rho0 = rho0, L = L)
       # Extract true parameters
       log_kappa <- true_params$log_kappa
       kappa <- exp(log_kappa)
@@ -100,7 +101,8 @@ for (i in 1:number_of_loops) {
 
       # Calculating the MAP under each prior knowing simulated data
       # Takes around 20s with mesh size 1 (554 degrees of freedom) and scales linearly in degrees of freedom
-      delta <- rnorm(5, 0, 1) # Used to randomize starting point of MAP
+      # delta <- rnorm(5, 0, 1) # Used to randomize starting point of MAP
+      delta <- 0
       maps <- lapply(log_priors, function(log_prior) {
         MAP_prior(
           log_prior = log_prior, mesh = mesh,
@@ -108,7 +110,6 @@ for (i in 1:number_of_loops) {
           theta0 = unlist(true_params) + delta
         )
       })
-
 
       # Gaussian_median approximations
       mus_Gaussian_median <- lapply(maps, function(map) map$par)
@@ -210,15 +211,6 @@ parameter_names <- rownames(results[[1]]$pc$confidence_intervals$Gaussian_median
 # Plots ecdf of distances to MAP using ggplot
 plot_distances_to_MAP <- function(results, prior_types) {
   all_distances <- data.frame()
-  # Factorial function
-  factorial <- function(n) {
-    if (n == 0) {
-      return(1)
-    } else {
-      return(n * factorial(n - 1))
-    }
-  }
-
   # Importance sampling
   importances <- lapply(prior_types, function(prior_type) {
     log_posterior <- log_posteriors[[prior_type]]

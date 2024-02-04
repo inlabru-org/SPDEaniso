@@ -180,7 +180,32 @@ log_uniform_density <- function(a, b) {
   }
   return(log_uniform_density)
 }
-
+#' @title Calculate support of the uniform prior
+#' @description Calculates the support of the uniform prior for theta
+#' @param a0 A surprisingly high ratio of anisotropy, in (1,infinity)
+#' @param a0_inf A surprisingly low ratio of anisotropy, in (1,a0), anisotropy ratio is not allowed to go below a0_inf
+#' @param rho0 A surprisingly small correlation range, in (0,infinity)
+#' @param L A surprisingly large correlation range (e.g. size of domain), in (0,infinity)
+#' @param width_support_factor A factor to multiply the width of the support of the uniform distribution. By default 2
+#' @return A list of upper and lower bounds for the support of the uniform prior. Each sublist is of length 5, corresponding to log_kappa, v1, v2, log_sigma_u, log_sigma_epsilon
+#' @export
+#' @examples
+#' a0 <- 10
+#' rho0 <- 0.1
+#' L <- 100
+#' width_support_factor <- 2
+#' support <- support_uniform(a0 = a0, rho0 = rho0, L = L, width_support_factor = width_support_factor)
+support_uniform <- function(a0, a0_inf, rho0, L, width_support_factor = 2) {
+  kappa0 <- sqrt(8) / rho0
+  log_kappa_support <- c(-log(width_support_factor * L), -log(rho0 / width_support_factor)) + 1 / 2 * log(8)
+  v_support <- c(log(a0_inf / width_support_factor) / sqrt(2), log(width_support_factor * a0) / sqrt(2))
+  log_sigma_u_support <- c(-Inf, Inf)
+  log_sigma_epsilon_support <- c(-Inf, Inf)
+  lower <- c(log_kappa_support[1], v_support[1], v_support[1], log_sigma_u_support[1], log_sigma_epsilon_support[1])
+  upper <- c(log_kappa_support[2], v_support[2], v_support[2], log_sigma_u_support[2], log_sigma_epsilon_support[2])
+  return(list(lower = lower, upper = upper))
+}
+#' @return A list with four elements: log_kappa, v, log_sigma_u, log_sigma_epsilon
 #' @title Log uniform prior on anisotropy, noise and variance of field
 #' @description Calculates  the log of the prior on the (log(kappa),v, log(sigma_u), log(sigma_epsilon)) supposing:
 #' correlation range rho = sqrt(8)/kappa ~ Uniform(rho0/2,L),
@@ -188,7 +213,9 @@ log_uniform_density <- function(a, b) {
 #'
 #' @param rho0 A surprisingly small correlation range, correlation is not allowed to go below rho0/2
 #' @param L A surprisingly large correlation range (e.g. size of domain), correlation is not allowed to go above L
+#' @param width_support_factor A factor to multiply the width of the support of the uniform distribution. By default 2
 #' @param a0 A surprisingly high ratio of anisotropy, in (1,infinity), anisotropy ratio is not allowed to go below a0/2 or above 2a0
+#' @param a0_inf A surprisingly low ratio of anisotropy, in (1,a0), anisotropy ratio is not allowed to go below a0_inf
 #' @param alpha A quantile in (0,1) for all the parameters. By default, alpha = 0.01
 #' @param alpha_u A quantile in (0,1) for the variance of the field. If NULL, alpha_u=alpha
 #' @param alpha_epsilon A quantile in (0,1) for the variance of the noise. If NULL, alpha_epsilon=alpha
@@ -206,8 +233,8 @@ log_uniform_density <- function(a, b) {
 #' rho0 <- 0.1
 #' L <- 100
 #'
-#' log_prior <- log_prior_uniform(alpha_u = alpha_u, alpha_epsilon = alpha_epsilon, sigma_u0 = sigma_u0, sigma_epsilon0 = sigma_epsilon0, a0 = a0, rho0 = rho0, L = L)
-log_prior_uniform <- function(sigma_u0, sigma_epsilon0, a0, rho0, L, alpha = 0.01, alpha_u = NULL, alpha_epsilon = NULL) {
+#' log_prior <- log_prior_uniform(alpha_u = alpha_u, alpha_epsilon = alpha_epsilon, sigma_u0 = sigma_u0, sigma_epsilon0 = sigma_epsilon0, a0 = a0, rho0 = rho0, L = L, width_support_factor = 2)
+log_prior_uniform <- function(sigma_u0, sigma_epsilon0, a0, a0_inf, rho0, L, width_support_factor = 2, alpha = 0.01, alpha_u = NULL, alpha_epsilon = NULL) {
   # This sets the NULL values to alpha
   if (is.null(alpha_u)) {
     alpha_u <- alpha
@@ -239,8 +266,8 @@ log_prior_uniform <- function(sigma_u0, sigma_epsilon0, a0, rho0, L, alpha = 0.0
   log_prior <- function(log_kappa, v, log_sigma_u, log_sigma_epsilon) {
     # Terms for anisotropy
     rho <- sqrt(8) / exp(log_kappa)
-    log_uniform_density_rho <- log_uniform_density(rho0 / 2, b = L)
-    log_uniform_density_v <- log_uniform_density(a = log(a0 / 2) / sqrt(2), b = log(2 * a0) / sqrt(2))
+    log_uniform_density_rho <- log_uniform_density(rho0 / width_support_factor, b = L)
+    log_uniform_density_v <- log_uniform_density(a = log(a0_inf / width_support_factor) / sqrt(2), b = log(width_support_factor * a0) / sqrt(2))
     log_kappa_term <- log_uniform_density_rho(rho)
     v_term <- log_uniform_density_v(abs(v[1])) + log_uniform_density_v(abs(v[2]))
 

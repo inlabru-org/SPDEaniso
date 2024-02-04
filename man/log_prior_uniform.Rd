@@ -8,8 +8,10 @@ log_prior_uniform(
   sigma_u0,
   sigma_epsilon0,
   a0,
+  a0_inf,
   rho0,
   L,
+  width_support_factor = 2,
   alpha = 0.01,
   alpha_u = NULL,
   alpha_epsilon = NULL
@@ -22,9 +24,13 @@ log_prior_uniform(
 
 \item{a0}{A surprisingly high ratio of anisotropy, in (1,infinity), anisotropy ratio is not allowed to go below a0/2 or above 2a0}
 
+\item{a0_inf}{A surprisingly low ratio of anisotropy, in (1,a0), anisotropy ratio is not allowed to go below a0_inf}
+
 \item{rho0}{A surprisingly small correlation range, correlation is not allowed to go below rho0/2}
 
 \item{L}{A surprisingly large correlation range (e.g. size of domain), correlation is not allowed to go above L}
+
+\item{width_support_factor}{A factor to multiply the width of the support of the uniform distribution. By default 2}
 
 \item{alpha}{A quantile in (0,1) for all the parameters. By default, alpha = 0.01}
 
@@ -33,6 +39,8 @@ log_prior_uniform(
 \item{alpha_epsilon}{A quantile in (0,1) for the variance of the noise. If NULL, alpha_epsilon=alpha}
 }
 \value{
+A list with four elements: log_kappa, v, log_sigma_u, log_sigma_epsilon
+
 The calculated log of the prior on  theta=(log(kappa),v, log(sigma_u), log(sigma_epsilon))
 }
 \description{
@@ -49,5 +57,5 @@ a0 <- 10
 rho0 <- 0.1
 L <- 100
 
-log_prior <- log_prior_uniform(alpha_u = alpha_u, alpha_epsilon = alpha_epsilon, sigma_u0 = sigma_u0, sigma_epsilon0 = sigma_epsilon0, a0 = a0, rho0 = rho0, L = L)
+log_prior <- log_prior_uniform(alpha_u = alpha_u, alpha_epsilon = alpha_epsilon, sigma_u0 = sigma_u0, sigma_epsilon0 = sigma_epsilon0, a0 = a0, rho0 = rho0, L = L, width_support_factor = 2)
 }

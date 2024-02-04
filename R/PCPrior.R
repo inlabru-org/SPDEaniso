@@ -601,8 +601,18 @@ MAP_prior <- function(log_prior = function(log_kappa, v, log_sigma_u, log_sigma_
         }
       )
     }
-    theta0 <- optim(par = theta0, fn = log_post, control = list(fnscale = -1, maxit = max_iterations / 2), hessian = do_u_want_hessian)$par
-    return(optim(par = theta0, fn = log_post, control = list(fnscale = -1, maxit = max_iterations / 2), hessian = do_u_want_hessian, method = "BFGS"))
+    map <- optim(par = theta0, fn = log_post, control = list(fnscale = -1, maxit = max_iterations / 2), hessian = do_u_want_hessian)
+    theta0 <- map$par
+    tryCatch(
+      {
+        return(optim(par = theta0, fn = log_post, control = list(fnscale = -1, maxit = max_iterations / 2), hessian = do_u_want_hessian, method = "BFGS"))
+      },
+      error = function(e) {
+        warning("Error in BFGS: ", e)
+        return(map)
+      }
+    )
+    # return(map)
   } else {
     # Maximizes the log-posterior density over (log_kappa, v, log_sigma_u)
     log_post <- function(theta) {
@@ -624,8 +634,17 @@ MAP_prior <- function(log_prior = function(log_kappa, v, log_sigma_u, log_sigma_
       )
     }
     theta0 <- theta0[1:4]
-    theta0 <- optim(par = theta0, fn = log_post, control = list(fnscale = -1, maxit = max_iterations / 2), hessian = do_u_want_hessian)$par
-    return(optim(par = theta0, fn = log_post, control = list(fnscale = -1, maxit = max_iterations / 2), hessian = do_u_want_hessian, method = "BFGS"))
+    map <- optim(par = theta0, fn = log_post, control = list(fnscale = -1, maxit = max_iterations / 2), hessian = do_u_want_hessian)$par
+    theta0 <- map$par
+    tryCatch(
+      {
+        return(optim(par = theta0, fn = log_post, control = list(fnscale = -1, maxit = max_iterations / 2), hessian = do_u_want_hessian, method = "BFGS"))
+      },
+      error = function(e) {
+        warning("Error in optim: ", e)
+        return(theta0)
+      }
+    )
   }
 }
 
