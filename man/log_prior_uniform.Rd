@@ -38,7 +38,7 @@ The calculated log of the prior on  theta=(log(kappa),v, log(sigma_u), log(sigma
 \description{
 Calculates  the log of the prior on the (log(kappa),v, log(sigma_u), log(sigma_epsilon)) supposing:
 correlation range rho = sqrt(8)/kappa ~ Uniform(rho0/2,L),
-v1,v2 ~ Uniform(log(a0/2)/sqrt(2),log(2a0)/sqrt(2)), and with PC priors on noise and variance of field, given certain quantiles.
+v1,v2 ~ Uniform(log(a0/2/sqrt(2)),log(2a0/sqrt(2))), and with PC priors on noise and variance of field, given certain quantiles.
 }
 \examples{
 alpha_u <- 0.01

@@ -34,14 +34,8 @@ log_pc_prior <- log_pc_prior_quantile(
   a0 = a0, rho0 = rho0, alpha = alpha
 )
 
-log_priors <- list(
-  pc = log_pc_prior,
-  not_pc = log_not_pc_prior,
-  uniform = log_uniform_prior
-)
-prior_types <- setNames(as.list(names(log_priors)), names(log_priors))
-approximation_types <- list("Gaussian_median", "importance", "importance_smoothed")
-approximation_types <- setNames(approximation_types, approximation_types)
+
+
 
 log_not_pc_prior <- log_gaussian_prior_quantile(
   sigma_u0 = sigma_u0, sigma_epsilon0 = sigma_epsilon0,
@@ -50,6 +44,14 @@ log_not_pc_prior <- log_gaussian_prior_quantile(
 L <- 10 # Length of domain
 log_uniform_prior <- log_prior_uniform(sigma_u0 = sigma_u0, sigma_epsilon0 = sigma_epsilon0, a0 = a0, rho0 = rho0, L = L)
 
+log_priors <- list(
+  pc = log_pc_prior,
+  not_pc = log_not_pc_prior,
+  uniform = log_uniform_prior
+)
+prior_types <- setNames(as.list(names(log_priors)), names(log_priors))
+approximation_types <- list("Gaussian_median", "importance", "importance_smoothed")
+approximation_types <- setNames(approximation_types, approximation_types)
 # Mesh definition
 library(sf)
 boundary_sf <- st_sfc(st_polygon(list(rbind(c(0, 0.01), c(L, 0.01), c(L, L), c(0, L), c(0, 0.01)))))
