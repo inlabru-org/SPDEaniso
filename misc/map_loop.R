@@ -73,13 +73,13 @@ for (i in 1:number_of_loops) {
   tryCatch(
     {
       # Simulate parameters from PC prior
-      # true_params <- sim_theta_pc_quantile(
-      #   alpha = alpha, sigma_u0 = sigma_u0,
-      #   sigma_epsilon0 = sigma_epsilon0,
-      #   a0 = a0, rho0 = rho0, m = 1
-      # )
+      true_params <- sim_theta_pc_quantile(
+        alpha = alpha, sigma_u0 = sigma_u0,
+        sigma_epsilon0 = sigma_epsilon0,
+        a0 = a0, rho0 = rho0, m = 1
+      )
       #Simulate parameters from uniform prior
-      true_params <-sim_theta_uniform(sigma_u0 = sigma_u0, sigma_epsilon0 = sigma_epsilon0, a0 = a0, rho0 = rho0, L = L)
+     # true_params <-sim_theta_uniform(sigma_u0 = sigma_u0, sigma_epsilon0 = sigma_epsilon0, a0 = a0, rho0 = rho0, L = L)
       # Extract true parameters
       log_kappa <- true_params$log_kappa
       kappa <- exp(log_kappa)

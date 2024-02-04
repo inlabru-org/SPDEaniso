@@ -135,9 +135,10 @@ tryCatch({
   delta <- rnorm(5, 0, 1) # Used to randomize starting point of MAP
   # Calculating the MAP under each prior knowing simulated data
   map_pc <- MAP_prior(
-    log_prior = log_pc_prior, mesh = mesh,
+    log_prior = log_uniform_prior, mesh = mesh,
     y = y, A = A, m_u = m_u, max_iterations = maxit,
-    theta0 = unlist(true_params) + delta
+    theta0 = unlist(true_params),
+    do_u_want_hessian = FALSE
     # ,log_sigma_epsilon = log_sigma_epsilon
   )
 

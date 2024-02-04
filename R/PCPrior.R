@@ -569,12 +569,15 @@ log_posterior_prior <- function(log_prior, mesh, log_kappa, v, log_sigma_u = 0, 
 #' @param max_iterations Maximum number of iterations for optim, by default 300
 #' @param log_sigma_epsilon Variance of noise, if NULL, it is estimated by the MAP
 #' @param theta0 Initial value for the parameters (log(kappa), v, log(sigma_u), log(sigma_epsilon)). By default, set to (log(0.5), 1, 2, 1, 1)
+#' @param hessian If TRUE, the hessian is returned. By default, set to TRUE
+#'
 #'
 #' @return The parameters (log_kappa, v, log_sigma_u, log_sigma_epsilon) that maximize the posterior
 #' @export
 MAP_prior <- function(log_prior = function(log_kappa, v, log_sigma_u, log_sigma_epsilon) {
                         return(0)
-                      }, mesh, y, A, m_u, log_sigma_epsilon = NULL, max_iterations = 300, theta0 = c(-0.5, c(0.1, 0.1), 0, -3)) {
+                      },
+                      mesh, y, A, m_u, log_sigma_epsilon = NULL, max_iterations = 300, theta0 = c(-0.5, c(0.1, 0.1), 0, -3), do_u_want_hessian = TRUE) {
   if (missing(log_sigma_epsilon) || is.null(log_sigma_epsilon)) {
     # Maximizes the log-posterior density over (log_kappa, v, log_sigma_u, log_sigma_epsilon)
     # First uses Nelder-Mead to find a good starting point for the optimization
@@ -598,8 +601,8 @@ MAP_prior <- function(log_prior = function(log_kappa, v, log_sigma_u, log_sigma_
         }
       )
     }
-    theta0 <- optim(par = theta0, fn = log_post, control = list(fnscale = -1, maxit = max_iterations / 2), hessian = TRUE)$par
-    return(optim(par = theta0, fn = log_post, control = list(fnscale = -1, maxit = max_iterations / 2), hessian = TRUE, method = "BFGS"))
+    theta0 <- optim(par = theta0, fn = log_post, control = list(fnscale = -1, maxit = max_iterations / 2), hessian = do_u_want_hessian)$par
+    return(optim(par = theta0, fn = log_post, control = list(fnscale = -1, maxit = max_iterations / 2), hessian = do_u_want_hessian, method = "BFGS"))
   } else {
     # Maximizes the log-posterior density over (log_kappa, v, log_sigma_u)
     log_post <- function(theta) {
@@ -621,8 +624,8 @@ MAP_prior <- function(log_prior = function(log_kappa, v, log_sigma_u, log_sigma_
       )
     }
     theta0 <- theta0[1:4]
-    theta0 <- optim(par = theta0, fn = log_post, control = list(fnscale = -1, maxit = max_iterations / 2), hessian = TRUE)$par
-    return(optim(par = theta0, fn = log_post, control = list(fnscale = -1, maxit = max_iterations / 2), hessian = TRUE, method = "BFGS"))
+    theta0 <- optim(par = theta0, fn = log_post, control = list(fnscale = -1, maxit = max_iterations / 2), hessian = do_u_want_hessian)$par
+    return(optim(par = theta0, fn = log_post, control = list(fnscale = -1, maxit = max_iterations / 2), hessian = do_u_want_hessian, method = "BFGS"))
   }
 }
 

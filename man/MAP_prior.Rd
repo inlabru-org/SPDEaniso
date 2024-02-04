@@ -14,7 +14,8 @@ MAP_prior(
   m_u,
   log_sigma_epsilon = NULL,
   max_iterations = 300,
-  theta0 = c(-0.5, c(0.1, 0.1), 0, -3)
+  theta0 = c(-0.5, c(0.1, 0.1), 0, -3),
+  do_u_want_hessian = TRUE
 )
 }
 \arguments{
@@ -34,6 +35,8 @@ If not specified, it is assumed to be the function that returns 0.}
 \item{max_iterations}{Maximum number of iterations for optim, by default 300}
 
 \item{theta0}{Initial value for the parameters (log(kappa), v, log(sigma_u), log(sigma_epsilon)). By default, set to (log(0.5), 1, 2, 1, 1)}
+
+\item{hessian}{If TRUE, the hessian is returned. By default, set to TRUE}
 }
 \value{
 The parameters (log_kappa, v, log_sigma_u, log_sigma_epsilon) that maximize the posterior
