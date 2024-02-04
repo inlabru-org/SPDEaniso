@@ -54,15 +54,15 @@ log_uniform_prior <- log_prior_uniform(sigma_u0 = sigma_u0, sigma_epsilon0 = sig
 library(sf)
 boundary_sf <- st_sfc(st_polygon(list(rbind(c(0, 0.01), c(L, 0.01), c(L, L), c(0, L), c(0, 0.01)))))
 boundary <- fm_as_segm(boundary_sf)
-mesh <- fm_mesh_2d_inla(boundary = boundary, max.edge = c(2, 2))
+mesh <- fm_mesh_2d_inla(boundary = boundary, max.edge = c(3, 3))
 nodes <- mesh$loc
 n <- mesh$n
 par(mfrow = c(1, 1))
 plot(mesh)
 
-number_of_loops <- 500 # number of iterations
+number_of_loops <- 400 # number of iterations
 maxit_MAP <- 600
-number_of_weights <- 1000
+number_of_weights <- 10000
 confidence_level <- 0.05
 results <- vector("list", number_of_loops) # Pre-allocates a list for m iterations
 
@@ -71,11 +71,13 @@ for (i in 1:number_of_loops) {
   tryCatch(
     {
       # Simulate parameters from PC prior
-      true_params <- sim_theta_pc_quantile(
-        alpha = alpha, sigma_u0 = sigma_u0,
-        sigma_epsilon0 = sigma_epsilon0,
-        a0 = a0, rho0 = rho0, m = 1
-      )
+      # true_params <- sim_theta_pc_quantile(
+      #   alpha = alpha, sigma_u0 = sigma_u0,
+      #   sigma_epsilon0 = sigma_epsilon0,
+      #   a0 = a0, rho0 = rho0, m = 1
+      # )
+      #Simulate parameters from uniform prior
+      true_params <-sim_theta_uniform(sigma_u0 = sigma_u0, sigma_epsilon0 = sigma_epsilon0, a0 = a0, rho0 = rho0, L = L)
       # Extract true parameters
       log_kappa <- true_params$log_kappa
       kappa <- exp(log_kappa)
@@ -197,12 +199,78 @@ for (i in 1:number_of_loops) {
 # Eliminates NULL results
 not_null_indices <- sapply(results, function(x) !is.null(x$pc$importance$log_unnormalized_weights))
 results <- results[not_null_indices]
+# Results obtained simulating parameters from PC priors and using a mesh size of 3, 400 iterations, 10000 weights and a confidence level of 0.05
+# saveRDS(results, "results_pc_3_400_10000_005.rds")
+# results <- readRDS("results_3_400_10000_005.rds")
 parameter_names <- rownames(results[[1]]$pc$confidence_intervals$Gaussian_median)
 
 
 # Plots ecdf of distances to MAP using ggplot
 plot_distances_to_MAP <- function(results, prior_types) {
   all_distances <- data.frame()
+  # Factorial function
+  factorial <- function(n) {
+    if (n == 0) {
+      return(1)
+    } else {
+      return(n * factorial(n - 1))
+    }
+  }
+
+  # Importance sampling
+  importances <- lapply(prior_types, function(prior_type) {
+    log_posterior <- log_posteriors[[prior_type]]
+    mu_Gaussian_median <- mus_Gaussian_median[[prior_type]]
+    Q_Gaussian_median <- Qs_Gaussian_median[[prior_type]]
+    log_unnormalized_importance_weights_and_integrals(
+      log_posterior_density = log_posterior,
+      mu_Gaussian_median = mu_Gaussian_median, Q_Gaussian_median = Q_Gaussian_median,
+      n_weights = number_of_weights, q = confidence_level, true_params = unlist(true_params)
+    )
+  })
+
+  # CIs
+  confidence_intervals <- lapply(prior_types, function(prior_type) {
+    lapply(approximation_types, function(approximation_type) {
+      importances[[prior_type]][[paste0("confidence_intervals_", approximation_type)]]
+    })
+  })
+
+  true_parameter_is_within_CI <- lapply(prior_types, function(prior_type) {
+    lapply(approximation_types, function(approximation_type) {
+      parameter_within_confidence_intervals(true_params, confidence_intervals[[prior_type]][[approximation_type]])
+    })
+  })
+
+
+  # Accumulate results
+  results_accumulator <- function(prior_type) {
+    # Return a list of the calculated values
+    list(
+      MAP_estimate = maps[[prior_type]]$par,
+      MAP_value = maps[[prior_type]]$value,
+      convergence = maps[[prior_type]]$convergence,
+      distance_vector = abs(maps[[prior_type]]$par - unlist(true_params)),
+      covariance_estimate = Covariances_Gaussian_median[[prior_type]],
+      std_dev_estimates_Gaussian_median = std_dev_estimates_Gaussian_median[[prior_type]],
+      confidence_intervals = lapply(approximation_types, function(approximation_type) {
+        confidence_intervals[[prior_type]][[approximation_type]]
+      }),
+      true_parameter_within_c_interval = lapply(approximation_types, function(approximation_type) {
+        true_parameter_is_within_CI[[prior_type]][[approximation_type]]
+      }),
+      importance = importances[[prior_type]]
+    )
+  }
+
+
+  # Store results
+  partial_results <- lapply(prior_types, results_accumulator)
+  results[[i]] <- c(
+    list(true_params = true_params),
+    partial_results, prior_types
+  )
+
 
   for (prior_type in prior_types) {
     distances_to_MAP <- lapply(results, function(x) x[[prior_type]]$distance_vector)
