@@ -205,7 +205,7 @@ support_uniform <- function(a0, a0_inf, rho0, L, width_support_factor = 2) {
   upper <- c(log_kappa_support[2], v_support[2], v_support[2], log_sigma_u_support[2], log_sigma_epsilon_support[2])
   return(list(lower = lower, upper = upper))
 }
-#' @return A list with four elements: log_kappa, v, log_sigma_u, log_sigma_epsilon
+
 #' @title Log uniform prior on anisotropy, noise and variance of field
 #' @description Calculates  the log of the prior on the (log(kappa),v, log(sigma_u), log(sigma_epsilon)) supposing:
 #' correlation range rho = sqrt(8)/kappa ~ Uniform(rho0/2,L),
@@ -265,10 +265,9 @@ log_prior_uniform <- function(sigma_u0, sigma_epsilon0, a0, a0_inf, rho0, L, wid
   # Defines the log prior
   log_prior <- function(log_kappa, v, log_sigma_u, log_sigma_epsilon) {
     # Terms for anisotropy
-    rho <- sqrt(8) / exp(log_kappa)
-    log_uniform_density_rho <- log_uniform_density(rho0 / width_support_factor, b = L)
+    log_uniform_density_log_kappa <- log_uniform_density(a = -log(width_support_factor * L) + 1 / 2 * log(8), b = -log(rho0 / width_support_factor) + 1 / 2 * log(8))
     log_uniform_density_v <- log_uniform_density(a = log(a0_inf / width_support_factor) / sqrt(2), b = log(width_support_factor * a0) / sqrt(2))
-    log_kappa_term <- log_uniform_density_rho(rho)
+    log_kappa_term <- log_uniform_density_log_kappa(log_kappa)
     v_term <- log_uniform_density_v(abs(v[1])) + log_uniform_density_v(abs(v[2]))
 
     # Terms for variance
@@ -280,6 +279,7 @@ log_prior_uniform <- function(sigma_u0, sigma_epsilon0, a0, a0_inf, rho0, L, wid
   }
   return(log_prior)
 }
+
 
 
 #' @title Log PC prior on theta=(log(kappa),v, log(sigma_u), log(sigma_epsilon)) given certain quantiles.
