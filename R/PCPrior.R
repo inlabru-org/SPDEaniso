@@ -752,19 +752,19 @@ normalize_log_weights <- function(log_unnormalized_weights) {
 
 
 
-#' @title Calculate confidence intervals for each entry of a weighted sample
-#' @description Calculates the confidence intervals for each entry of a weighted sample.
+#' @title Calculate credible intervals for each entry of a weighted sample
+#' @description Calculates the credible intervals for each entry of a weighted sample.
 #' @param theta A matrix of size n x d representing the weighted sample
 #' @param w A vector of length n representing the weights of the unnormalized weighted sample.
 #' @param q The significance level
-#' @return A matrix of size d x 2 representing the confidence intervals for each entry of the weighted sample
+#' @return A matrix of size d x 2 representing the credible intervals for each entry of the weighted sample
 #' @export
-calculate_confidence_intervals_importance <- function(theta, w, q) {
+calculate_credible_intervals_importance <- function(theta, w, q) {
   # Normalize the weights
   w <- w / sum(w)
 
-  # Function to calculate the confidence interval for one dimension
-  confidence_interval <- function(theta, w, q) {
+  # Function to calculate the credible interval for one dimension
+  credible_interval <- function(theta, w, q) {
     df <- data.frame(theta = theta, w = w)
 
     # Calculate cumulative weights
@@ -780,7 +780,7 @@ calculate_confidence_intervals_importance <- function(theta, w, q) {
   }
 
   # Apply the function to each dimension of theta
-  t(apply(theta, 2, confidence_interval, w, q))
+  t(apply(theta, 2, credible_interval, w, q))
 }
 #' @title Calculate the probabilities P[theta_i <= theta^*_i]
 #' @description Calculates the probabilities P[theta_i <= theta^*_i] using the weighted empirical CDF.
@@ -811,43 +811,43 @@ calculate_probabilities <- function(theta_0, theta, w) {
   # Apply the function to each dimension of theta
   sapply(seq_along(theta_0), function(i) probability(theta[, i], w, theta_0[i]))
 }
-#' @title Calculate confidence intervals for Gaussian
-#' @description Calculates the confidence intervals for a Gaussian distribution.
+#' @title Calculate credible intervals for Gaussian
+#' @description Calculates the credible intervals for a Gaussian distribution.
 #' @param mu A vector of length d representing the mean of the Gaussian distribution
 #' @param standard_deviation A vector of length d representing the standard deviation of the Gaussian distribution
 #' @param q The significance level
-#' @return A matrix of size d x 2 representing the confidence intervals for each entry of the Gaussian distribution
+#' @return A matrix of size d x 2 representing the credible intervals for each entry of the Gaussian distribution
 #' @export
 #' @examples
 #' mu <- c(0, 0)
 #' standard_deviation <- c(1, 1)
 #' q <- 0.05
-#' calculate_confidence_intervals_gaussian(mu, standard_deviation, q)
-calculate_confidence_intervals_gaussian <- function(mu, standard_deviation, q) {
-  # Calculate the confidence intervals for each dimension
+#' calculate_credible_intervals_gaussian(mu, standard_deviation, q)
+calculate_credible_intervals_gaussian <- function(mu, standard_deviation, q) {
+  # Calculate the credible intervals for each dimension
   ci <- cbind(mu - qnorm(1 - q / 2) * standard_deviation, mu + qnorm(1 - q / 2) * standard_deviation)
   return(ci)
 }
 
-#' @title Parameter within confidence intervals
-#' @description Checks if the parameter is within the confidence intervals
+#' @title Parameter within credible intervals
+#' @description Checks if the parameter is within the credible intervals
 #' @param parameter A vector of length d representing the parameter
-#' @param confidence_intervals A matrix of size d x 2 representing the confidence intervals
-#' @return A vector of length d representing whether the parameter is within the confidence intervals
+#' @param credible_intervals A matrix of size d x 2 representing the credible intervals
+#' @return A vector of length d representing whether the parameter is within the credible intervals
 #' @export
 #' @examples
 #' mu <- c(0, 0)
 #' standard_deviation <- c(1, 1)
 #' q <- 0.05
-#' confidence_intervals <- calculate_confidence_intervals_gaussian(mu, standard_deviation, q)
+#' credible_intervals <- calculate_credible_intervals_gaussian(mu, standard_deviation, q)
 #' theta <- c(0.5, 0.5)
-#' parameter_within_confidence_intervals(theta, confidence_intervals)
+#' parameter_within_credible_intervals(theta, credible_intervals)
 #'
-parameter_within_confidence_intervals <- function(parameter, confidence_intervals) {
-  # Check if the parameter is within the confidence intervals
+parameter_within_credible_intervals <- function(parameter, credible_intervals) {
+  # Check if the parameter is within the credible intervals
   parameter <- unlist(parameter)
-  parameter_within_confidence_intervals <- (parameter >= confidence_intervals[, 1]) & (parameter <= confidence_intervals[, 2])
-  return(parameter_within_confidence_intervals)
+  parameter_within_credible_intervals <- (parameter >= credible_intervals[, 1]) & (parameter <= credible_intervals[, 2])
+  return(parameter_within_credible_intervals)
 }
 
 
@@ -927,11 +927,11 @@ log_unnormalized_importance_weights_and_integrals <- function(log_posterior_dens
   complexity_importance_smoothed <- weighted.mean(complexity_values, w = weights_smoothed_normalized)
 
 
-  # Calculate a 95% confidence interval for each component of the parameters around its mean
+  # Calculate a 95% credible interval for each component of the parameters around its mean
   std_dev_Gaussian_median <- sqrt(diag(covariance_Gaussian_median))
-  confidence_intervals_Gaussian_median <- calculate_confidence_intervals_gaussian(mu_Gaussian_median, std_dev_Gaussian_median, q)
-  confidence_intervals_importance <- calculate_confidence_intervals_importance(theta_sim_importance, weights_normalized, q)
-  confidence_intervals_importance_smoothed <- calculate_confidence_intervals_importance(theta_sim_importance, weights_smoothed_normalized, q)
+  credible_intervals_Gaussian_median <- calculate_credible_intervals_gaussian(mu_Gaussian_median, std_dev_Gaussian_median, q)
+  credible_intervals_importance <- calculate_credible_intervals_importance(theta_sim_importance, weights_normalized, q)
+  credible_intervals_importance_smoothed <- calculate_credible_intervals_importance(theta_sim_importance, weights_smoothed_normalized, q)
   # Calculates the probabilities P[theta_i <= true_params_i]
   probabilities_Gaussian_median <- pnorm(true_params, mu_Gaussian_median, std_dev_Gaussian_median)
   probabilities_importance <- calculate_probabilities(true_params, theta_sim_importance, weights_normalized)
@@ -956,9 +956,9 @@ log_unnormalized_importance_weights_and_integrals <- function(log_posterior_dens
     mean_smoothed_importance = mean_smoothed_importance,
     marginal_variance_smoothed_importance = marginal_variance_smoothed_importance,
     complexity_importance_smoothed = complexity_importance_smoothed,
-    confidence_intervals_Gaussian_median = confidence_intervals_Gaussian_median,
-    confidence_intervals_importance = confidence_intervals_importance,
-    confidence_intervals_importance_smoothed = confidence_intervals_importance_smoothed,
+    credible_intervals_Gaussian_median = credible_intervals_Gaussian_median,
+    credible_intervals_importance = credible_intervals_importance,
+    credible_intervals_importance_smoothed = credible_intervals_importance_smoothed,
     probabilities_Gaussian_median = probabilities_Gaussian_median,
     probabilities_importance = probabilities_importance,
     probabilities_importance_smoothed = probabilities_importance_smoothed,

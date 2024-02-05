@@ -129,7 +129,7 @@ for (i in 1:m) {
   )
 }
 
-# This calculates the proportion of times the MAP estimate is in the 95% confidence intervalfor each parameter ignoring
+# This calculates the proportion of times the MAP estimate is in the 95% credible intervalfor each parameter ignoring
 # results with any NANs
 pc_within_cinterval <- lapply(results, function(x) x$pc$within_cinterval)
 # This transforms the list into a matrix
@@ -138,7 +138,7 @@ pc_within_cinterval <- do.call(rbind, pc_within_cinterval)
 pc_within_cinterval <- colMeans(pc_within_cinterval, na.rm = TRUE)
 pc_within_cinterval
 
-# This calculates the proportion of times the MAP estimate is in the 95% confidence intervalfor each parameter ignoring
+# This calculates the proportion of times the MAP estimate is in the 95% credible intervalfor each parameter ignoring
 # results with any NANs
 not_pc_within_cinterval <- lapply(results, function(x) x$not_pc$within_cinterval)
 # This transforms the list into a matrix

@@ -70,7 +70,7 @@ plot(mesh)
 number_of_loops <- 400 # number of iterations
 maxit_MAP <- 600
 number_of_weights <- 10000
-confidence_level <- 0.05
+credible_level <- 0.05
 results <- vector("list", number_of_loops) # Pre-allocates a list for m iterations
 
 for (i in 1:number_of_loops) {
@@ -148,20 +148,20 @@ for (i in 1:number_of_loops) {
         log_unnormalized_importance_weights_and_integrals(
           log_posterior_density = log_posterior,
           mu_Gaussian_median = mu_Gaussian_median, Q_Gaussian_median = Q_Gaussian_median,
-          n_weights = number_of_weights, q = confidence_level, true_params = unlist(true_params)
+          n_weights = number_of_weights, q = credible_level, true_params = unlist(true_params)
         )
       })
 
       # CIs
-      confidence_intervals <- lapply(prior_types, function(prior_type) {
+      credible_intervals <- lapply(prior_types, function(prior_type) {
         lapply(approximation_types, function(approximation_type) {
-          importances[[prior_type]][[paste0("confidence_intervals_", approximation_type)]]
+          importances[[prior_type]][[paste0("credible_intervals_", approximation_type)]]
         })
       })
 
       true_parameter_is_within_CI <- lapply(prior_types, function(prior_type) {
         lapply(approximation_types, function(approximation_type) {
-          parameter_within_confidence_intervals(true_params, confidence_intervals[[prior_type]][[approximation_type]])
+          parameter_within_credible_intervals(true_params, credible_intervals[[prior_type]][[approximation_type]])
         })
       })
 
@@ -176,8 +176,8 @@ for (i in 1:number_of_loops) {
           distance_vector = abs(maps[[prior_type]]$par - unlist(true_params)),
           covariance_estimate = Covariances_Gaussian_median[[prior_type]],
           std_dev_estimates_Gaussian_median = std_dev_estimates_Gaussian_median[[prior_type]],
-          confidence_intervals = lapply(approximation_types, function(approximation_type) {
-            confidence_intervals[[prior_type]][[approximation_type]]
+          credible_intervals = lapply(approximation_types, function(approximation_type) {
+            credible_intervals[[prior_type]][[approximation_type]]
           }),
           true_parameter_within_c_interval = lapply(approximation_types, function(approximation_type) {
             true_parameter_is_within_CI[[prior_type]][[approximation_type]]
@@ -208,10 +208,10 @@ for (i in 1:number_of_loops) {
 # Eliminates NULL results
 not_null_indices <- sapply(results, function(x) !is.null(x$pc$importance$log_unnormalized_weights))
 results <- results[not_null_indices]
-# Results obtained simulating parameters from PC priors and using a mesh size of 3, 400 iterations, 10000 weights and a confidence level of 0.05
+# Results obtained simulating parameters from PC priors and using a mesh size of 3, 400 iterations, 10000 weights and a credible level of 0.05
 # saveRDS(results, "results_pc_3_400_10000_005.rds")
 # results <- readRDS("results_3_400_10000_005.rds")
-parameter_names <- rownames(results[[1]]$pc$confidence_intervals$Gaussian_median)
+parameter_names <- rownames(results[[1]]$pc$credible_intervals$Gaussian_median)
 
 
 # Plots ecdf of distances to MAP using ggplot
@@ -254,13 +254,13 @@ mean_distances <- lapply(prior_types, function(prior_type) {
 })
 
 
-# THere we test how to get the dataframe of confidence interval lengths using lapplyand for each approximation type
+# THere we test how to get the dataframe of credible interval lengths using lapplyand for each approximation type
 
 lengths_df <- lapply(prior_types, function(prior_type) {
   lapply(approximation_types, function(approximation_type) {
     lengths <- lapply(parameter_names, function(parameter_name) {
       all_lengths <- sapply(seq_along(results), function(j) {
-        length <- diff(results[[j]][[prior_type]]$confidence_intervals[[approximation_type]][parameter_name, ])
+        length <- diff(results[[j]][[prior_type]]$credible_intervals[[approximation_type]][parameter_name, ])
         length
       })
       all_lengths
@@ -303,7 +303,7 @@ plot_CI_lengths(lengths_df, prior_types, approximation_types)
 
 
 
-# Percentage of times the true parameter is within the confidence interval
+# Percentage of times the true parameter is within the credible interval
 
 within_ci <- lapply(prior_types, function(prior_type) {
   lapply(approximation_types, function(approximation_type) {
