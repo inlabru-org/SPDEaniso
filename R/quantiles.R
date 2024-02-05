@@ -213,8 +213,8 @@ support_uniform <- function(a0, a0_inf, rho0, L, width_support_factor = 2) {
 #'
 #' @param rho0 A surprisingly small correlation range, correlation is not allowed to go below rho0/2
 #' @param L A surprisingly large correlation range (e.g. size of domain), correlation is not allowed to go above L
-#' @param width_support_factor A factor to multiply the width of the support of the uniform distribution. By default 2
-#' @param a0 A surprisingly high ratio of anisotropy, in (1,infinity), anisotropy ratio is not allowed to go below a0/2 or above 2a0
+#' @param width_support_factor A factor to multiply the width of the support of the uniform distribution. By default 2. If Inf,an improper uniform prior is used
+#' @param a0 A surprisingly high ratio of anisotropy, in (1,infinity), anisotropy ratio is not allowed to go below a0/2 or above 2a0.
 #' @param a0_inf A surprisingly low ratio of anisotropy, in (1,a0), anisotropy ratio is not allowed to go below a0_inf
 #' @param alpha A quantile in (0,1) for all the parameters. By default, alpha = 0.01
 #' @param alpha_u A quantile in (0,1) for the variance of the field. If NULL, alpha_u=alpha
@@ -234,7 +234,7 @@ support_uniform <- function(a0, a0_inf, rho0, L, width_support_factor = 2) {
 #' L <- 100
 #'
 #' log_prior <- log_prior_uniform(alpha_u = alpha_u, alpha_epsilon = alpha_epsilon, sigma_u0 = sigma_u0, sigma_epsilon0 = sigma_epsilon0, a0 = a0, rho0 = rho0, L = L, width_support_factor = 2)
-log_prior_uniform <- function(sigma_u0, sigma_epsilon0, a0, a0_inf, rho0, L, width_support_factor = 2, alpha = 0.01, alpha_u = NULL, alpha_epsilon = NULL) {
+log_prior_uniform <- function(sigma_u0, sigma_epsilon0, a0 = NULL, a0_inf = NULL, rho0 = NULL, L = NULL, width_support_factor = 2, alpha = 0.01, alpha_u = NULL, alpha_epsilon = NULL) {
   # This sets the NULL values to alpha
   if (is.null(alpha_u)) {
     alpha_u <- alpha
@@ -264,17 +264,21 @@ log_prior_uniform <- function(sigma_u0, sigma_epsilon0, a0, a0_inf, rho0, L, wid
 
   # Defines the log prior
   log_prior <- function(log_kappa, v, log_sigma_u, log_sigma_epsilon) {
+    # Terms for variance
+    lambda_u <- lambda_variance_quantile(alpha_sigma = alpha_u, sigma0 = sigma_u0)
+    lambda_epsilon <- lambda_variance_quantile(alpha_sigma = alpha_epsilon, sigma0 = sigma_epsilon0)
+    variance_term <- log_pc_prior_noise_variance(lambda_epsilon = lambda_epsilon, log_sigma_epsilon = log_sigma_epsilon)
+    +log_pc_prior_noise_variance(lambda_epsilon = lambda_u, log_sigma_epsilon = log_sigma_u)
+    if (width_support_factor == Inf) {
+      return(variance_term)
+    }
     # Terms for anisotropy
     log_uniform_density_log_kappa <- log_uniform_density(a = -log(width_support_factor * L) + 1 / 2 * log(8), b = -log(rho0 / width_support_factor) + 1 / 2 * log(8))
     log_uniform_density_v <- log_uniform_density(a = log(a0_inf / width_support_factor) / sqrt(2), b = log(width_support_factor * a0) / sqrt(2))
     log_kappa_term <- log_uniform_density_log_kappa(log_kappa)
     v_term <- log_uniform_density_v(abs(v[1])) + log_uniform_density_v(abs(v[2]))
 
-    # Terms for variance
-    lambda_u <- lambda_variance_quantile(alpha_sigma = alpha_u, sigma0 = sigma_u0)
-    lambda_epsilon <- lambda_variance_quantile(alpha_sigma = alpha_epsilon, sigma0 = sigma_epsilon0)
-    variance_term <- log_pc_prior_noise_variance(lambda_epsilon = lambda_epsilon, log_sigma_epsilon = log_sigma_epsilon)
-    +log_pc_prior_noise_variance(lambda_epsilon = lambda_u, log_sigma_epsilon = log_sigma_u)
+
     return(log_kappa_term + v_term + variance_term)
   }
   return(log_prior)

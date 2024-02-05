@@ -7,10 +7,10 @@
 log_prior_uniform(
   sigma_u0,
   sigma_epsilon0,
-  a0,
-  a0_inf,
-  rho0,
-  L,
+  a0 = NULL,
+  a0_inf = NULL,
+  rho0 = NULL,
+  L = NULL,
   width_support_factor = 2,
   alpha = 0.01,
   alpha_u = NULL,
@@ -22,7 +22,7 @@ log_prior_uniform(
 
 \item{sigma_epsilon0}{A surprisingly high variance of noise, in (0,infinity)}
 
-\item{a0}{A surprisingly high ratio of anisotropy, in (1,infinity), anisotropy ratio is not allowed to go below a0/2 or above 2a0}
+\item{a0}{A surprisingly high ratio of anisotropy, in (1,infinity), anisotropy ratio is not allowed to go below a0/2 or above 2a0.}
 
 \item{a0_inf}{A surprisingly low ratio of anisotropy, in (1,a0), anisotropy ratio is not allowed to go below a0_inf}
 
@@ -30,7 +30,7 @@ log_prior_uniform(
 
 \item{L}{A surprisingly large correlation range (e.g. size of domain), correlation is not allowed to go above L}
 
-\item{width_support_factor}{A factor to multiply the width of the support of the uniform distribution. By default 2}
+\item{width_support_factor}{A factor to multiply the width of the support of the uniform distribution. By default 2. If Inf,an improper uniform prior is used}
 
 \item{alpha}{A quantile in (0,1) for all the parameters. By default, alpha = 0.01}
 
