@@ -38,9 +38,6 @@ true_params <- sim_theta_pc_quantile(
   alpha = alpha, sigma_u0 = sigma_u0,
   sigma_epsilon0 = sigma_epsilon0, a0 = a0, rho0 = rho0, m = 1
 )
-# Prints the hyperparameters and the true parameters
-print(hyper_pc)
-print(true_params)
 
 # Extracting simulated parameters
 log_kappa <- true_params$log_kappa
@@ -123,16 +120,17 @@ log_pc_prior_theta(
 library(sf)
 boundary_sf <- st_sfc(st_polygon(list(rbind(c(0, 0.01), c(L, 0.01), c(L, L), c(0, L), c(0, 0.01)))))
 boundary <- fm_as_segm(boundary_sf)
-mesh <- fm_mesh_2d_inla(boundary = boundary, max.edge = c(3, 3))
+mesh <- fm_mesh_2d_inla(boundary = boundary, max.edge = c(0.5, 3))
 nodes <- mesh$loc
 n <- mesh$n
 plot(mesh)
+observations <- matrix(runif(30),ncol=2)
+A<-fm_basis(mesh,loc = observations)
 
 # Sample from noisy data
 aniso <- list(rep(kappa, n), matrix(v, n, 2))
 x <- fm_aniso_basis_weights_sample(x = mesh, aniso = aniso, log_sigma = log_sigma_u)
-A <- Matrix::Diagonal(n, 1)
-y <- A %*% x + exp(log_sigma_epsilon) * stats::rnorm(n)
+y <- A %*% x + exp(log_sigma_epsilon) * stats::rnorm(nrow(A))
 
 # Testing the MAP_prior function for log_prior = log_pc_prior
 maxit <- 600
@@ -257,7 +255,7 @@ plotter <- function(map = map_pc, log_priors = log_priors, log_posteriors = log_
 
     # Create a ggplot
     # Create a ggplot
-    p <- ggplot(parameter_data, aes(x = x, y = Value, color = PriorType, linetype = FunctionType)) +
+    p <- ggplot(parameter_data, aes(x = x, y = exp(Value), color = PriorType, linetype = FunctionType)) +
       geom_line() +
       geom_vline(xintercept = unlist(true_params)[parameter], color = "purple") + # Move xintercept outside of aes()
       labs(title = paste("Unnormalized Priors and Posteriors for", parameter), x = parameter, y = "Log density") +
@@ -276,3 +274,5 @@ plotter <- function(map = map_pc, log_priors = log_priors, log_posteriors = log_
 }
 
 plotter(map = map_pc, log_priors = log_priors, log_posteriors = log_posteriors, l = 4, n_points = 50, together = FALSE, n_parameters_to_plot = 3)
+
+

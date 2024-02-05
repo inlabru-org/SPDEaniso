@@ -42,17 +42,17 @@ log_not_pc_prior <- log_gaussian_prior_quantile(
   a0 = a0, rho0 = rho0, alpha = alpha
 )
 L <- 10 # Length of domain
-a0_inf <-1.01
+a0_inf <- 1.01
 width_uniform <- 2
-log_uniform_prior <- log_prior_uniform(sigma_u0 = sigma_u0, sigma_epsilon0 = sigma_epsilon0, a0 = a0, a0_inf = a0_inf , rho0 = rho0, L = L, width_support_factor = width_uniform)
+log_uniform_prior <- log_prior_uniform(sigma_u0 = sigma_u0, sigma_epsilon0 = sigma_epsilon0, a0 = a0, a0_inf = a0_inf, rho0 = rho0, L = L, width_support_factor = width_uniform)
 shape <- 1.1
 log_beta_prior <- log_prior_beta(sigma_u0 = sigma_u0, sigma_epsilon0 = sigma_epsilon0, a0 = a0, a0_inf = a0_inf, rho0 = rho0, L = L, shape = shape, width_support_factor = width_uniform)
 
 log_priors <- list(
   pc = log_pc_prior,
   not_pc = log_not_pc_prior,
- # uniform = log_uniform_prior,
- beta = log_beta_prior
+  # uniform = log_uniform_prior,
+  beta = log_beta_prior
 )
 prior_types <- setNames(as.list(names(log_priors)), names(log_priors))
 approximation_types <- list("Gaussian_median", "importance", "importance_smoothed")
@@ -114,7 +114,7 @@ for (i in 1:number_of_loops) {
           log_prior = log_prior, mesh = mesh,
           y = y, A = A, m_u = m_u, max_iterations = maxit_MAP,
           theta0 = unlist(true_params) + delta
-          )
+        )
       })
 
       # Gaussian_median approximations
@@ -218,13 +218,13 @@ parameter_names <- rownames(results[[1]]$pc$confidence_intervals$Gaussian_median
 plot_distances_to_MAP <- function(results, prior_types) {
   all_distances <- data.frame()
   for (prior_type in prior_types) {
-  distances_to_MAP <- lapply(results, function(x) x[[prior_type]]$distance_vector)
-  distances_to_MAP <- do.call(rbind, distances_to_MAP)
-  distances_to_MAP <- as.data.frame(distances_to_MAP)
-  distances_to_MAP$iteration <- seq_len(nrow(distances_to_MAP))
-  distances_to_MAP <- reshape2::melt(distances_to_MAP, id.vars = "iteration")
-  distances_to_MAP$prior_type <- prior_type
-  all_distances <- rbind(all_distances, distances_to_MAP)
+    distances_to_MAP <- lapply(results, function(x) x[[prior_type]]$distance_vector)
+    distances_to_MAP <- do.call(rbind, distances_to_MAP)
+    distances_to_MAP <- as.data.frame(distances_to_MAP)
+    distances_to_MAP$iteration <- seq_len(nrow(distances_to_MAP))
+    distances_to_MAP <- reshape2::melt(distances_to_MAP, id.vars = "iteration")
+    distances_to_MAP$prior_type <- prior_type
+    all_distances <- rbind(all_distances, distances_to_MAP)
   }
 
   ggplot(all_distances) +
@@ -400,7 +400,7 @@ ggplot(all_probabilities) +
 KS_results <- data.frame()
 
 for (i in seq_along(parameter_names)) {
-  # Get the probabililog_priorse current parameter
+  # Get the probabilities for the current parameter
   probabilities <- all_probabilities[all_probabilities$parameter == parameter_names[[i]], ]
   # Calculate the KS statistic for each prior and approximation type
   for (prior_type in prior_types) {
@@ -420,7 +420,7 @@ ggplot(KS_results) +
   geom_point(aes(x = parameter, y = p_value, color = prior, shape = approximation)) +
   facet_wrap(~parameter)
 
-#ks.test(x<-runif(5000),"punif")
+# ks.test(x<-runif(5000),"punif")
 
 # Now we do the CDF of the complexity of the model
 complexity <- lapply(prior_types, function(prior_type) {
