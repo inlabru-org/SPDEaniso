@@ -273,6 +273,6 @@ plotter <- function(map = map_pc, log_priors = log_priors, log_posteriors = log_
   }
 }
 
-plotter(map = map_pc, log_priors = log_priors, log_posteriors = log_posteriors, l = 4, n_points = 50, together = FALSE, n_parameters_to_plot = 3)
+plotter(map = map_pc, log_priors = log_priors, log_posteriors = NULL, l = 4, n_points = 50, together = FALSE, n_parameters_to_plot = 3)
 
 

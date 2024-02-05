@@ -41,12 +41,12 @@ log_not_pc_prior <- log_gaussian_prior_quantile(
 )
 
 L <- 10
-width_uniform <- 1000
+width_uniform <- Inf
 a0_inf <- 1.01
 log_uniform_prior <- log_prior_uniform(sigma_u0 = sigma_u0, sigma_epsilon0 = sigma_epsilon0, a0 = a0, a0_inf = a0_inf, rho0 = rho0, L = L, width_support_factor = width_uniform)
 shape <- 1.1
-
-log_beta_prior <- log_prior_beta(sigma_u0 = sigma_u0, sigma_epsilon0 = sigma_epsilon0, a0 = a0, a0_inf = a0_inf, rho0 = rho0, L = L, shape = shape, width_support_factor = width_uniform)
+width_beta <-10
+log_beta_prior <- log_prior_beta(sigma_u0 = sigma_u0, sigma_epsilon0 = sigma_epsilon0, a0 = a0, a0_inf = a0_inf, rho0 = rho0, L = L, shape = shape, width_support_factor = width_beta)
 
 log_priors <- list(
   pc = log_pc_prior,
@@ -66,29 +66,14 @@ mesh <- fm_mesh_2d_inla(boundary = boundary, max.edge = c(1, 3))
 nodes <- mesh$loc
 n <- mesh$n
 plot(mesh)
-observations <- matrix(runif(30),ncol=2)
+n_observations <- 50
+observations <- matrix(runif(n_observations*2),ncol=2)
 A<-fm_basis(mesh,loc = observations)
 
 # Sample from noisy data
 aniso <- list(rep(kappa, n), matrix(v, n, 2))
 x <- fm_aniso_basis_weights_sample(x = mesh, aniso = aniso, log_sigma = log_sigma_u)
 y <- A %*% x + exp(log_sigma_epsilon) * stats::rnorm(nrow(A))
-
-# Testing the MAP_prior function for log_prior = log_pc_prior
-maxit <- 600
-tryCatch({
-  delta <- rnorm(5, 0, 1) # Used to randomize starting point of MAP
-  # Calculating the MAP under each prior knowing simulated data
-  map_pc <- MAP_prior(
-    log_prior = log_pc_prior, mesh = mesh,
-    y = y, A = A, m_u = m_u, max_iterations = maxit,
-    theta0 = unlist(true_params) + delta
-    # ,log_sigma_epsilon = log_sigma_epsilon
-  )
-
-  error <- function(e) {}
-})
-#### TESTING MAP_prior ####
 
 # Defining the log posterior
 log_posteriors <- lapply(log_priors, function(log_prior) {
@@ -101,10 +86,6 @@ log_posteriors <- lapply(log_priors, function(log_prior) {
     )
   }
 })
-
-
-
-
 plotter <- function(map = map_pc, log_priors = log_priors, log_posteriors = log_posteriors, l = 2, n_points = 10, together = TRUE, n_parameters_to_plot = 3) {
   function_types <- list(prior = "prior", posterior = "posterior")
   ########## UNNORMALIZED Gaussian_median APPROXIMATION TO THE POSTERIOR############
@@ -195,7 +176,8 @@ plotter <- function(map = map_pc, log_priors = log_priors, log_posteriors = log_
     plots[1:n_parameters_to_plot]
   }
 }
+plotter(map = map_pc, log_priors = log_priors, log_posteriors = log_posteriors, l = 8, n_points = 50, together = FALSE, n_parameters_to_plot = 2)
 
-plotter(map = map_pc, log_priors = log_priors, log_posteriors = log_posteriors, l = 4, n_points = 50, together = FALSE, n_parameters_to_plot = 3)
+
 
 
