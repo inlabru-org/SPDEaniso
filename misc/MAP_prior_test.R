@@ -178,7 +178,7 @@ map_pc$value == log_posteriors$pc(map_pc$par[1], map_pc$par[2:3], map_pc$par[4],
 
 
 
-plotter <- function(map = map_pc, log_priors = log_priors, log_posteriors = log_posteriors, l = 2, n_points = 10, together = TRUE) {
+plotter <- function(map = map_pc, log_priors = log_priors, log_posteriors = log_posteriors, l = 2, n_points = 10, together = TRUE, n_parameters_to_plot = 3) {
   function_types <- list(prior = "prior", posterior = "posterior")
   ########## UNNORMALIZED Gaussian_median APPROXIMATION TO THE POSTERIOR############
   log_Gaussian_median <- function(theta) {
@@ -271,8 +271,8 @@ plotter <- function(map = map_pc, log_priors = log_priors, log_posteriors = log_
     do.call(grid.arrange, c(plots, ncol = 3))
   } else {
     # Print the plots
-    plots
+    plots[1:n_parameters_to_plot]
   }
 }
 
-plotter(map = map_pc, log_priors = log_priors, log_posteriors = log_posteriors, l = 4, n_points = 50, together = FALSE)
+plotter(map = map_pc, log_priors = log_priors, log_posteriors = log_posteriors, l = 4, n_points = 50, together = FALSE, n_parameters_to_plot = 3)
