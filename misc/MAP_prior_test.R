@@ -82,12 +82,16 @@ log_not_pc_prior <- log_gaussian_prior_quantile(
 L <- 10
 width_uniform <- 2
 a0_inf <- 1.01
-log_uniform_prior <- log_prior_uniform(sigma_u0 = sigma_u0, sigma_epsilon0 = sigma_epsilon0, a0 = a0, a0_inf = a0_inf , rho0 = rho0, L = L, width_support_factor = width_uniform)
+log_uniform_prior <- log_prior_uniform(sigma_u0 = sigma_u0, sigma_epsilon0 = sigma_epsilon0, a0 = a0, a0_inf = a0_inf, rho0 = rho0, L = L, width_support_factor = width_uniform)
+shape <- 1.1
+
+log_beta_prior <- log_prior_beta(sigma_u0 = sigma_u0, sigma_epsilon0 = sigma_epsilon0, a0 = a0, a0_inf = a0_inf, rho0 = rho0, L = L, shape = shape, width_support_factor = width_uniform)
 
 log_priors <- list(
   pc = log_pc_prior,
   not_pc = log_not_pc_prior,
-  uniform = log_uniform_prior
+  uniform = log_uniform_prior,
+  beta = log_beta_prior
 )
 prior_types <- setNames(as.list(names(log_priors)), names(log_priors))
 
@@ -143,8 +147,8 @@ tryCatch({
     do_u_want_hessian = TRUE
     # ,log_sigma_epsilon = log_sigma_epsilon
   )
-  map_uniform <- MAP_prior(
-    log_prior = log_uniform_prior, mesh = mesh,
+  map_beta <- MAP_prior(
+    log_prior = log_beta_prior, mesh = mesh,
     y = y, A = A, m_u = m_u, max_iterations = maxit,
     theta0 = unlist(true_params),
     do_u_want_hessian = TRUE
@@ -280,4 +284,4 @@ plotter <- function(map = map_pc, log_priors = log_priors, log_posteriors = log_
   }
 }
 
-plotter(map = map_pc, log_priors = log_priors, log_posteriors = log_posteriors, l = 1.5, n_points = 20, together = FALSE)
+plotter(map = map_pc, log_priors = log_priors[4], log_posteriors = NULL, l = 4, n_points = 20, together = FALSE)

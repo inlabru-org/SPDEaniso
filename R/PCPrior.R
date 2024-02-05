@@ -901,6 +901,9 @@ log_unnormalized_importance_weights_and_integrals <- function(log_posterior_dens
   theta_sim_importance <- MASS::mvrnorm(n_weights, mu_Gaussian_median, covariance_Gaussian_median)
   # Subtract the max to avoid numerical issues as it shouldn't change the result
   log_importance_ratios <- apply(theta_sim_importance, 1, log_ratio_function)
+  # We remove samples and ratios with - infinite importance ratios
+  theta_sim_importance <- theta_sim_importance[!is.infinite(log_importance_ratios), ]
+  log_importance_ratios <- log_importance_ratios[!is.infinite(log_importance_ratios)]
   log_importance_ratios <- log_importance_ratios - max(log_importance_ratios)
 
   psis_result <- psis(log_importance_ratios, r_eff = NA)

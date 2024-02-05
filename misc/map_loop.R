@@ -45,11 +45,14 @@ L <- 10 # Length of domain
 a0_inf <-1.01
 width_uniform <- 2
 log_uniform_prior <- log_prior_uniform(sigma_u0 = sigma_u0, sigma_epsilon0 = sigma_epsilon0, a0 = a0, a0_inf = a0_inf , rho0 = rho0, L = L, width_support_factor = width_uniform)
-# log_uniform_prior <- function(a,b,c,d){0}
+shape <- 1.1
+log_beta_prior <- log_prior_beta(sigma_u0 = sigma_u0, sigma_epsilon0 = sigma_epsilon0, a0 = a0, a0_inf = a0_inf, rho0 = rho0, L = L, shape = shape, width_support_factor = width_uniform)
+
 log_priors <- list(
   pc = log_pc_prior,
   not_pc = log_not_pc_prior,
-  uniform = log_uniform_prior
+ # uniform = log_uniform_prior,
+ beta = log_beta_prior
 )
 prior_types <- setNames(as.list(names(log_priors)), names(log_priors))
 approximation_types <- list("Gaussian_median", "importance", "importance_smoothed")
@@ -58,7 +61,7 @@ approximation_types <- setNames(approximation_types, approximation_types)
 library(sf)
 boundary_sf <- st_sfc(st_polygon(list(rbind(c(0, 0.01), c(L, 0.01), c(L, L), c(0, L), c(0, 0.01)))))
 boundary <- fm_as_segm(boundary_sf)
-mesh <- fm_mesh_2d_inla(boundary = boundary, max.edge = c(1.5, 1.5))
+mesh <- fm_mesh_2d_inla(boundary = boundary, max.edge = c(2.5, 2.5))
 nodes <- mesh$loc
 n <- mesh$n
 par(mfrow = c(1, 1))
@@ -106,12 +109,12 @@ for (i in 1:number_of_loops) {
       delta <- 0
       # lower <- support_uniform(a0,a0_inf,rho0,L,width_uniform)[[1]]/1.2
       # upper <- support_uniform(a0,a0_inf,rho0,L,width_uniform)[[2]]/1.2
-      maps <- lapply(log_priors[3], function(log_prior) {
+      maps <- lapply(log_priors, function(log_prior) {
         MAP_prior(
           log_prior = log_prior, mesh = mesh,
           y = y, A = A, m_u = m_u, max_iterations = maxit_MAP,
-          theta0 = unlist(true_params) + delta, lower = lower, upper = upper
-        )
+          theta0 = unlist(true_params) + delta
+          )
       })
 
       # Gaussian_median approximations

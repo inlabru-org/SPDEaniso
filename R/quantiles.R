@@ -279,7 +279,102 @@ log_prior_uniform <- function(sigma_u0, sigma_epsilon0, a0, a0_inf, rho0, L, wid
   }
   return(log_prior)
 }
+#' @title Log beta density
+#' @description Calculates the log of the beta density on [a,b] centred at the midpoint with shape parameters shape
+#' @param a A number
+#' @param b A number
+#' @param shape A shape parameter of the beta distribution
+#' @return The function for the log of the beta density on [a,b]
+#' @export
+#' @examples
+#' a <- 0
+#' b <- 1
+#' shape <- 1.1
+#' log_beta_density <- log_beta_density(a = a, b = b, shape = shape)
+log_beta_density <- function(a, b, shape) {
+  log_beta_density <- function(x) {
+    x_scaled <- (x - a) / (b - a)
+    log_density <- log(dbeta(x_scaled, shape1 = shape, shape2 = shape))
+    return(log_density - log(b - a))
+  }
+  return(log_beta_density)
+}
+#' @title Log beta prior on anisotropy, noise and variance of field
+#' @description Calculates  the log of the prior on the (log(kappa),v, log(sigma_u), log(sigma_epsilon)) supposing:
+#' correlation range rho = sqrt(8)/kappa ~ Uniform(rho0/2,L),
+#' v1,v2 ~ Uniform(log(a0/w)/sqrt(2),log(wa0)/sqrt(2)), and with PC priors on noise and variance of field, given certain quantiles.
+#' Both shape parameters of the beta distribution are set to shape
+#'
+#' @param rho0 A surprisingly small correlation range, correlation is not allowed to go below rho0/2
+#' @param L A surprisingly large correlation range (e.g. size of domain), correlation is not allowed to go above L
+#' @param width_support_factor A factor to multiply the width of the support of the uniform distribution. By default 2
+#' @param a0 A surprisingly high ratio of anisotropy, in (1,infinity), anisotropy ratio is not allowed to go below a0/2 or above 2a0
+#' @param a0_inf A surprisingly low ratio of anisotropy, in (1,a0), anisotropy ratio is not allowed to go below a0_inf
+#' @param shape A shape parameter of the beta distribution
+#' @param alpha A quantile in (0,1) for all the parameters. By default, alpha = 0.01
+#' @param alpha_u A quantile in (0,1) for the variance of the field. If NULL, alpha_u=alpha
+#' @param alpha_epsilon A quantile in (0,1) for the variance of the noise. If NULL, alpha_epsilon=alpha
+#' @param sigma_u0 A surprisingly high variance of field, in (0,infinity)
+#' @param sigma_epsilon0 A surprisingly high variance of noise, in (0,infinity)
+#'
+#' @return The calculated log of the prior on  theta=(log(kappa),v, log(sigma_u), log(sigma_epsilon))
+#' @export
+#' @examples
+#' alpha_u <- 0.01
+#' alpha_epsilon <- 0.01
+#' sigma_u0 <- 10
+#' sigma_epsilon0 <- 1
+#' a0 <- 10
+#' a0_inf <- 1.01
+#' rho0 <- 0.1
+#' L <- 100
+#' width_support_factor <- 2
+#' shape <- 1.1
+#'
+#' log_prior <- log_prior_beta(alpha_u = alpha_u, alpha_epsilon = alpha_epsilon, sigma_u0 = sigma_u0, sigma_epsilon0 = sigma_epsilon0, a0 = a0, a0_inf = a0_inf, rho0 = rho0, L = L, shape = shape, width_support_factor = width_support_factor)
+log_prior_beta <- function(sigma_u0, sigma_epsilon0, a0, a0_inf, rho0, L, shape, width_support_factor = 2, alpha = 0.01, alpha_u = NULL, alpha_epsilon = NULL) {
+  # This sets the NULL values to alpha
+  if (is.null(alpha_u)) {
+    alpha_u <- alpha
+  }
+  if (is.null(alpha_epsilon)) {
+    alpha_epsilon <- alpha
+  }
+  # This warns the user if alpha is not in (0,1)
+  if (alpha <= 0 || alpha >= 1) {
+    warning("alpha should be in (0,1)")
+  }
+  if (alpha_u <= 0 || alpha_u >= 1) {
+    warning("alpha_u should be in (0,1)")
+  }
+  if (alpha_epsilon <= 0 || alpha_epsilon >= 1) {
+    warning("alpha_epsilon should be in (0,1)")
+  }
 
+  check_range(a0, "a0", 1, Inf)
+  check_range(rho0, "rho0", 0, Inf)
+  check_range(sigma_u0, "sigma_u0", 0, Inf)
+  check_range(sigma_epsilon0, "sigma_epsilon0", 0, Inf)
+  check_range(L, "L", 0, Inf)
+
+  lambda_u <- lambda_variance_quantile(alpha_sigma = alpha_u, sigma0 = sigma_u0)
+  lambda_epsilon <- lambda_variance_quantile(alpha_sigma = alpha_epsilon, sigma0 = sigma_epsilon0)
+
+  # Defines the log prior
+  log_prior <- function(log_kappa, v, log_sigma_u, log_sigma_epsilon) {
+    # Terms for anisotropy
+    log_beta_density_log_kappa <- log_beta_density(a = -log(width_support_factor * L) + 1 / 2 * log(8), b = -log(rho0 / width_support_factor) + 1 / 2 * log(8), shape = shape)
+    log_beta_density_v <- log_beta_density(a = log(a0_inf / width_support_factor) / sqrt(2), b = log(width_support_factor * a0) / sqrt(2), shape = shape)
+    log_kappa_term <- log_beta_density_log_kappa(log_kappa)
+    v_term <- log_beta_density_v(abs(v[1])) + log_beta_density_v(abs(v[2]))
+
+    # Terms for variance
+    variance_term <- log_pc_prior_noise_variance(lambda_epsilon = lambda_epsilon, log_sigma_epsilon = log_sigma_epsilon)
+    +log_pc_prior_noise_variance(lambda_epsilon = lambda_u, log_sigma_epsilon = log_sigma_u)
+    return(log_kappa_term + v_term + variance_term)
+  }
+  return(log_prior)
+}
 
 
 #' @title Log PC prior on theta=(log(kappa),v, log(sigma_u), log(sigma_epsilon)) given certain quantiles.
