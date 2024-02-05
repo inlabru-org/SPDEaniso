@@ -78,7 +78,6 @@ log_not_pc_prior <- log_gaussian_prior_quantile(
   a0 = a0, rho0 = rho0, alpha = alpha
 )
 
-# Uniform prior
 L <- 10
 width_uniform <- 2
 a0_inf <- 1.01
@@ -143,15 +142,7 @@ tryCatch({
   map_pc <- MAP_prior(
     log_prior = log_pc_prior, mesh = mesh,
     y = y, A = A, m_u = m_u, max_iterations = maxit,
-    theta0 = unlist(true_params),
-    do_u_want_hessian = TRUE
-    # ,log_sigma_epsilon = log_sigma_epsilon
-  )
-  map_beta <- MAP_prior(
-    log_prior = log_beta_prior, mesh = mesh,
-    y = y, A = A, m_u = m_u, max_iterations = maxit,
-    theta0 = unlist(true_params),
-    do_u_want_hessian = TRUE
+    theta0 = unlist(true_params) + delta
     # ,log_sigma_epsilon = log_sigma_epsilon
   )
 
@@ -284,4 +275,4 @@ plotter <- function(map = map_pc, log_priors = log_priors, log_posteriors = log_
   }
 }
 
-plotter(map = map_pc, log_priors = log_priors[4], log_posteriors = NULL, l = 4, n_points = 20, together = FALSE)
+plotter(map = map_pc, log_priors = log_priors, log_posteriors = log_posteriors, l = 4, n_points = 50, together = FALSE)
