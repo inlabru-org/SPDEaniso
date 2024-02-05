@@ -67,9 +67,9 @@ n <- mesh$n
 par(mfrow = c(1, 1))
 plot(mesh)
 
-number_of_loops <- 3 # number of iterations
+number_of_loops <- 400 # number of iterations
 maxit_MAP <- 600
-number_of_weights <- 500
+number_of_weights <- 10000
 confidence_level <- 0.05
 results <- vector("list", number_of_loops) # Pre-allocates a list for m iterations
 
@@ -217,69 +217,14 @@ parameter_names <- rownames(results[[1]]$pc$confidence_intervals$Gaussian_median
 # Plots ecdf of distances to MAP using ggplot
 plot_distances_to_MAP <- function(results, prior_types) {
   all_distances <- data.frame()
-  # Importance sampling
-  importances <- lapply(prior_types, function(prior_type) {
-    log_posterior <- log_posteriors[[prior_type]]
-    mu_Gaussian_median <- mus_Gaussian_median[[prior_type]]
-    Q_Gaussian_median <- Qs_Gaussian_median[[prior_type]]
-    log_unnormalized_importance_weights_and_integrals(
-      log_posterior_density = log_posterior,
-      mu_Gaussian_median = mu_Gaussian_median, Q_Gaussian_median = Q_Gaussian_median,
-      n_weights = number_of_weights, q = confidence_level, true_params = unlist(true_params)
-    )
-  })
-
-  # CIs
-  confidence_intervals <- lapply(prior_types, function(prior_type) {
-    lapply(approximation_types, function(approximation_type) {
-      importances[[prior_type]][[paste0("confidence_intervals_", approximation_type)]]
-    })
-  })
-
-  true_parameter_is_within_CI <- lapply(prior_types, function(prior_type) {
-    lapply(approximation_types, function(approximation_type) {
-      parameter_within_confidence_intervals(true_params, confidence_intervals[[prior_type]][[approximation_type]])
-    })
-  })
-
-
-  # Accumulate results
-  results_accumulator <- function(prior_type) {
-    # Return a list of the calculated values
-    list(
-      MAP_estimate = maps[[prior_type]]$par,
-      MAP_value = maps[[prior_type]]$value,
-      convergence = maps[[prior_type]]$convergence,
-      distance_vector = abs(maps[[prior_type]]$par - unlist(true_params)),
-      covariance_estimate = Covariances_Gaussian_median[[prior_type]],
-      std_dev_estimates_Gaussian_median = std_dev_estimates_Gaussian_median[[prior_type]],
-      confidence_intervals = lapply(approximation_types, function(approximation_type) {
-        confidence_intervals[[prior_type]][[approximation_type]]
-      }),
-      true_parameter_within_c_interval = lapply(approximation_types, function(approximation_type) {
-        true_parameter_is_within_CI[[prior_type]][[approximation_type]]
-      }),
-      importance = importances[[prior_type]]
-    )
-  }
-
-
-  # Store results
-  partial_results <- lapply(prior_types, results_accumulator)
-  results[[i]] <- c(
-    list(true_params = true_params),
-    partial_results, prior_types
-  )
-
-
   for (prior_type in prior_types) {
-    distances_to_MAP <- lapply(results, function(x) x[[prior_type]]$distance_vector)
-    distances_to_MAP <- do.call(rbind, distances_to_MAP)
-    distances_to_MAP <- as.data.frame(distances_to_MAP)
-    distances_to_MAP$iteration <- seq_len(nrow(distances_to_MAP))
-    distances_to_MAP <- reshape2::melt(distances_to_MAP, id.vars = "iteration")
-    distances_to_MAP$prior_type <- prior_type
-    all_distances <- rbind(all_distances, distances_to_MAP)
+  distances_to_MAP <- lapply(results, function(x) x[[prior_type]]$distance_vector)
+  distances_to_MAP <- do.call(rbind, distances_to_MAP)
+  distances_to_MAP <- as.data.frame(distances_to_MAP)
+  distances_to_MAP$iteration <- seq_len(nrow(distances_to_MAP))
+  distances_to_MAP <- reshape2::melt(distances_to_MAP, id.vars = "iteration")
+  distances_to_MAP$prior_type <- prior_type
+  all_distances <- rbind(all_distances, distances_to_MAP)
   }
 
   ggplot(all_distances) +
@@ -475,6 +420,7 @@ ggplot(KS_results) +
   geom_point(aes(x = parameter, y = p_value, color = prior, shape = approximation)) +
   facet_wrap(~parameter)
 
+#ks.test(x<-runif(5000),"punif")
 
 # Now we do the CDF of the complexity of the model
 complexity <- lapply(prior_types, function(prior_type) {
