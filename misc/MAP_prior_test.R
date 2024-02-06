@@ -124,8 +124,8 @@ mesh <- fm_mesh_2d_inla(boundary = boundary, max.edge = c(0.5, 3))
 nodes <- mesh$loc
 n <- mesh$n
 plot(mesh)
-observations <- matrix(runif(30),ncol=2)
-A<-fm_basis(mesh,loc = observations)
+observations <- matrix(runif(30), ncol = 2)
+A <- fm_basis(mesh, loc = observations)
 
 # Sample from noisy data
 aniso <- list(rep(kappa, n), matrix(v, n, 2))
@@ -161,10 +161,10 @@ log_posteriors <- lapply(log_priors, function(log_prior) {
 })
 
 print("Checking if map is larger than posterior value at true parameters. ")
-map_pc$value > log_posteriors$pc(log_kappa, v, log_sigma_u, log_sigma_epsilon)
+theta$value > log_posteriors$pc(log_kappa, v, log_sigma_u, log_sigma_epsilon)
 
 print("Checking if value for map is the same as posterior value at map parameters. ")
-map_pc$value == log_posteriors$pc(map_pc$par[1], map_pc$par[2:3], map_pc$par[4], map_pc$par[5])
+theta$value == log_posteriors$pc(theta$par[1], theta$par[2:3], theta$par[4], theta$par[5])
 
 # print("Checking if MAP_prior with PC priors returns the same thing as MAP using PC priors defined through hyperparameters")
 
@@ -176,14 +176,14 @@ map_pc$value == log_posteriors$pc(map_pc$par[1], map_pc$par[2:3], map_pc$par[4],
 
 
 
-plotter <- function(map = map_pc, log_priors = log_priors, log_posteriors = log_posteriors, l = 2, n_points = 10, together = TRUE, n_parameters_to_plot = 3) {
+plotter <- function(map = theta, log_priors = log_priors, log_posteriors = log_posteriors, l = 2, n_points = 10, together = TRUE, n_parameters_to_plot = 3) {
   function_types <- list(prior = "prior", posterior = "posterior")
   ########## UNNORMALIZED Gaussian_median APPROXIMATION TO THE POSTERIOR############
   log_Gaussian_median <- function(theta) {
     logGdensity(
-      x = theta, mu = map_pc$par, Q = -map_pc$hessian
+      x = theta, mu = theta$par, Q = -theta$hessian
     ) - logGdensity(
-      x = map_pc$par, mu = map_pc$par, Q = -map_pc$hessian
+      x = theta$par, mu = theta$par, Q = -theta$hessian
     )
   }
   ### UNNORMALIZED LOG FUNCTION SO THEY ALL START AT 0###
@@ -193,8 +193,8 @@ plotter <- function(map = map_pc, log_priors = log_priors, log_posteriors = log_
         log_kappa = log_kappa, v = c(v1, v2),
         log_sigma_u = log_sigma_u, log_sigma_epsilon = log_sigma_epsilon
       ) - log_prior(
-        log_kappa = map_pc$par[1], v = map_pc$par[2:3],
-        log_sigma_u = map_pc$par[4], log_sigma_epsilon = map_pc$par[5]
+        log_kappa = theta$par[1], v = theta$par[2:3],
+        log_sigma_u = theta$par[4], log_sigma_epsilon = theta$par[5]
       )
     }
   }
@@ -216,15 +216,15 @@ plotter <- function(map = map_pc, log_priors = log_priors, log_posteriors = log_
     f_list
   }
   restricted_priors_and_posteriors <- lapply(unnormalized_priors_and_posteriors, function(f) {
-    lapply(f, restricting_function_to_one_parameter, map_pc$par)
+    lapply(f, restricting_function_to_one_parameter, theta$par)
   })
 
 
   # Getting data for plotting
-  partitions <- lapply(seq_along(map_pc$par), function(i) {
-    seq(map_pc$par[i] - l, map_pc$par[i] + l, length.out = n_points)
+  partitions <- lapply(seq_along(theta$par), function(i) {
+    seq(theta$par[i] - l, theta$par[i] + l, length.out = n_points)
   })
-  names(partitions) <- names(map_pc$par)
+  names(partitions) <- names(theta$par)
 
   plot_data <- do.call(rbind, lapply(names(restricted_priors_and_posteriors), function(function_type) {
     do.call(rbind, lapply(names(restricted_priors_and_posteriors[[function_type]]), function(prior_type) {
@@ -273,6 +273,4 @@ plotter <- function(map = map_pc, log_priors = log_priors, log_posteriors = log_
   }
 }
 
-plotter(map = map_pc, log_priors = log_priors, log_posteriors = NULL, l = 4, n_points = 50, together = FALSE, n_parameters_to_plot = 3)
-
-
+plotter(map = theta, log_priors = log_priors, log_posteriors = NULL, l = 4, n_points = 50, together = FALSE, n_parameters_to_plot = 3)
