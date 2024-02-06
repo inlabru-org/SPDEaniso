@@ -45,7 +45,7 @@ width_uniform <- Inf
 a0_inf <- 1.01
 log_uniform_prior <- log_prior_uniform(sigma_u0 = sigma_u0, sigma_epsilon0 = sigma_epsilon0, a0 = a0, a0_inf = a0_inf, rho0 = rho0, L = L, width_support_factor = width_uniform)
 shape <- 1.1
-width_beta <-10
+width_beta <- 10
 log_beta_prior <- log_prior_beta(sigma_u0 = sigma_u0, sigma_epsilon0 = sigma_epsilon0, a0 = a0, a0_inf = a0_inf, rho0 = rho0, L = L, shape = shape, width_support_factor = width_beta)
 
 log_priors <- list(
@@ -67,8 +67,8 @@ nodes <- mesh$loc
 n <- mesh$n
 plot(mesh)
 n_observations <- 50
-observations <- matrix(runif(n_observations*2),ncol=2)
-A<-fm_basis(mesh,loc = observations)
+observations <- matrix(runif(n_observations * 2), ncol = 2)
+A <- fm_basis(mesh, loc = observations)
 
 # Sample from noisy data
 aniso <- list(rep(kappa, n), matrix(v, n, 2))
@@ -177,7 +177,3 @@ plotter <- function(map = map_pc, log_priors = log_priors, log_posteriors = log_
   }
 }
 plotter(map = map_pc, log_priors = log_priors, log_posteriors = log_posteriors, l = 8, n_points = 50, together = FALSE, n_parameters_to_plot = 2)
-
-
-
-
