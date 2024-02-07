@@ -64,13 +64,13 @@ mesh <- fm_mesh_2d_inla(boundary = boundary, max.edge = c(1, 3))
 nodes <- mesh$loc
 n <- mesh$n
 plot(mesh)
-n_observations <- 100
+n_observations <- 15
 observations <- L*matrix(runif(n_observations * 2), ncol = 2)
 A <- fm_basis(mesh, loc = observations)
 
 number_of_loops <- 200 # number of iterations
 maxit_MAP <- 600
-number_of_weights <- 500
+number_of_weights <- 5000
 credible_level <- 0.05
 results <- vector("list", number_of_loops) # Pre-allocates a list for m iterations
 
@@ -97,8 +97,6 @@ for (i in 1:number_of_loops) {
 
       # delta <- rnorm(5, 0, 1) # Used to randomize starting point of MAP
       delta <- 0
-      # lower <- support_uniform(a0,a0_inf,rho0,L,width_uniform)[[1]]/1.2
-      # upper <- support_uniform(a0,a0_inf,rho0,L,width_uniform)[[2]]/1.2
       maps <- lapply(log_priors, function(log_prior) {
         MAP_prior(
           log_prior = log_prior, mesh = mesh,
@@ -198,8 +196,8 @@ for (i in 1:number_of_loops) {
 # Eliminates NULL results
 not_null_indices <- sapply(results, function(x) !is.null(x$pc$importance$log_unnormalized_weights))
 results <- results[not_null_indices]
-# Results obtained simulating parameters from PC priors and using a mesh size of 3, 400 iterations, 10000 weights and a credible level of 0.05
-# saveRDS(results, "results_pc_3_400_10000_005.rds")
+# Results obtained simulating parameters from PC priors and using a mesh size of 1, 15 observations, 200 iterations, 5000 weights, a credible level of 0.05 a width of uniform =inf and for beta a multiplier of 20.
+#saveRDS(results, "results_pc_1_15_200_5000_005_wu_inf_wb_20.rds")
 # results <- readRDS("results_3_400_10000_005.rds")
 parameter_names <- rownames(results[[1]]$pc$credible_intervals$Gaussian_median)
 

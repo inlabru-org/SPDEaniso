@@ -76,7 +76,7 @@ log_not_pc_prior <- log_gaussian_prior_quantile(
 )
 
 L <- 10
-width_uniform <- 2
+width_uniform <- 20
 a0_inf <- 1.01
 log_uniform_prior <- log_prior_uniform(sigma_u0 = sigma_u0, sigma_epsilon0 = sigma_epsilon0, a0 = a0, a0_inf = a0_inf, rho0 = rho0, L = L, width_support_factor = width_uniform)
 shape <- 1.1
