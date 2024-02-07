@@ -12,8 +12,7 @@ sim_theta_uniform(
   L,
   alpha = 0.01,
   alpha_u = NULL,
-  alpha_epsilon = NULL,
-  m = 1
+  alpha_epsilon = NULL
 )
 }
 \arguments{
@@ -32,8 +31,6 @@ sim_theta_uniform(
 \item{alpha_u}{A quantile in (0,1) for the variance of the field. If NULL, alpha_u=alpha}
 
 \item{alpha_epsilon}{A quantile in (0,1) for the variance of the noise. If NULL, alpha_epsilon=alpha}
-
-\item{m}{Number of samples, by default 1.}
 }
 \value{
 A list with four elements: log_kappa, v, log_sigma_u, log_sigma_epsilon
@@ -50,5 +47,5 @@ a0 <- 10
 rho0 <- 0.1
 L <- 100
 m <- 10
-result <- sim_theta_uniform(alpha_u = alpha_u, alpha_epsilon = alpha_epsilon, sigma_u0 = sigma_u0, sigma_epsilon0 = sigma_epsilon0, a0 = a0, rho0 = rho0, L = L, m = m)
+result <- sim_theta_uniform(alpha_u = alpha_u, alpha_epsilon = alpha_epsilon, sigma_u0 = sigma_u0, sigma_epsilon0 = sigma_epsilon0, a0 = a0, rho0 = rho0, L = L)
 }

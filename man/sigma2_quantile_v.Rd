@@ -15,7 +15,7 @@ sigma2_quantile_v(a0, alpha_v = 0.01)
 The calculated parameter sigma^2
 }
 \description{
-Calculates the parameter sigma^2 such that if v1,v2 are iid N(0, sigma^2), then the anisotropy ratio exp(2|v|) is larger than a0 with probability alpha
+Calculates the parameter sigma^2 such that if v1,v2 are iid N(0, sigma^2), then the anisotropy ratio exp(|v|) is larger than a0 with probability alpha
 }
 \examples{
 alpha_v <- 0.01

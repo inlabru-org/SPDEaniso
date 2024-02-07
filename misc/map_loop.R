@@ -20,7 +20,7 @@ set.seed(123)
 rho0 <- 1 # Controls the size of kappa
 a0 <- 2 # Controls the size of v
 sigma_u0 <- 10 # controls standard deviation of field
-sigma_epsilon0 <- 2 # control standard deviation of noise
+sigma_epsilon0 <- 1 # control standard deviation of noise
 sigma0 <- 1.5 # Controls the size of v in non PC priors
 # Defines the quantile
 alpha <- 0.01
@@ -49,7 +49,7 @@ log_beta_prior <- log_prior_beta(sigma_u0 = sigma_u0, sigma_epsilon0 = sigma_eps
 log_priors <- list(
   pc = log_pc_prior,
   not_pc = log_not_pc_prior,
-  uniform = log_uniform_prior,
+  #uniform = log_uniform_prior,
   beta = log_beta_prior
 )
 prior_types <- setNames(as.list(names(log_priors)), names(log_priors))
@@ -67,9 +67,9 @@ n_observations <- 15
 observations <- L*matrix(runif(n_observations * 2), ncol = 2)
 A <- fm_basis(mesh, loc = observations)
 
-number_of_loops <- 200 # number of iterations
+number_of_loops <- 4 # number of iterations
 maxit_MAP <- 600
-number_of_weights <- 5000
+number_of_weights <- 500
 credible_level <- 0.05
 results <- vector("list", number_of_loops) # Pre-allocates a list for m iterations
 
@@ -83,11 +83,16 @@ for (i in 1:number_of_loops) {
       #   sigma_epsilon0 = sigma_epsilon0,
       #   a0 = a0, rho0 = rho0, m = 1
       # )
-      #Simulate parameters from beta
-      true_params <- sim_theta_beta(
-        sigma_u0 = sigma_u0, sigma_epsilon0 = sigma_epsilon0,
-        a0 = a0, rho0 = rho0, L = L, shape = shape,
-        width_support_factor = width_beta)
+      # #Simulate parameters from beta
+      # true_params <- sim_theta_beta(
+      #   sigma_u0 = sigma_u0, sigma_epsilon0 = sigma_epsilon0,
+      #   a0 = a0, rho0 = rho0, L = L, shape = shape,
+      #   width_support_factor = width_beta)
+      #Simulate parameters from not_pc
+      sim_not_pc(
+        alpha=alpha,sigma_u0 = sigma_u0,
+        sigma_epsilon0 = sigma_epsilon0,
+        a0 = a0, rho0 = rho0)
 
       log_kappa <- true_params$log_kappa
       kappa <- exp(log_kappa)
@@ -202,11 +207,11 @@ for (i in 1:number_of_loops) {
 not_null_indices <- sapply(results, function(x) !is.null(x$pc$importance$log_unnormalized_weights))
 results <- results[not_null_indices]
 # Results obtained simulating parameters from PC priors and using a mesh size of 1, 15 observations, 200 iterations, 5000 weights, a credible level of 0.05 a width of uniform =inf and for beta a multiplier of 20.
-#saveRDS(results, "results_pc_1_15_200_5000_005_wu_inf_wb_20.rds")
+#saveRDS(results, "results_beta_1_15_200_5000_005_wu_inf_wb_20.rds")
 # results <- readRDS("results_3_400_10000_005.rds")
+# Results obtained simulating parameters from PC priors and using a mesh size of 1, 15 observations, 200 iterations, 5000 weights, a credible level of 0.05 a width of uniform =inf and for beta a multiplier of 20.
+#results <- readRDS("results_pc_1_15_200_5000_005_wu_inf_wb_20.rds")
 parameter_names <- rownames(results[[1]]$pc$credible_intervals$Gaussian_median)
-
-
 # Plots ecdf of distances to MAP using ggplot
 plot_distances_to_MAP <- function(results, prior_types) {
   all_distances <- data.frame()

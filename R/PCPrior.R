@@ -413,7 +413,7 @@ MAP_pc <- function(mesh, lambda, lambda1, lambda_epsilon, lambda_u, y, A, m_u, m
 #'
 #' @param x A numeric vector representing the point x
 #' @param mu A numeric vector representing the mean mu
-#' @param log_sigma A numeric vector representing the variance log sigma
+#' @param log_sigma A numeric vector representing the logarithm of the standard deviation sigma
 #'
 #' @return The calculated log Gaussian density
 #' @export

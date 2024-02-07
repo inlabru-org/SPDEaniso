@@ -11,7 +11,7 @@ log_gaussian_density(x, mu, log_sigma)
 
 \item{mu}{A numeric vector representing the mean mu}
 
-\item{log_sigma}{A numeric vector representing the variance log sigma}
+\item{log_sigma}{A numeric vector representing the logarithm of the standard deviation sigma}
 }
 \value{
 The calculated log Gaussian density

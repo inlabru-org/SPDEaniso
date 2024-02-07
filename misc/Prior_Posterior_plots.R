@@ -15,19 +15,10 @@ rho0 <- 1
 # a0 <- 2 # Controls the size of v in PC and non PC priors
 a0 <- 2
 sigma_u0 <- 10 # controls standard deviation of field
-sigma_epsilon0 <- 2 # control standard deviation of noise
+sigma_epsilon0 <- 0.5 # control standard deviation of noise
 sigma0 <- 1.5 # Controls the size of v in non PC priors
 # Defines the quantile
 alpha <- 0.01
-
-# Simulates the "true parameters" from the pc_prior.
-true_params <- sim_theta_pc_quantile(
-  alpha = alpha, sigma_u0 = sigma_u0,
-  sigma_epsilon0 = sigma_epsilon0, a0 = a0, rho0 = rho0, m = 1
-)
-
-
-
 
 m_u <- 0
 
@@ -46,7 +37,7 @@ L <- 10
 width_uniform <- Inf
 log_uniform_prior <- log_prior_uniform(sigma_u0 = sigma_u0, sigma_epsilon0 = sigma_epsilon0, a0 = a0, rho0 = rho0, L = L, width_support_factor = width_uniform)
 shape <- 1.1
-width_beta <- 20
+width_beta <- 2
 log_beta_prior <- log_prior_beta(sigma_u0 = sigma_u0, sigma_epsilon0 = sigma_epsilon0, a0 = a0, rho0 = rho0, L = L, shape = shape, width_support_factor = width_beta)
 sim_theta_beta(sigma_u0 = sigma_u0, sigma_epsilon0 = sigma_epsilon0, a0 = a0, rho0 = rho0, L = L, shape = shape, width_support_factor = width_beta)
 log_priors <- list(
@@ -89,6 +80,16 @@ log_posteriors <- lapply(log_priors, function(log_prior) {
 })
 maxit <- 600
 tryCatch({
+  # Simulates the "true parameters" from the pc_prior.
+  # true_params <- sim_theta_pc_quantile(
+  #   alpha = alpha, sigma_u0 = sigma_u0,
+  #   sigma_epsilon0 = sigma_epsilon0, a0 = a0, rho0 = rho0, m = 1
+  # )
+  true_params <- sim_theta_beta(
+    sigma_u0 = sigma_u0, sigma_epsilon0 = sigma_epsilon0,
+    a0 = a0, rho0 = rho0, L = L, shape = shape,
+    width_support_factor = width_beta)
+
   delta <- rnorm(5, 0, 1) # Used to randomize starting point of MAP
   # Calculating the MAP under each prior knowing simulated data
   map_pc <- MAP_prior(
