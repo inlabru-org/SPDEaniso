@@ -4,12 +4,10 @@
 \alias{support_uniform}
 \title{Calculate support of the uniform prior}
 \usage{
-support_uniform(a0, a0_inf, rho0, L, width_support_factor = 2)
+support_uniform(a0, rho0, L, width_support_factor = 2)
 }
 \arguments{
 \item{a0}{A surprisingly high ratio of anisotropy, in (1,infinity)}
-
-\item{a0_inf}{A surprisingly low ratio of anisotropy, in (1,a0), anisotropy ratio is not allowed to go below a0_inf}
 
 \item{rho0}{A surprisingly small correlation range, in (0,infinity)}
 
@@ -21,7 +19,7 @@ support_uniform(a0, a0_inf, rho0, L, width_support_factor = 2)
 A list of upper and lower bounds for the support of the uniform prior. Each sublist is of length 5, corresponding to log_kappa, v1, v2, log_sigma_u, log_sigma_epsilon
 }
 \description{
-Calculates the support of the uniform prior for theta
+Calculates the support of the uniform prior for theta.
 }
 \examples{
 a0 <- 10

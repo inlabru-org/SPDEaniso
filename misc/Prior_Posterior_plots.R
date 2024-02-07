@@ -10,9 +10,9 @@ document()
 set.seed(123)
 
 # Defines the upper bounds for the quantiles
-#rho0 <- 1 # Controls the size of kappa in PC and non PC priors
+# rho0 <- 1 # Controls the size of kappa in PC and non PC priors
 rho0 <- 1
-#a0 <- 2 # Controls the size of v in PC and non PC priors
+# a0 <- 2 # Controls the size of v in PC and non PC priors
 a0 <- 2
 sigma_u0 <- 10 # controls standard deviation of field
 sigma_epsilon0 <- 2 # control standard deviation of noise
@@ -44,12 +44,11 @@ log_not_pc_prior <- log_gaussian_prior_quantile(
 
 L <- 10
 width_uniform <- Inf
-a0_inf <- 1.01
-log_uniform_prior <- log_prior_uniform(sigma_u0 = sigma_u0, sigma_epsilon0 = sigma_epsilon0, a0 = a0, a0_inf = a0_inf, rho0 = rho0, L = L, width_support_factor = width_uniform)
+log_uniform_prior <- log_prior_uniform(sigma_u0 = sigma_u0, sigma_epsilon0 = sigma_epsilon0, a0 = a0, rho0 = rho0, L = L, width_support_factor = width_uniform)
 shape <- 1.1
 width_beta <- 20
-log_beta_prior <- log_prior_beta(sigma_u0 = sigma_u0, sigma_epsilon0 = sigma_epsilon0, a0 = a0, a0_inf = a0_inf, rho0 = rho0, L = L, shape = shape, width_support_factor = width_beta)
-
+log_beta_prior <- log_prior_beta(sigma_u0 = sigma_u0, sigma_epsilon0 = sigma_epsilon0, a0 = a0, rho0 = rho0, L = L, shape = shape, width_support_factor = width_beta)
+sim_theta_beta(sigma_u0 = sigma_u0, sigma_epsilon0 = sigma_epsilon0, a0 = a0, rho0 = rho0, L = L, shape = shape, width_support_factor = width_beta)
 log_priors <- list(
   pc = log_pc_prior,
   not_pc = log_not_pc_prior,
@@ -69,7 +68,7 @@ nodes <- mesh$loc
 n <- mesh$n
 plot(mesh)
 n_observations <- 15
-observations <- 10*matrix(runif(n_observations * 2), ncol = 2)
+observations <- 10 * matrix(runif(n_observations * 2), ncol = 2)
 A <- fm_basis(mesh, loc = observations)
 
 # Sample from noisy data
@@ -187,7 +186,7 @@ plotter <- function(theta_fixed = map_pc$par, log_priors = log_priors, log_poste
 }
 alpha <- 0.05
 
-#The plots are different when rho0 and a0 are large. eg (2,4) more for (4,10). But are still quite similar.
+# The plots are different when rho0 and a0 are large. eg (2,4) more for (4,10). But are still quite similar.
 
 
 plotter(theta_fixed = map_pc$par, log_priors = log_priors, log_posteriors = log_posteriors, l = 2, n_points = 50, together = FALSE, n_parameters_to_plot = 2)

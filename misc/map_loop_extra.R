@@ -42,11 +42,10 @@ log_not_pc_prior <- log_gaussian_prior_quantile(
   a0 = a0, rho0 = rho0, alpha = alpha
 )
 L <- 10 # Length of domain
-a0_inf <- 1.01
 width_uniform <- 2
-log_uniform_prior <- log_prior_uniform(sigma_u0 = sigma_u0, sigma_epsilon0 = sigma_epsilon0, a0 = a0, a0_inf = a0_inf, rho0 = rho0, L = L, width_support_factor = width_uniform)
+log_uniform_prior <- log_prior_uniform(sigma_u0 = sigma_u0, sigma_epsilon0 = sigma_epsilon0, a0 = a0, rho0 = rho0, L = L, width_support_factor = width_uniform)
 shape <- 1.1
-log_beta_prior <- log_prior_beta(sigma_u0 = sigma_u0, sigma_epsilon0 = sigma_epsilon0, a0 = a0, a0_inf = a0_inf, rho0 = rho0, L = L, shape = shape, width_support_factor = width_uniform)
+log_beta_prior <- log_prior_beta(sigma_u0 = sigma_u0, sigma_epsilon0 = sigma_epsilon0, a0 = a0, rho0 = rho0, L = L, shape = shape, width_support_factor = width_uniform)
 
 log_priors <- list(
   pc = log_pc_prior,
@@ -107,8 +106,6 @@ for (i in 1:number_of_loops) {
       # Takes around 20s with mesh size 1 (554 degrees of freedom) and scales linearly in degrees of freedom
       # delta <- rnorm(5, 0, 1) # Used to randomize starting point of MAP
       delta <- 0
-      # lower <- support_uniform(a0,a0_inf,rho0,L,width_uniform)[[1]]/1.2
-      # upper <- support_uniform(a0,a0_inf,rho0,L,width_uniform)[[2]]/1.2
       maps <- lapply(log_priors, function(log_prior) {
         MAP_prior(
           log_prior = log_prior, mesh = mesh,

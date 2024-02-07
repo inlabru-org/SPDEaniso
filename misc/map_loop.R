@@ -41,12 +41,11 @@ log_not_pc_prior <- log_gaussian_prior_quantile(
 
 L <- 10
 width_uniform <- Inf
-a0_inf <- 1.01
-log_uniform_prior <- log_prior_uniform(sigma_u0 = sigma_u0, sigma_epsilon0 = sigma_epsilon0, a0 = a0, a0_inf = a0_inf, rho0 = rho0, L = L, width_support_factor = width_uniform)
+log_uniform_prior <- log_prior_uniform(sigma_u0 = sigma_u0, sigma_epsilon0 = sigma_epsilon0, a0 = a0, rho0 = rho0, L = L, width_support_factor = width_uniform)
 shape <- 1.1
-width_beta <- 20
-log_beta_prior <- log_prior_beta(sigma_u0 = sigma_u0, sigma_epsilon0 = sigma_epsilon0, a0 = a0, a0_inf = a0_inf, rho0 = rho0, L = L, shape = shape, width_support_factor = width_beta)
-
+#width_beta <- 20
+width_beta <- 2 #Changing to not get extreme values in simulations
+log_beta_prior <- log_prior_beta(sigma_u0 = sigma_u0, sigma_epsilon0 = sigma_epsilon0, a0 = a0, rho0 = rho0, L = L, shape = shape, width_support_factor = width_beta)
 log_priors <- list(
   pc = log_pc_prior,
   not_pc = log_not_pc_prior,
@@ -78,12 +77,18 @@ for (i in 1:number_of_loops) {
   start_time <- Sys.time()
   tryCatch(
     {
-      # Simulate parameters from PC prior
-      true_params <- sim_theta_pc_quantile(
-        alpha = alpha, sigma_u0 = sigma_u0,
-        sigma_epsilon0 = sigma_epsilon0,
-        a0 = a0, rho0 = rho0, m = 1
-      )
+      # # Simulate parameters from PC prior
+      # true_params <- sim_theta_pc_quantile(
+      #   alpha = alpha, sigma_u0 = sigma_u0,
+      #   sigma_epsilon0 = sigma_epsilon0,
+      #   a0 = a0, rho0 = rho0, m = 1
+      # )
+      #Simulate parameters from beta
+      true_params <- sim_theta_beta(
+        sigma_u0 = sigma_u0, sigma_epsilon0 = sigma_epsilon0,
+        a0 = a0, rho0 = rho0, L = L, shape = shape,
+        width_support_factor = width_beta)
+
       log_kappa <- true_params$log_kappa
       kappa <- exp(log_kappa)
       v <- true_params$v

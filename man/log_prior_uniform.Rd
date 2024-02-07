@@ -8,7 +8,6 @@ log_prior_uniform(
   sigma_u0,
   sigma_epsilon0,
   a0 = NULL,
-  a0_inf = NULL,
   rho0 = NULL,
   L = NULL,
   width_support_factor = 2,
@@ -23,8 +22,6 @@ log_prior_uniform(
 \item{sigma_epsilon0}{A surprisingly high variance of noise, in (0,infinity)}
 
 \item{a0}{A surprisingly high ratio of anisotropy, in (1,infinity), anisotropy ratio is not allowed to go below a0/2 or above 2a0.}
-
-\item{a0_inf}{A surprisingly low ratio of anisotropy, in (1,a0), anisotropy ratio is not allowed to go below a0_inf}
 
 \item{rho0}{A surprisingly small correlation range, correlation is not allowed to go below rho0/2}
 
@@ -43,8 +40,9 @@ The calculated log of the prior on  theta=(log(kappa),v, log(sigma_u), log(sigma
 }
 \description{
 Calculates  the log of the prior on the (log(kappa),v, log(sigma_u), log(sigma_epsilon)) supposing:
-correlation range rho = sqrt(8)/kappa ~ Uniform(rho0/2,L),
-v1,v2 ~ Uniform(log(a0/2)/sqrt(2),log(2a0)/sqrt(2)), and with PC priors on noise and variance of field, given certain quantiles.
+kappa ~ Uniform(-log(w\emph{L)+1/2}log(8),-log(rho0/w)+1/2\emph{log(8)), so that rho= sqrt{8}/kappa has support \link{rho0/w,w*L}
+|v1|,|v2| ~ Uniform(0,log(w}a0)/sqrt(2)), so that exp(|v|) has support \link{1,a0*w}
+and with PC priors on noise and variance of field, given certain quantiles.
 }
 \examples{
 alpha_u <- 0.01
