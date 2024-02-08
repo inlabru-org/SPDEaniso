@@ -152,9 +152,9 @@ log_gaussian_prior_quantile <- function(sigma_u0, sigma_epsilon0, a0, rho0, alph
     # Logarithm of log exponential prior on kappa
     log_kappa_term <- log(lambda_k) - lambda_k * exp(log_kappa) + log_kappa
     v_term <- log_gaussian_density(x = v[1], mu = 0, log_sigma = log(sigma2_v) / 2) + log_gaussian_density(x = v[2], mu = 0, log_sigma = log(sigma2_v) / 2) # log_gaussian takes standard deviation not variance
-    variance_term <- log_pc_prior_noise_variance(lambda_epsilon = lambda_epsilon, log_sigma_epsilon = log_sigma_epsilon)
-    +log_pc_prior_noise_variance(lambda_epsilon = lambda_u, log_sigma_epsilon = log_sigma_u)
-    return(log_kappa_term + v_term + variance_term)
+    log_noise_value <- log_pc_prior_noise_variance(lambda_epsilon = lambda_epsilon, log_sigma_epsilon = log_sigma_epsilon)
+    log_sigma_u_value <- log_pc_prior_noise_variance(lambda_epsilon = lambda_u, log_sigma_epsilon = log_sigma_u)
+    log_kappa_term + v_term + log_noise_value + log_sigma_u_value
   }
   return(log_prior)
 }
@@ -266,8 +266,7 @@ log_prior_uniform <- function(sigma_u0, sigma_epsilon0, a0 = NULL, rho0 = NULL, 
     # Terms for variance
     lambda_u <- lambda_variance_quantile(alpha_sigma = alpha_u, sigma0 = sigma_u0)
     lambda_epsilon <- lambda_variance_quantile(alpha_sigma = alpha_epsilon, sigma0 = sigma_epsilon0)
-    variance_term <- log_pc_prior_noise_variance(lambda_epsilon = lambda_epsilon, log_sigma_epsilon = log_sigma_epsilon)
-    +log_pc_prior_noise_variance(lambda_epsilon = lambda_u, log_sigma_epsilon = log_sigma_u)
+    variance_term <- log_pc_prior_noise_variance(lambda_epsilon = lambda_epsilon, log_sigma_epsilon = log_sigma_epsilon) + log_pc_prior_noise_variance(lambda_epsilon = lambda_u, log_sigma_epsilon = log_sigma_u)
     if (width_support_factor == Inf) {
       return(variance_term)
     }
@@ -369,10 +368,9 @@ log_prior_beta <- function(sigma_u0, sigma_epsilon0, a0, rho0, L, shape, width_s
     log_kappa_term <- log_beta_density_log_kappa(log_kappa)
     v_term <- 0.5 * (log_beta_density_v(abs(v[1])) + log_beta_density_v(abs(v[2])))
 
-    # Terms for variance
-    variance_term <- log_pc_prior_noise_variance(lambda_epsilon = lambda_epsilon, log_sigma_epsilon = log_sigma_epsilon)
-    +log_pc_prior_noise_variance(lambda_epsilon = lambda_u, log_sigma_epsilon = log_sigma_u)
-    return(log_kappa_term + v_term + variance_term)
+    log_noise_value <- log_pc_prior_noise_variance(lambda_epsilon = lambda_epsilon, log_sigma_epsilon = log_sigma_epsilon)
+    log_sigma_u_value <- log_pc_prior_noise_variance(lambda_epsilon = lambda_u, log_sigma_epsilon = log_sigma_u)
+    log_kappa_term + v_term + log_noise_value + log_sigma_u_value
   }
   return(log_prior)
 }
