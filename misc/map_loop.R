@@ -7,6 +7,7 @@ library(INLA)
 library(inlabru)
 library(future)
 library(future.apply)
+library(dplyr)
 library(loo)
 document()
 
@@ -19,7 +20,7 @@ set.seed(123)
 rho0 <- 1 # Controls the size of kappa
 a0 <- 2 # Controls the size of v
 sigma_u0 <- 10 # controls standard deviation of field
-sigma_epsilon0 <- 1 # control standard deviation of noise
+sigma_epsilon0 <- 2 # control standard deviation of noise
 sigma0 <- 1.5 # Controls the size of v in non PC priors
 # Defines the quantile
 alpha <- 0.01
@@ -48,7 +49,7 @@ log_beta_prior <- log_prior_beta(sigma_u0 = sigma_u0, sigma_epsilon0 = sigma_eps
 log_priors <- list(
   pc = log_pc_prior,
   not_pc = log_not_pc_prior,
-  # uniform = log_uniform_prior,
+  uniform = log_uniform_prior,
   beta = log_beta_prior
 )
 prior_types <- setNames(as.list(names(log_priors)), names(log_priors))
@@ -66,9 +67,9 @@ n_observations <- 15
 observations <- L * matrix(runif(n_observations * 2), ncol = 2)
 A <- fm_basis(mesh, loc = observations)
 
-number_of_loops <- 400 # number of iterations
+number_of_loops <- 2 # number of iterations
 maxit_MAP <- 600
-number_of_weights <- 5000
+number_of_weights <- 500
 credible_level <- 0.05
 results <- vector("list", number_of_loops) # Pre-allocates a list for m iterations
 
