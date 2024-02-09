@@ -705,7 +705,7 @@ sim_not_pc <- function(sigma_u0, sigma_epsilon0, a0, rho0, alpha = 0.01, alpha_u
   kappa <- rexp(m, rate = lambda_k)
   v1 <- rnorm(m, mean = 0, sd = sqrt(sigma2_v))
   v2 <- rnorm(m, mean = 0, sd = sqrt(sigma2_v))
-  log_sigma_u <- rexp(m, rate = lambda_u)
-  log_sigma_epsilon <- rexp(m, rate = lambda_epsilon)
-  return(list(log_kappa = log(kappa), v = cbind(v1, v2), log_sigma_u = log_sigma_u, log_sigma_epsilon = log_sigma_epsilon))
+  sigma_u <- rexp(m, rate = lambda_u)
+  sigma_epsilon <- rexp(m, rate = lambda_epsilon)
+  list(log_kappa = log(kappa), v = cbind(v1, v2), log_sigma_u = log(sigma_u), log_sigma_epsilon = log(sigma_epsilon))
 }
