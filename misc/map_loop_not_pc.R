@@ -71,7 +71,7 @@ number_of_loops <- 200 # number of iterations
 maxit_MAP <- 600
 number_of_weights <- 5000
 credible_level <- 0.05
-results <- vector("list", number_of_loops) # Pre-allocates a list for m iterations
+results_not_pc <- vector("list", number_of_loops) # Pre-allocates a list for m iterations
 
 for (i in 1:number_of_loops) {
     start_time <- Sys.time()
@@ -176,7 +176,7 @@ for (i in 1:number_of_loops) {
 
             # Store results
             partial_results <- lapply(prior_types, results_accumulator)
-            results[[i]] <- c(
+            results_not_pc[[i]] <- c(
                 list(true_params = true_params),
                 partial_results, prior_types
             )
@@ -193,17 +193,17 @@ for (i in 1:number_of_loops) {
     print(paste("Estimated time left:", seconds_to_hours_minutes_seconds(time_left)))
 }
 # Eliminates NULL results
-not_null_indices <- sapply(results, function(x) !is.null(x$pc$importance$log_unnormalized_weights))
-results <- results[not_null_indices]
+not_null_indices <- sapply(results_not_pc, function(x) !is.null(x$pc$importance$log_unnormalized_weights))
+results_not_pc <- results_not_pc[not_null_indices]
 # Results obtained simulating parameters from PC priors and using a mesh size of 1, 15 observations, 200 iterations, 5000 weights, a credible level of 0.05 a width of uniform =inf and for beta a multiplier of 20.
-# saveRDS(results, "results_not_pc_1_15_200_5000_005_wu_inf_wb_20.rds")
-# results <- readRDS("Simulation_results/results_not_pc_1_15_200_5000_005_wu_inf_wb_20.rds")
-parameter_names <- rownames(results[[1]]$pc$credible_intervals$Gaussian_median)
+# saveRDS(results_not_pc, "results_not_pc_1_15_200_5000_005_wu_inf_wb_20.rds")
+# results_not_pc <- readRDS("Simulation_results/results_not_pc_1_15_200_5000_005_wu_inf_wb_20.rds")
+parameter_names <- rownames(results_not_pc[[1]]$pc$credible_intervals$Gaussian_median)
 # Plots ecdf of distances to MAP using ggplot
-plot_distances_to_MAP <- function(results, prior_types) {
+plot_distances_to_MAP <- function(results_not_pc, prior_types) {
     all_distances <- data.frame()
     for (prior_type in prior_types) {
-        distances_to_MAP <- lapply(results, function(x) x[[prior_type]]$distance_vector)
+        distances_to_MAP <- lapply(results_not_pc, function(x) x[[prior_type]]$distance_vector)
         distances_to_MAP <- do.call(rbind, distances_to_MAP)
         distances_to_MAP <- as.data.frame(distances_to_MAP)
         distances_to_MAP$iteration <- seq_len(nrow(distances_to_MAP))
@@ -217,18 +217,18 @@ plot_distances_to_MAP <- function(results, prior_types) {
         facet_wrap(~variable)
 }
 
-plot_distances_to_MAP(results, prior_types)
+plot_distances_to_MAP(results_not_pc, prior_types)
 
 # Mean distances and standard deviation estimates
 mean_distances <- lapply(prior_types, function(prior_type) {
     mean_distances <- sapply(1:5, function(i) {
-        all_distances <- sapply(seq_along(results), function(j) {
-            results[[j]][[prior_type]]$distance_vector[i]
+        all_distances <- sapply(seq_along(results_not_pc), function(j) {
+            results_not_pc[[j]][[prior_type]]$distance_vector[i]
         })
         mean(all_distances)
     })
 
-    std_dev_estimates_Gaussian_median <- do.call(rbind, lapply(results, function(x) x[[prior_type]]$std_dev_estimates_Gaussian_median))
+    std_dev_estimates_Gaussian_median <- do.call(rbind, lapply(results_not_pc, function(x) x[[prior_type]]$std_dev_estimates_Gaussian_median))
     mean_std_dev <- colMeans(std_dev_estimates_Gaussian_median)
 
     names(mean_distances) <- parameter_names
@@ -244,8 +244,8 @@ mean_distances <- lapply(prior_types, function(prior_type) {
 lengths_df <- lapply(prior_types, function(prior_type) {
     lapply(approximation_types, function(approximation_type) {
         lengths <- lapply(parameter_names, function(parameter_name) {
-            all_lengths <- sapply(seq_along(results), function(j) {
-                length <- diff(results[[j]][[prior_type]]$credible_intervals[[approximation_type]][parameter_name, ])
+            all_lengths <- sapply(seq_along(results_not_pc), function(j) {
+                length <- diff(results_not_pc[[j]][[prior_type]]$credible_intervals[[approximation_type]][parameter_name, ])
                 length
             })
             all_lengths
@@ -292,7 +292,7 @@ plot_CI_lengths(lengths_df, prior_types, approximation_types)
 
 within_ci <- lapply(prior_types, function(prior_type) {
     lapply(approximation_types, function(approximation_type) {
-        rowMeans(sapply(results, function(x) x[[prior_type]][["true_parameter_within_c_interval"]][[approximation_type]]))
+        rowMeans(sapply(results_not_pc, function(x) x[[prior_type]][["true_parameter_within_c_interval"]][[approximation_type]]))
     })
 })
 # Convert the list to a data frame
@@ -319,7 +319,7 @@ ggplot(within_ci, aes(x = approximation_type, y = value, color = prior_type)) +
 KL_approx_types <- list(importance = "importance", smoothed_importance = "smoothed_importance")
 KL <- lapply(prior_types, function(prior_type) {
     lapply(KL_approx_types, function(approximation_type) {
-        sapply(results, function(x) {
+        sapply(results_not_pc, function(x) {
             kl_values <- x[[prior_type]]$importance[[paste0("KL_divergence_", approximation_type, "_Gaussian_median")]]
             kl_values <- replace(kl_values, is.na(kl_values), Inf) # Replace NA values with Inf
             kl_values
@@ -363,7 +363,7 @@ all_probabilities <- data.frame()
 
 for (prior_type in prior_types) {
     for (approximation_type in approximation_types) {
-        probabilities <- sapply(results, function(x) x[[prior_type]][["importance"]][[paste0("probabilities_", approximation_type)]])
+        probabilities <- sapply(results_not_pc, function(x) x[[prior_type]][["importance"]][[paste0("probabilities_", approximation_type)]])
         for (i in seq_along(parameter_names)) {
             df <- data.frame(prob = unlist(probabilities[i, ]), parameter = parameter_names[[i]], prior = prior_type, approximation = approximation_type)
             all_probabilities <- rbind(all_probabilities, df)
@@ -410,7 +410,7 @@ ggplot(KS_results) +
 # Now we do the CDF of the complexity of the model
 complexity <- lapply(prior_types, function(prior_type) {
     lapply(approximation_types[2:3], function(approximation_type) {
-        sapply(results, function(x) {
+        sapply(results_not_pc, function(x) {
             complexity <- x[[prior_type]]$importance[[paste0("complexity_", approximation_type)]]
             complexity
         })
@@ -450,9 +450,9 @@ print(complexity_mean)
 
 # We get the vector of k diagnostics and show the log weights are similar
 par(mfrow = c(1, 1))
-k_diagnostics <- sapply(results, function(x) x$pc$importance$k_diagnostic)
+k_diagnostics <- sapply(results_not_pc, function(x) x$pc$importance$k_diagnostic)
 hist(k_diagnostics, main = "Histogram of k diagnostics", xlab = "k diagnostic")
 par(mfrow = c(1, 2))
 j <- 1
-hist(results[[j]]$pc$importance$log_unnormalized_weights_smoothed, main = "Log weights", xlab = "Log weight")
-hist(results[[j]]$pc$importance$log_unnormalized_weights, main = "Log weights", xlab = "Log weight")
+hist(results_not_pc[[j]]$pc$importance$log_unnormalized_weights_smoothed, main = "Log weights", xlab = "Log weight")
+hist(results_not_pc[[j]]$pc$importance$log_unnormalized_weights, main = "Log weights", xlab = "Log weight")
