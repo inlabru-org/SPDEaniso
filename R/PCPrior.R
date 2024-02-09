@@ -1007,3 +1007,24 @@ seconds_to_hours_minutes_seconds <- function(seconds) {
   }
   return(paste0(hours, "h ", minutes, "m ", seconds, "s"))
 }
+
+#' @title Simulated params to evaluable by prior
+#' @description  Simulated params to evaluable by prior
+#' @param theta Simulated parameter
+#' @return Vector which can be evaluated (log_kappa,v,log_sigma_u,log_sigma_epsilon)
+
+apply_log_prior <- function(log_prior, theta) {
+  theta <- unlist(theta)
+  log_prior(theta[1], c(theta[2], theta[3]), theta[4], theta[5])
+}
+#' @title Correlation range
+#' @description Calculates the correlation range given log(kappa)
+#' @param log_kappa The logarithm of kappa
+#' @return The correlation range
+#' @export
+#' @examples
+#' log_kappa <- -1
+#' correlation_range(log_kappa)
+correlation_range <- function(log_kappa) {
+  sqrt(8) / exp(log_kappa)
+}

@@ -12,7 +12,8 @@ sim_theta_uniform(
   L,
   alpha = 0.01,
   alpha_u = NULL,
-  alpha_epsilon = NULL
+  alpha_epsilon = NULL,
+  width_support_factor = 2
 )
 }
 \arguments{

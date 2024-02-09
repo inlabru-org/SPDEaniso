@@ -537,7 +537,7 @@ sim_theta_pc_quantile <- function(sigma_u0, sigma_epsilon0, a0, rho0, alpha = 0.
 #' L <- 100
 #' m <- 10
 #' result <- sim_theta_uniform(alpha_u = alpha_u, alpha_epsilon = alpha_epsilon, sigma_u0 = sigma_u0, sigma_epsilon0 = sigma_epsilon0, a0 = a0, rho0 = rho0, L = L)
-sim_theta_uniform <- function(sigma_u0, sigma_epsilon0, a0, rho0, L, alpha = 0.01, alpha_u = NULL, alpha_epsilon = NULL) {
+sim_theta_uniform <- function(sigma_u0, sigma_epsilon0, a0, rho0, L, alpha = 0.01, alpha_u = NULL, alpha_epsilon = NULL, width_support_factor = 2) {
   # This sets the NULL values to alpha
   if (is.null(alpha_u)) {
     alpha_u <- alpha
@@ -561,11 +561,11 @@ sim_theta_uniform <- function(sigma_u0, sigma_epsilon0, a0, rho0, L, alpha = 0.0
   check_range(sigma_epsilon0, "sigma_epsilon0", 0, Inf)
   check_range(L, "L", 0, Inf)
 
-  log_kappa <- runif(min = -log(width_support_factor * L) + 1 / 2 * log(8), max = -log(rho0 / width_support_factor) + 1 / 2 * log(8))
-  abs_v1 <- runif(min = 0, max = log(2 * a0) / sqrt(2))
-  abs_v2 <- runif(min = 0, max = log(2 * a0) / sqrt(2))
-  v1 <- sign(runif(min = -1, max = 1)) * abs_v1
-  v2 <- sign(runif(min = -1, max = 1)) * abs_v2
+  log_kappa <- runif(n = 1, min = -log(width_support_factor * L) + 1 / 2 * log(8), max = -log(rho0 / width_support_factor) + 1 / 2 * log(8))
+  abs_v1 <- runif(n = 1, min = 0, max = log(2 * a0) / sqrt(2))
+  abs_v2 <- runif(n = 1, min = 0, max = log(2 * a0) / sqrt(2))
+  v1 <- sign(runif(n = 1, min = -1, max = 1)) * abs_v1
+  v2 <- sign(runif(n = 1, min = -1, max = 1)) * abs_v2
   lambda_u <- lambda_variance_quantile(alpha_sigma = alpha_u, sigma0 = sigma_u0)
   lambda_epsilon <- lambda_variance_quantile(alpha_sigma = alpha_epsilon, sigma0 = sigma_epsilon0)
   sigma_u <- rexp(1, rate = lambda_u)
