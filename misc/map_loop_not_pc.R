@@ -197,7 +197,7 @@ not_null_indices <- sapply(results_not_pc, function(x) !is.null(x$pc$importance$
 results_not_pc <- results_not_pc[not_null_indices]
 # Results obtained simulating parameters from PC priors and using a mesh size of 1, 15 observations, 200 iterations, 5000 weights, a credible level of 0.05 a width of uniform =inf and for beta a multiplier of 20.
 # saveRDS(results_not_pc, "results_not_pc_1_15_200_5000_005_wu_inf_wb_20.rds")
-# results_not_pc <- readRDS("Simulation_results/results_not_pc_1_15_200_5000_005_wu_inf_wb_20.rds")
+#results_not_pc <- readRDS("Simulation_results/results_not_pc_1_15_200_5000_005_wu_inf_wb_20.rds")
 parameter_names <- rownames(results_not_pc[[1]]$pc$credible_intervals$Gaussian_median)
 # Plots ecdf of distances to MAP using ggplot
 plot_distances_to_MAP <- function(results_not_pc, prior_types) {
@@ -220,8 +220,8 @@ plot_distances_to_MAP <- function(results_not_pc, prior_types) {
 plot_distances_to_MAP(results_not_pc, prior_types)
 
 # Mean distances and standard deviation estimates
-mean_distances <- lapply(prior_types, function(prior_type) {
-    mean_distances <- sapply(1:5, function(i) {
+mean_distances_not_pc <- lapply(prior_types, function(prior_type) {
+    mean_distances_not_pc <- sapply(1:5, function(i) {
         all_distances <- sapply(seq_along(results_not_pc), function(j) {
             results_not_pc[[j]][[prior_type]]$distance_vector[i]
         })
@@ -231,9 +231,9 @@ mean_distances <- lapply(prior_types, function(prior_type) {
     std_dev_estimates_Gaussian_median <- do.call(rbind, lapply(results_not_pc, function(x) x[[prior_type]]$std_dev_estimates_Gaussian_median))
     mean_std_dev <- colMeans(std_dev_estimates_Gaussian_median)
 
-    names(mean_distances) <- parameter_names
+    names(mean_distances_not_pc) <- parameter_names
     print(paste("Mean distances for", prior_type))
-    print(mean_distances)
+    print(mean_distances_not_pc)
     print(paste("Mean standard deviations for", prior_type))
     print(mean_std_dev)
 })
@@ -241,7 +241,7 @@ mean_distances <- lapply(prior_types, function(prior_type) {
 
 # THere we test how to get the dataframe of credible interval lengths using lapplyand for each approximation type
 
-lengths_df <- lapply(prior_types, function(prior_type) {
+lengths_df_not_pc <- lapply(prior_types, function(prior_type) {
     lapply(approximation_types, function(approximation_type) {
         lengths <- lapply(parameter_names, function(parameter_name) {
             all_lengths <- sapply(seq_along(results_not_pc), function(j) {
@@ -256,20 +256,20 @@ lengths_df <- lapply(prior_types, function(prior_type) {
     })
 })
 
-mean_lengths_df <- lapply(lengths_df, function(prior_type) {
+mean_lengths_df_not_pc <- lapply(lengths_df_not_pc, function(prior_type) {
     lapply(prior_type, function(approximation_type) {
         colMeans(approximation_type)
     })
 })
-print(mean_lengths_df)
+print(mean_lengths_df_not_pc)
 
 # We show a cdf of lengths_df using ggplot
-plot_CI_lengths <- function(lengths_df, prior_types, approximation_types) {
+plot_CI_lengths <- function(lengths_df_not_pc, prior_types, approximation_types) {
     all_lengths <- data.frame()
 
     for (prior_type in prior_types) {
         for (approximation_type in approximation_types) {
-            lengths <- lengths_df[[prior_type]][[approximation_type]]
+            lengths <- lengths_df_not_pc[[prior_type]][[approximation_type]]
             lengths <- as.data.frame(lengths)
             lengths$iteration <- seq_len(nrow(lengths))
             lengths <- reshape2::melt(lengths, id.vars = "iteration") # Necessary to use ggplot as it expects a data frame in long format
@@ -284,7 +284,7 @@ plot_CI_lengths <- function(lengths_df, prior_types, approximation_types) {
         facet_wrap(~variable)
 }
 
-plot_CI_lengths(lengths_df, prior_types, approximation_types)
+plot_CI_lengths(lengths_df_not_pc, prior_types, approximation_types)
 
 
 
@@ -437,7 +437,8 @@ plot_complexity <- function(complexity, prior_types, approximation_types) {
         facet_wrap(~variable)
 }
 
-plot_complexity(complexity, prior_types[2:3], approximation_types[2:3])
+plot_complexity(complexity, prior_types, approximation_types[2:3])
+plot_complexity(complexity, prior_types[1:2], approximation_types[2:3])
 
 # We calculate the mean of the complexity
 complexity_mean <- lapply(prior_types, function(prior_type) {

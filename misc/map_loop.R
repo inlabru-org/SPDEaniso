@@ -209,7 +209,7 @@ not_null_indices <- sapply(results, function(x) !is.null(x$pc$importance$log_unn
 results <- results[not_null_indices]
 # Results obtained simulating parameters from PC priors and using a mesh size of 1, 15 observations, 200 iterations, 5000 weights, a credible level of 0.05 a width of uniform =inf and for beta a multiplier of 20.
 # saveRDS(results, "results_pc_1_15_200_5000_005_wu_inf_wb_20.rds")
-# results <- readRDS("Simulation_results/results_pc_1_15_200_5000_005_wu_inf_wb_20.rds")
+#results <- readRDS("Simulation_results/results_pc_1_15_200_5000_005_wu_inf_wb_20.rds")
 parameter_names <- rownames(results[[1]]$pc$credible_intervals$Gaussian_median)
 # Plots ecdf of distances to MAP using ggplot
 plot_distances_to_MAP <- function(results, prior_types) {
@@ -448,8 +448,8 @@ plot_complexity <- function(complexity, prior_types, approximation_types) {
     stat_ecdf(aes(value, color = prior_type, linetype = approximation_type)) +
     facet_wrap(~variable)
 }
-
-plot_complexity(complexity, prior_types[2:3], approximation_types[2:3])
+plot_complexity(complexity, prior_types, approximation_types[2:3])
+plot_complexity(complexity, prior_types[1:2], approximation_types[2:3])
 
 # We calculate the mean of the complexity
 complexity_mean <- lapply(prior_types, function(prior_type) {
