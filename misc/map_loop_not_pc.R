@@ -195,15 +195,15 @@ for (i in 1:number_of_loops) {
 not_null_indices <- sapply(results_not_pc, function(x) !is.null(x$pc$importance$log_unnormalized_weights))
 results_not_pc <- results_not_pc[not_null_indices]
 # Results obtained simulating parameters from PC priors and using a mesh size of 1, 15 observations, 200 iterations, 5000 weights, a credible level of 0.05 a width of uniform =inf and for beta a multiplier of 20.
-#saveRDS(results_not_pc, "results_not_pc_1_15_200_5000_005_wu_inf_wb_20.rds")
-results_not_pc <- readRDS("Simulation_results/results_not_pc_1_15_200_5000_005_wu_inf_wb_20.rds")
+# saveRDS(results_not_pc, "results_not_pc_1_15_200_5000_005_wu_inf_wb_20.rds")
+# results_not_pc <- readRDS("Simulation_results/results_not_pc_1_15_200_5000_005_wu_inf_wb_20.rds")
 parameter_names <- rownames(results_not_pc[[1]]$pc$credible_intervals$Gaussian_median)
 
-# Distances to MAP
+# DISTANCES true parameter to MAP
 plt_distances_to_MAP(results = results_not_pc, prior_types = prior_types, path = "Simulation_images/Distances_to_map_not_pc.png")
 mean_distance_and_std_dev <- mean_distance_to_MAP_and_std_dev_of_Gaussian_approximation(results = results_not_pc, prior_types = prior_types)
 
-# Credible intervals
+# CI: Credible intervals
 plt_CI_lengths_and_get_mean_lengths(results = results_not_pc, prior_types = prior_types, approximation_types = approximation_types, parameter_names = parameter_names, path = "Simulation_images/CI_lengths_not_pc.png")
 plt_frequency_true_parameter_in_CI(results = results_not_pc, prior_types = prior_types, approximation_types = approximation_types, parameter_names = parameter_names, path = "Simulation_images/within_CI_not_pc.png")
 
@@ -212,22 +212,20 @@ plt_frequency_true_parameter_in_CI(results = results_not_pc, prior_types = prior
 KL_approx_types <- list(importance = "importance", smoothed_importance = "smoothed_importance")
 plt_KL_and_get_mean_KL(results = results_not_pc, prior_types = prior_types, approximation_types = KL_approx_types, path = "Simulation_images/KL_not_pc.png")
 
-# Probabilities that marginal posterior is smaller than true parameter
+# PROBABILITIES that marginal posterior is smaller than true parameter
 plt_probabilities(results = results_not_pc, prior_types = prior_types, approximation_types = approximation_types, parameter_names = parameter_names, path = "Simulation_images/probabilities_not_pc.png")
 
-# Now we calculate the Kolmogorov-Smirnov statistic for each parameter and represent it in a point plot
+# KS TEST FOR EACH PARAMETER
 
 plt_KS(results = results_not_pc, prior_types = prior_types, approximation_types = approximation_types, parameter_names = parameter_names, path1 = "Simulation_images/KS_distance_not_pc.png", path2 = "Simulation_images/KS_pvalue_not_pc.png")
 
 # ks.test(x<-runif(5000),"punif")
 
-# Now we do the CDF of the complexity of the model
+# COMPLEXITY
 plt_complexity_and_get_mean_complexity(results = results_not_pc, prior_types = prior_types, approximation_types = approximation_types, path = "Simulation_images/complexity_not_pc.png")
 plt_complexity_and_get_mean_complexity(results = results_not_pc, prior_types = prior_types[1:2], approximation_types = approximation_types, path = "Simulation_images/Complexity_12_not_pc.png")
 
 
-
+# K diagnostics and checking weights are similar
 plt_k_diagnostics(results = results_not_pc, prior_types = prior_types, path = "Simulation_images/k_diagnostics_not_pc.png")
-
-
 plt_weights_cdf(results = results_not_pc, prior_types = prior_types, path = "Simulation_images/weights_not_pc.png")

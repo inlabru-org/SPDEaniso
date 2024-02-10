@@ -211,200 +211,34 @@ results <- results[not_null_indices]
 # saveRDS(results, "results_pc_1_15_200_5000_005_wu_inf_wb_20.rds")
 # results <- readRDS("Simulation_results/results_pc_1_15_200_5000_005_wu_inf_wb_20.rds")
 parameter_names <- rownames(results[[1]]$pc$credible_intervals$Gaussian_median)
-simulation_name <- "pc"
-path <- paste0("Simulation_images/Distances_to_map_", simulation_name, ".png")
-# Plots ecdf of distances to MAP using ggplot
-plot_distances_to_MAP <- function(results, prior_types) {
-  all_distances <- data.frame()
-  for (prior_type in prior_types) {
-    distances_to_MAP <- lapply(results, function(x) x[[prior_type]]$distance_vector)
-    distances_to_MAP <- do.call(rbind, distances_to_MAP)
-    distances_to_MAP <- as.data.frame(distances_to_MAP)
-    distances_to_MAP$iteration <- seq_len(nrow(distances_to_MAP))
-    distances_to_MAP <- reshape2::melt(distances_to_MAP, id.vars = "iteration")
-    distances_to_MAP$prior_type <- prior_type
-    all_distances <- rbind(all_distances, distances_to_MAP)
-  }
 
-  ggplot(all_distances) +
-    stat_ecdf(aes(value, color = prior_type)) +
-    facet_wrap(~variable)
-}
-# Distances to MAP
+# DISTANCES true parameter to MAP
 plt_distances_to_MAP(results = results, prior_types = prior_types, path = "Simulation_images/Distances_to_map_pc.png")
 mean_distance_and_std_dev <- mean_distance_to_MAP_and_std_dev_of_Gaussian_approximation(results = results, prior_types = prior_types)
 
-# Credible intervals
+# CI: Credible intervals
 plt_CI_lengths_and_get_mean_lengths(results = results, prior_types = prior_types, approximation_types = approximation_types, parameter_names = parameter_names, path = "Simulation_images/CI_lengths_pc.png")
+plt_frequency_true_parameter_in_CI(results = results, prior_types = prior_types, approximation_types = approximation_types, parameter_names = parameter_names, path = "Simulation_images/within_CI_pc.png")
 
 
-
-
-# Percentage of times the true parameter is within the credible interval
-
-within_ci <- lapply(prior_types, function(prior_type) {
-  lapply(approximation_types, function(approximation_type) {
-    rowMeans(sapply(results, function(x) x[[prior_type]][["true_parameter_within_c_interval"]][[approximation_type]]))
-  })
-})
-# Convert the list to a data frame
-within_ci <- do.call(rbind, lapply(names(within_ci), function(prior_type) {
-  do.call(rbind, lapply(names(within_ci[[prior_type]]), function(approximation_type) {
-    data.frame(
-      prior_type = prior_type,
-      approximation_type = approximation_type,
-      parameter = factor(names(within_ci[[prior_type]][[approximation_type]]), levels = c("log_kappa", "v1", "v2", "log_sigma_u", "log_sigma_epsilon")),
-      value = c(within_ci[[prior_type]][[approximation_type]])
-    )
-  }))
-}))
-
-# Plot the points using ggplot
-ggplot(within_ci, aes(x = approximation_type, y = value, color = prior_type)) +
-  geom_point() +
-  geom_text(aes(label = round(value, 2)), vjust = -0.5) +
-  facet_wrap(~parameter) +
-  labs(x = "Approximation Type", y = "Value") +
-  theme(axis.text.x = element_text(angle = 90, hjust = 1))
-
-
+# KL divergences
 KL_approx_types <- list(importance = "importance", smoothed_importance = "smoothed_importance")
-KL <- lapply(prior_types, function(prior_type) {
-  lapply(KL_approx_types, function(approximation_type) {
-    sapply(results, function(x) {
-      kl_values <- x[[prior_type]]$importance[[paste0("KL_divergence_", approximation_type, "_Gaussian_median")]]
-      kl_values <- replace(kl_values, is.na(kl_values), Inf) # Replace NA values with Inf
-      kl_values
-    })
-  })
-})
+plt_KL_and_get_mean_KL(results = results, prior_types = prior_types, approximation_types = KL_approx_types, path = "Simulation_images/KL_pc.png")
 
-# ggplot of ecdf of KL divergences
-plot_KL_divergences <- function(KL, prior_types, approximation_types) {
-  all_KL <- data.frame()
-  for (prior_type in prior_types) {
-    for (approximation_type in KL_approx_types) {
-      KL_divergences <- KL[[prior_type]][[approximation_type]]
-      KL_divergences <- as.data.frame(KL_divergences)
-      KL_divergences$iteration <- seq_len(nrow(KL_divergences))
-      KL_divergences <- reshape2::melt(KL_divergences, id.vars = "iteration") # Necessary to use ggplot as it expects a data frame in long format
-      KL_divergences$prior_type <- prior_type
-      KL_divergences$approximation_type <- approximation_type
-      all_KL <- rbind(all_KL, KL_divergences)
-    }
-  }
+# PROBABILITIES that marginal posterior is smaller than true parameter
+plt_probabilities(results = results, prior_types = prior_types, approximation_types = approximation_types, parameter_names = parameter_names, path = "Simulation_images/probabilities_pc.png")
 
-  ggplot(all_KL) +
-    stat_ecdf(aes(value, color = prior_type, linetype = approximation_type)) +
-    facet_wrap(~variable)
-}
+# KS TEST FOR EACH PARAMETER
 
-plot_KL_divergences(KL, prior_types, approximation_types)
-
-# We calculate the mean of the KL divergences
-KL_Gaussian_median_mean <- lapply(prior_types, function(prior_type) {
-  lapply(KL_approx_types, function(approximation_type) {
-    mean(KL[[prior_type]][[approximation_type]])
-  })
-})
-print(KL_Gaussian_median_mean)
-
-
-# Probabilities that marginal posterior is smaller than true parameter
-all_probabilities <- data.frame()
-
-for (prior_type in prior_types) {
-  for (approximation_type in approximation_types) {
-    probabilities <- sapply(results, function(x) x[[prior_type]][["importance"]][[paste0("probabilities_", approximation_type)]])
-    for (i in seq_along(parameter_names)) {
-      df <- data.frame(prob = unlist(probabilities[i, ]), parameter = parameter_names[[i]], prior = prior_type, approximation = approximation_type)
-      all_probabilities <- rbind(all_probabilities, df)
-    }
-  }
-}
-
-
-
-
-
-# Plot the ECDF for all probabilities
-ggplot(all_probabilities) +
-  stat_ecdf(aes(prob, col = prior, linetype = approximation)) +
-  geom_abline(slope = 1, intercept = 0, color = "red") + # Add this line
-  facet_wrap(~parameter)
-
-# Now we calculate the Kolmogorov-Smirnov statistic for each parameter and represent it in a point plot
-KS_results <- data.frame()
-
-for (i in seq_along(parameter_names)) {
-  # Get the probabilities for the current parameter
-  probabilities <- all_probabilities[all_probabilities$parameter == parameter_names[[i]], ]
-  # Calculate the KS statistic for each prior and approximation type
-  for (prior_type in prior_types) {
-    for (approximation_type in approximation_types) {
-      KS_result <- ks.test(probabilities[probabilities$prior == prior_type & probabilities$approximation == approximation_type, ]$prob, "punif")
-      # Add the KS statistic and p-value for the current parameter to the data frame
-      KS_results <- rbind(KS_results, data.frame(parameter = parameter_names[[i]], prior = prior_type, approximation = approximation_type, statistic = KS_result$statistic, p_value = KS_result$p.value))
-    }
-  }
-}
-
-ggplot(KS_results) +
-  geom_point(aes(x = parameter, y = statistic, color = prior, shape = approximation)) +
-  facet_wrap(~parameter)
-
-ggplot(KS_results) +
-  geom_point(aes(x = parameter, y = p_value, color = prior, shape = approximation)) +
-  facet_wrap(~parameter)
+plt_KS(results = results, prior_types = prior_types, approximation_types = approximation_types, parameter_names = parameter_names, path1 = "Simulation_images/KS_distance_pc.png", path2 = "Simulation_images/KS_pvalue_pc.png")
 
 # ks.test(x<-runif(5000),"punif")
 
-# Now we do the CDF of the complexity of the model
-complexity <- lapply(prior_types, function(prior_type) {
-  lapply(approximation_types[2:3], function(approximation_type) {
-    sapply(results, function(x) {
-      complexity <- x[[prior_type]]$importance[[paste0("complexity_", approximation_type)]]
-      complexity
-    })
-  })
-})
-
-# ggplot of ecdf of complexity
-plot_complexity <- function(complexity, prior_types, approximation_types) {
-  all_complexity <- data.frame()
-  for (prior_type in prior_types) {
-    for (approximation_type in approximation_types) {
-      complexity_values <- complexity[[prior_type]][[approximation_type]]
-      complexity_values <- as.data.frame(complexity_values)
-      complexity_values$iteration <- seq_len(nrow(complexity_values))
-      complexity_values <- reshape2::melt(complexity_values, id.vars = "iteration") # Necessary to use ggplot as it expects a data frame in long format
-      complexity_values$prior_type <- prior_type
-      complexity_values$approximation_type <- approximation_type
-      all_complexity <- rbind(all_complexity, complexity_values)
-    }
-  }
-
-  ggplot(all_complexity) +
-    stat_ecdf(aes(value, color = prior_type, linetype = approximation_type)) +
-    facet_wrap(~variable)
-}
-plot_complexity(complexity, prior_types, approximation_types[2:3])
-plot_complexity(complexity, prior_types[1:2], approximation_types[2:3])
-
-# We calculate the mean of the complexity
-complexity_mean <- lapply(prior_types, function(prior_type) {
-  lapply(approximation_types[2:3], function(approximation_type) {
-    mean(complexity[[prior_type]][[approximation_type]])
-  })
-})
-print(complexity_mean)
+# COMPLEXITY
+plt_complexity_and_get_mean_complexity(results = results, prior_types = prior_types, approximation_types = approximation_types, path = "Simulation_images/complexity_pc.png")
+plt_complexity_and_get_mean_complexity(results = results, prior_types = prior_types[1:2], approximation_types = approximation_types, path = "Simulation_images/Complexity_12_pc.png")
 
 
-# We get the vector of k diagnostics and show the log weights are similar
-par(mfrow = c(1, 1))
-k_diagnostics <- sapply(results, function(x) x$pc$importance$k_diagnostic)
-hist(k_diagnostics, main = "Histogram of k diagnostics", xlab = "k diagnostic")
-par(mfrow = c(1, 2))
-j <- 1
-hist(results[[j]]$pc$importance$log_unnormalized_weights_smoothed, main = "Log weights", xlab = "Log weight")
-hist(results[[j]]$pc$importance$log_unnormalized_weights, main = "Log weights", xlab = "Log weight")
+# K diagnostics and checking weights are similar
+plt_k_diagnostics(results = results, prior_types = prior_types, path = "Simulation_images/k_diagnostics_pc.png")
+plt_weights_cdf(results = results, prior_types = prior_types, path = "Simulation_images/weights_pc.png")

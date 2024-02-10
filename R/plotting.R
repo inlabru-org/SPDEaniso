@@ -389,16 +389,11 @@ plt_weights_cdf <- function(results, prior_types, path = NULL, dpi = 600, width 
         stat_ecdf(aes(weights_unsmoothed, color = "Unsmoothed")) +
         stat_ecdf(aes(weights_smoothed, color = "Smoothed")) +
         labs(x = "Log weight", y = "Cumulative density") +
-        theme(legend.position = "bottom")
+        theme(legend.position = "bottom") +
+        xlim(c(-5, 0))
 
     if (!is.null(path)) {
         ggsave(path, dpi = dpi, width = width, height = height)
     }
     print(p)
 }
-
-
-## Example for j=1
-j <- 1
-hist(results_not_pc[[j]]$pc$importance$log_unnormalized_weights_smoothed, main = "Log weights", xlab = "Log weight")
-hist(results_not_pc[[j]]$pc$importance$log_unnormalized_weights, main = "Log weights", xlab = "Log weight")
