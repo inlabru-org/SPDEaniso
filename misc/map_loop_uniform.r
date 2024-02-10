@@ -198,8 +198,9 @@ not_null_indices <- sapply(results_uniform, function(x) !is.null(x$pc$importance
 results_uniform <- results_uniform[not_null_indices]
 # Results obtained simulating parameters from uniform priors and using a mesh size of 1, 15 observations, 200 iterations, 5000 weights, a credible level of 0.05 a width of uniform =2 (to prevent extreme results) and for beta a multiplier of 20 (to prevent errors in optimization).
 # saveRDS(results_uniform, "results_uniform_1_15_200_5000_005_wu_2_wb_20.rds")
-#results_uniform <- readRDS("Simulation_results/results_uniform_1_15_200_5000_005_wu_2_wb_20.rds")
+# results_uniform <- readRDS("Simulation_results/results_uniform_1_15_200_5000_005_wu_2_wb_20.rds")
 parameter_names <- rownames(results_uniform[[1]]$pc$credible_intervals$Gaussian_median)
+simulation_name <- "uniform"
 # Plots ecdf of distances to MAP using ggplot
 plot_distances_to_MAP <- function(results_uniform, prior_types) {
     all_distances <- data.frame()
@@ -216,6 +217,7 @@ plot_distances_to_MAP <- function(results_uniform, prior_types) {
     ggplot(all_distances) +
         stat_ecdf(aes(value, color = prior_type)) +
         facet_wrap(~variable)
+    ggsave(paste0("Simulation_images/Distances_to_map_", simulation_name, ".png"), dpi = 600)
 }
 
 plot_distances_to_MAP(results_uniform, prior_types)

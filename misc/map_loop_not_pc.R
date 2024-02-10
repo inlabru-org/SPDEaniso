@@ -15,7 +15,6 @@ document()
 plan(multisession)
 # Defining the random seed
 set.seed(123)
-
 # Defines the upper bounds for the quantiles
 rho0 <- 1 # Controls the size of kappa
 a0 <- 2 # Controls the size of v
@@ -197,7 +196,8 @@ not_null_indices <- sapply(results_not_pc, function(x) !is.null(x$pc$importance$
 results_not_pc <- results_not_pc[not_null_indices]
 # Results obtained simulating parameters from PC priors and using a mesh size of 1, 15 observations, 200 iterations, 5000 weights, a credible level of 0.05 a width of uniform =inf and for beta a multiplier of 20.
 # saveRDS(results_not_pc, "results_not_pc_1_15_200_5000_005_wu_inf_wb_20.rds")
-#results_not_pc <- readRDS("Simulation_results/results_not_pc_1_15_200_5000_005_wu_inf_wb_20.rds")
+# results_not_pc <- readRDS("Simulation_results/results_not_pc_1_15_200_5000_005_wu_inf_wb_20.rds")
+simulation_name <- "not_pc"
 parameter_names <- rownames(results_not_pc[[1]]$pc$credible_intervals$Gaussian_median)
 # Plots ecdf of distances to MAP using ggplot
 plot_distances_to_MAP <- function(results_not_pc, prior_types) {
@@ -215,9 +215,11 @@ plot_distances_to_MAP <- function(results_not_pc, prior_types) {
     ggplot(all_distances) +
         stat_ecdf(aes(value, color = prior_type)) +
         facet_wrap(~variable)
+    ggsave(paste0("Simulation_images/Distances_to_map_", simulation_name, ".png"), dpi = 600)
 }
-
 plot_distances_to_MAP(results_not_pc, prior_types)
+
+
 
 # Mean distances and standard deviation estimates
 mean_distances_not_pc <- lapply(prior_types, function(prior_type) {
