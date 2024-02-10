@@ -202,6 +202,7 @@ results_beta <- results_beta[not_null_indices]
 # results_beta <- readRDS("Simulation_results/results_beta_1_15_200_5000_005_wu_inf_wb_2.rds")
 parameter_names <- rownames(results_beta[[1]]$pc$credible_intervals$Gaussian_median)
 simulation_name <- "beta"
+path <- paste0("Simulation_images/Distances_to_map_", simulation_name, ".png")
 # Plots ecdf of distances to MAP using ggplot
 plot_distances_to_MAP <- function(results_beta, prior_types) {
     all_distances <- data.frame()

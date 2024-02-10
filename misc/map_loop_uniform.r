@@ -201,6 +201,7 @@ results_uniform <- results_uniform[not_null_indices]
 # results_uniform <- readRDS("Simulation_results/results_uniform_1_15_200_5000_005_wu_2_wb_20.rds")
 parameter_names <- rownames(results_uniform[[1]]$pc$credible_intervals$Gaussian_median)
 simulation_name <- "uniform"
+path <- paste0("Simulation_images/Distances_to_map_", simulation_name, ".png")
 # Plots ecdf of distances to MAP using ggplot
 plot_distances_to_MAP <- function(results_uniform, prior_types) {
     all_distances <- data.frame()

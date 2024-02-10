@@ -4,7 +4,14 @@
 \alias{plt_distances_to_MAP}
 \title{Plot distances to MAP}
 \usage{
-plt_distances_to_MAP(results, prior_types, path = NULL, dpi = 600)
+plt_distances_to_MAP(
+  results,
+  prior_types,
+  path = NULL,
+  dpi = 600,
+  width = 10,
+  height = 10
+)
 }
 \arguments{
 \item{results}{A list of results from the simulation containing the distances to MAP}
@@ -13,7 +20,11 @@ plt_distances_to_MAP(results, prior_types, path = NULL, dpi = 600)
 
 \item{path}{A character string of the path to save the plot}
 
-\item{dpi}{An integer of the dpi to save the plot}
+\item{dpi}{An integer of the dpi to save the plot. By default, it is 600}
+
+\item{width}{An integer of the width of the plot. By default, it is 10}
+
+\item{height}{An integer of the height of the plot. By default, it is 10}
 }
 \value{
 A ggplot object

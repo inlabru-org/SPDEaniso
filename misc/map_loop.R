@@ -212,6 +212,7 @@ results <- results[not_null_indices]
 # results <- readRDS("Simulation_results/results_pc_1_15_200_5000_005_wu_inf_wb_20.rds")
 parameter_names <- rownames(results[[1]]$pc$credible_intervals$Gaussian_median)
 simulation_name <- "pc"
+path <- paste0("Simulation_images/Distances_to_map_", simulation_name, ".png")
 # Plots ecdf of distances to MAP using ggplot
 plot_distances_to_MAP <- function(results, prior_types) {
   all_distances <- data.frame()
@@ -229,75 +230,13 @@ plot_distances_to_MAP <- function(results, prior_types) {
     stat_ecdf(aes(value, color = prior_type)) +
     facet_wrap(~variable)
 }
+# Distances to MAP
+plt_distances_to_MAP(results = results, prior_types = prior_types, path = "Simulation_images/Distances_to_map_pc.png")
+mean_distance_and_std_dev <- mean_distance_to_MAP_and_std_dev_of_Gaussian_approximation(results = results, prior_types = prior_types)
 
-plot_distances_to_MAP(results, prior_types)
+# Credible intervals
+plt_CI_lengths_and_get_mean_lengths(results = results, prior_types = prior_types, approximation_types = approximation_types, parameter_names = parameter_names, path = "Simulation_images/CI_lengths_pc.png")
 
-# Mean distances and standard deviation estimates
-mean_distances <- lapply(prior_types, function(prior_type) {
-  mean_distances <- sapply(1:5, function(i) {
-    all_distances <- sapply(seq_along(results), function(j) {
-      results[[j]][[prior_type]]$distance_vector[i]
-    })
-    mean(all_distances)
-  })
-
-  std_dev_estimates_Gaussian_median <- do.call(rbind, lapply(results, function(x) x[[prior_type]]$std_dev_estimates_Gaussian_median))
-  mean_std_dev <- colMeans(std_dev_estimates_Gaussian_median)
-
-  names(mean_distances) <- parameter_names
-  print(paste("Mean distances for", prior_type))
-  print(mean_distances)
-  print(paste("Mean standard deviations for", prior_type))
-  print(mean_std_dev)
-})
-
-
-# THere we test how to get the dataframe of credible interval lengths using lapplyand for each approximation type
-
-lengths_df <- lapply(prior_types, function(prior_type) {
-  lapply(approximation_types, function(approximation_type) {
-    lengths <- lapply(parameter_names, function(parameter_name) {
-      all_lengths <- sapply(seq_along(results), function(j) {
-        length <- diff(results[[j]][[prior_type]]$credible_intervals[[approximation_type]][parameter_name, ])
-        length
-      })
-      all_lengths
-    })
-    lengths <- do.call(cbind, lengths)
-    colnames(lengths) <- parameter_names
-    lengths
-  })
-})
-
-mean_lengths_df <- lapply(lengths_df, function(prior_type) {
-  lapply(prior_type, function(approximation_type) {
-    colMeans(approximation_type)
-  })
-})
-print(mean_lengths_df)
-
-# We show a cdf of lengths_df using ggplot
-plot_CI_lengths <- function(lengths_df, prior_types, approximation_types) {
-  all_lengths <- data.frame()
-
-  for (prior_type in prior_types) {
-    for (approximation_type in approximation_types) {
-      lengths <- lengths_df[[prior_type]][[approximation_type]]
-      lengths <- as.data.frame(lengths)
-      lengths$iteration <- seq_len(nrow(lengths))
-      lengths <- reshape2::melt(lengths, id.vars = "iteration") # Necessary to use ggplot as it expects a data frame in long format
-      lengths$prior_type <- prior_type
-      lengths$approximation_type <- approximation_type
-      all_lengths <- rbind(all_lengths, lengths)
-    }
-  }
-
-  ggplot(all_lengths) +
-    stat_ecdf(aes(value, color = prior_type, linetype = approximation_type)) +
-    facet_wrap(~variable)
-}
-
-plot_CI_lengths(lengths_df, prior_types, approximation_types)
 
 
 
