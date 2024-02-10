@@ -195,29 +195,13 @@ for (i in 1:number_of_loops) {
 not_null_indices <- sapply(results_not_pc, function(x) !is.null(x$pc$importance$log_unnormalized_weights))
 results_not_pc <- results_not_pc[not_null_indices]
 # Results obtained simulating parameters from PC priors and using a mesh size of 1, 15 observations, 200 iterations, 5000 weights, a credible level of 0.05 a width of uniform =inf and for beta a multiplier of 20.
-# saveRDS(results_not_pc, "results_not_pc_1_15_200_5000_005_wu_inf_wb_20.rds")
+saveRDS(results_not_pc, "results_not_pc_1_15_200_5000_005_wu_inf_wb_20.rds")
 # results_not_pc <- readRDS("Simulation_results/results_not_pc_1_15_200_5000_005_wu_inf_wb_20.rds")
 simulation_name <- "not_pc"
+path <-paste0("Simulation_images/Distances_to_map_", simulation_name, ".png")
 parameter_names <- rownames(results_not_pc[[1]]$pc$credible_intervals$Gaussian_median)
 # Plots ecdf of distances to MAP using ggplot
-plot_distances_to_MAP <- function(results_not_pc, prior_types) {
-    all_distances <- data.frame()
-    for (prior_type in prior_types) {
-        distances_to_MAP <- lapply(results_not_pc, function(x) x[[prior_type]]$distance_vector)
-        distances_to_MAP <- do.call(rbind, distances_to_MAP)
-        distances_to_MAP <- as.data.frame(distances_to_MAP)
-        distances_to_MAP$iteration <- seq_len(nrow(distances_to_MAP))
-        distances_to_MAP <- reshape2::melt(distances_to_MAP, id.vars = "iteration")
-        distances_to_MAP$prior_type <- prior_type
-        all_distances <- rbind(all_distances, distances_to_MAP)
-    }
-
-    ggplot(all_distances) +
-        stat_ecdf(aes(value, color = prior_type)) +
-        facet_wrap(~variable)
-    ggsave(paste0("Simulation_images/Distances_to_map_", simulation_name, ".png"), dpi = 600)
-}
-plot_distances_to_MAP(results_not_pc, prior_types)
+plt_distances_to_MAP(results = results_not_pc, prior_types = prior_types, path =path)
 
 
 
