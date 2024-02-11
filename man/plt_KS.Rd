@@ -11,7 +11,7 @@ plt_KS(
   parameter_names,
   path1 = NULL,
   path2 = NULL,
-  dpi = 600,
+  dpi = 100,
   width = 10,
   height = 10
 )

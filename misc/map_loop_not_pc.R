@@ -8,6 +8,7 @@ library(inlabru)
 library(future)
 library(future.apply)
 library(dplyr)
+library(tidyr)
 library(loo)
 document()
 
@@ -216,9 +217,7 @@ plt_KL_and_get_mean_KL(results = results_not_pc, prior_types = prior_types, appr
 plt_probabilities(results = results_not_pc, prior_types = prior_types, approximation_types = approximation_types, parameter_names = parameter_names, path = "Simulation_images/probabilities_not_pc.png")
 
 # KS TEST FOR EACH PARAMETER
-
 plt_KS(results = results_not_pc, prior_types = prior_types, approximation_types = approximation_types, parameter_names = parameter_names, path1 = "Simulation_images/KS_distance_not_pc.png", path2 = "Simulation_images/KS_pvalue_not_pc.png")
-
 # ks.test(x<-runif(5000),"punif")
 
 # COMPLEXITY
@@ -228,4 +227,4 @@ plt_complexity_and_get_mean_complexity(results = results_not_pc, prior_types = p
 
 # K diagnostics and checking weights are similar
 plt_k_diagnostics(results = results_not_pc, prior_types = prior_types, path = "Simulation_images/k_diagnostics_not_pc.png")
-plt_weights_cdf(results = results_not_pc, prior_types = prior_types, path = "Simulation_images/weights_not_pc.png")
+# plt_weights_cdf(results = results_not_pc, prior_types = prior_types, path = "Simulation_images/weights_not_pc.png")

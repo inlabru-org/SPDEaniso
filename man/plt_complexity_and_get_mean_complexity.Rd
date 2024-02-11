@@ -9,7 +9,7 @@ plt_complexity_and_get_mean_complexity(
   prior_types,
   approximation_types,
   path = NULL,
-  dpi = 600,
+  dpi = 100,
   width = 10,
   height = 10
 )

@@ -10,7 +10,7 @@ plt_frequency_true_parameter_in_CI(
   approximation_types = approximation_types,
   parameter_names = parameter_names,
   path = NULL,
-  dpi = 600,
+  dpi = 100,
   width = 10,
   height = 10
 )

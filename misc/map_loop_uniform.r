@@ -8,6 +8,7 @@ library(inlabru)
 library(future)
 library(future.apply)
 library(dplyr)
+library(tidyr)
 library(loo)
 document()
 
@@ -198,7 +199,7 @@ not_null_indices <- sapply(results_uniform, function(x) !is.null(x$pc$importance
 results_uniform <- results_uniform[not_null_indices]
 # Results obtained simulating parameters from uniform priors and using a mesh size of 1, 15 observations, 200 iterations, 5000 weights, a credible level of 0.05 a width of uniform =2 (to prevent extreme results) and for beta a multiplier of 20 (to prevent errors in optimization).
 # saveRDS(results_uniform, "results_uniform_1_15_200_5000_005_wu_2_wb_20.rds")
-# results_uniform <- readRDS("Simulation_results/results_uniform_1_15_200_5000_005_wu_2_wb_20.rds")
+#results_uniform <- readRDS("Simulation_results/results_uniform_1_15_200_5000_005_wu_2_wb_20.rds")
 parameter_names <- rownames(results_uniform[[1]]$pc$credible_intervals$Gaussian_median)
 
 # DISTANCES true parameter to MAP
@@ -231,3 +232,4 @@ plt_complexity_and_get_mean_complexity(results = results_uniform, prior_types = 
 # K diagnostics and checking weights are similar
 plt_k_diagnostics(results = results_uniform, prior_types = prior_types, path = "Simulation_images/k_diagnostics_uniform.png")
 plt_weights_cdf(results = results_uniform, prior_types = prior_types, path = "Simulation_images/weights_uniform.png")
+

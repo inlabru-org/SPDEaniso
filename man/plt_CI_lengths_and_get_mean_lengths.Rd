@@ -10,7 +10,7 @@ plt_CI_lengths_and_get_mean_lengths(
   approximation_types,
   parameter_names,
   path = NULL,
-  dpi = 600,
+  dpi = 100,
   width = 10,
   height = 10
 )

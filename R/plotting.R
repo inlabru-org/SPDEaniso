@@ -9,7 +9,7 @@
 #' @return A ggplot object
 #' @export
 
-plt_distances_to_MAP <- function(results, prior_types, path = NULL, dpi = 600, width = 10, height = 10) {
+plt_distances_to_MAP <- function(results, prior_types, path = NULL, dpi = 100, width = 10, height = 10) {
     all_distances <- data.frame()
     for (prior_type in prior_types) {
         distances_to_MAP <- lapply(results, function(x) x[[prior_type]]$distance_vector)
@@ -68,7 +68,7 @@ mean_distance_to_MAP_and_std_dev_of_Gaussian_approximation <- function(results, 
 #' @return A list of data frames containing the mean lengths for each prior type and approximation type
 #' @export
 
-plt_CI_lengths_and_get_mean_lengths <- function(results, prior_types, approximation_types, parameter_names, path = NULL, dpi = 600, width = 10, height = 10) {
+plt_CI_lengths_and_get_mean_lengths <- function(results, prior_types, approximation_types, parameter_names, path = NULL, dpi = 100, width = 10, height = 10) {
     lengths_df <- lapply(prior_types, function(prior_type) {
         lapply(approximation_types, function(approximation_type) {
             lengths <- lapply(parameter_names, function(parameter_name) {
@@ -123,7 +123,7 @@ plt_CI_lengths_and_get_mean_lengths <- function(results, prior_types, approximat
 #' @param height An integer of the height of the plot
 #' @export
 
-plt_frequency_true_parameter_in_CI <- function(results = results, prior_types = prior_types, approximation_types = approximation_types, parameter_names = parameter_names, path = NULL, dpi = 600, width = 10, height = 10) {
+plt_frequency_true_parameter_in_CI <- function(results = results, prior_types = prior_types, approximation_types = approximation_types, parameter_names = parameter_names, path = NULL, dpi = 100, width = 10, height = 10) {
     within_ci <- lapply(prior_types, function(prior_type) {
         lapply(approximation_types, function(approximation_type) {
             rowMeans(sapply(results, function(x) x[[prior_type]][["true_parameter_within_c_interval"]][[approximation_type]]))
@@ -166,7 +166,7 @@ plt_frequency_true_parameter_in_CI <- function(results = results, prior_types = 
 #' @param height An integer of the height of the plot
 #' @export
 
-plt_KL_and_get_mean_KL <- function(results, prior_types, approximation_types, path = NULL, dpi = 600, width = 10, height = 10) {
+plt_KL_and_get_mean_KL <- function(results, prior_types, approximation_types, path = NULL, dpi = 100, width = 10, height = 10) {
     KL <- lapply(prior_types, function(prior_type) {
         lapply(KL_approx_types, function(approximation_type) {
             sapply(results, function(x) {
@@ -218,7 +218,7 @@ plt_KL_and_get_mean_KL <- function(results, prior_types, approximation_types, pa
 #' @param height An integer of the height of the plot
 #' @export
 
-plt_probabilities <- function(results, prior_types, approximation_types, parameter_names, path = NULL, dpi = 600, width = 10, height = 10) {
+plt_probabilities <- function(results, prior_types, approximation_types, parameter_names, path = NULL, dpi = 100, width = 10, height = 10) {
     all_probabilities <- data.frame()
     for (prior_type in prior_types) {
         for (approximation_type in approximation_types) {
@@ -229,7 +229,7 @@ plt_probabilities <- function(results, prior_types, approximation_types, paramet
             }
         }
     }
-
+    all_probabilities$parameter <- factor(all_probabilities$parameter, levels = parameter_names)
     p <- ggplot(all_probabilities) +
         stat_ecdf(aes(prob, col = prior, linetype = approximation)) +
         geom_abline(slope = 1, intercept = 0, color = "red") + # Add this line
@@ -254,7 +254,7 @@ plt_probabilities <- function(results, prior_types, approximation_types, paramet
 #' @param height An integer of the height of the plot
 #' @export
 
-plt_KS <- function(results, prior_types, approximation_types, parameter_names, path1 = NULL, path2 = NULL, dpi = 600, width = 10, height = 10) {
+plt_KS <- function(results, prior_types, approximation_types, parameter_names, path1 = NULL, path2 = NULL, dpi = 100, width = 10, height = 10) {
     all_probabilities <- data.frame()
     for (prior_type in prior_types) {
         for (approximation_type in approximation_types) {
@@ -279,16 +279,16 @@ plt_KS <- function(results, prior_types, approximation_types, parameter_names, p
             }
         }
     }
+    KS_results$parameter <- factor(KS_results$parameter, levels = parameter_names)
 
     p1 <- ggplot(KS_results) +
         geom_point(aes(x = parameter, y = statistic, color = prior, shape = approximation))
-
-    p2 <- ggplot(KS_results) +
-        geom_point(aes(x = parameter, y = p_value, color = prior, shape = approximation))
-
     if (!is.null(path1)) {
         ggsave(path1, dpi = dpi, width = width, height = height)
     }
+
+    p2 <- ggplot(KS_results) +
+        geom_point(aes(x = parameter, y = p_value, color = prior, shape = approximation))
     if (!is.null(path2)) {
         ggsave(path2, dpi = dpi, width = width, height = height)
     }
@@ -308,7 +308,7 @@ plt_KS <- function(results, prior_types, approximation_types, parameter_names, p
 #' @return A list of vectors containing the mean complexity for each prior type and approximation type
 #' @export
 
-plt_complexity_and_get_mean_complexity <- function(results, prior_types, approximation_types, path = NULL, dpi = 600, width = 10, height = 10) {
+plt_complexity_and_get_mean_complexity <- function(results, prior_types, approximation_types, path = NULL, dpi = 100, width = 10, height = 10) {
     complexity <- lapply(prior_types, function(prior_type) {
         lapply(approximation_types[2:3], function(approximation_type) {
             sapply(results, function(x) {
@@ -359,7 +359,7 @@ plt_complexity_and_get_mean_complexity <- function(results, prior_types, approxi
 #' @param height An integer of the height of the plot
 #' @export
 
-plt_k_diagnostics <- function(results, prior_types, path = NULL, dpi = 600, width = 10, height = 10) {
+plt_k_diagnostics <- function(results, prior_types, path = NULL, dpi = 100, width = 10, height = 10) {
     all_k_diagnostics <- data.frame(matrix(ncol = length(prior_types), nrow = length(results)))
     colnames(all_k_diagnostics) <- prior_types
     for (prior_type in prior_types) {
@@ -378,16 +378,21 @@ plt_k_diagnostics <- function(results, prior_types, path = NULL, dpi = 600, widt
     print(p)
 }
 
-plt_weights_cdf <- function(results, prior_types, path = NULL, dpi = 600, width = 10, height = 10) {
+plt_weights_cdf <- function(results, prior_types, path = NULL, dpi = 100, width = 10, height = 10) {
     all_weights <- list()
     for (prior_type in prior_types) {
         weights_unsmoothed <- c(unlist(sapply(results, function(x) x[[prior_type]]$importance$log_unnormalized_weights)))
         weights_smoothed <- c(unlist(sapply(results, function(x) x[[prior_type]]$importance$log_unnormalized_weights_smoothed)))
-        weights <- data.frame(weights_unsmoothed = weights_unsmoothed, weights_smoothed = weights_smoothed)
+        weights <- data.frame(prior_type = prior_type, weights_unsmoothed = weights_unsmoothed, weights_smoothed = weights_smoothed)
+        all_weights[[prior_type]] <- weights
     }
-    p <- ggplot(weights) +
-        stat_ecdf(aes(weights_unsmoothed, color = "Unsmoothed")) +
-        stat_ecdf(aes(weights_smoothed, color = "Smoothed")) +
+    all_weights_df <- do.call(rbind, all_weights)
+
+    # Reshape the data to long format
+    all_weights_long <- pivot_longer(all_weights_df, c(weights_unsmoothed, weights_smoothed), names_to = "weight_type", values_to = "weight")
+
+    p <- ggplot(all_weights_long) +
+        stat_ecdf(aes(weight, color = prior_type, linetype = weight_type)) +
         labs(x = "Log weight", y = "Cumulative density") +
         theme(legend.position = "bottom") +
         xlim(c(-5, 0))

@@ -8,6 +8,7 @@ library(inlabru)
 library(future)
 library(future.apply)
 library(dplyr)
+library(tidyr)
 library(loo)
 document()
 
@@ -231,4 +232,5 @@ plt_complexity_and_get_mean_complexity(results = results_beta, prior_types = pri
 
 # K diagnostics and checking weights are similar
 plt_k_diagnostics(results = results_beta, prior_types = prior_types, path = "Simulation_images/k_diagnostics_beta.png")
-plt_weights_cdf(results = results_beta, prior_types = prior_types, path = "Simulation_images/weights_beta.png")
+# plt_weights_cdf(results = results_beta, prior_types = prior_types, path = "Simulation_images/weights_beta.png")
+

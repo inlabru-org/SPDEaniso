@@ -10,7 +10,7 @@ plt_probabilities(
   approximation_types,
   parameter_names,
   path = NULL,
-  dpi = 600,
+  dpi = 100,
   width = 10,
   height = 10
 )

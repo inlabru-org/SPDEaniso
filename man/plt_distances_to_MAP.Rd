@@ -8,7 +8,7 @@ plt_distances_to_MAP(
   results,
   prior_types,
   path = NULL,
-  dpi = 600,
+  dpi = 100,
   width = 10,
   height = 10
 )
