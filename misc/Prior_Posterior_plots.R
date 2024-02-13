@@ -5,9 +5,10 @@ library(Matrix)
 library(sp)
 library(INLA)
 library(inlabru)
+library(cowplot)
 document()
 # Defining the random seed
-set.seed(123)
+set.seed(223)
 
 # Defines the upper bounds for the quantiles
 # rho0 <- 1 # Controls the size of kappa in PC and non PC priors
@@ -37,9 +38,8 @@ L <- 10
 width_uniform <- Inf
 log_uniform_prior <- log_prior_uniform(sigma_u0 = sigma_u0, sigma_epsilon0 = sigma_epsilon0, a0 = a0, rho0 = rho0, L = L, width_support_factor = width_uniform)
 shape <- 1.1
-width_beta <- 2
+width_beta <- 20
 log_beta_prior <- log_prior_beta(sigma_u0 = sigma_u0, sigma_epsilon0 = sigma_epsilon0, a0 = a0, rho0 = rho0, L = L, shape = shape, width_support_factor = width_beta)
-sim_theta_beta(sigma_u0 = sigma_u0, sigma_epsilon0 = sigma_epsilon0, a0 = a0, rho0 = rho0, L = L, shape = shape, width_support_factor = width_beta)
 log_priors <- list(
   pc = log_pc_prior,
   not_pc = log_not_pc_prior,
@@ -62,11 +62,6 @@ n_observations <- 15
 observations <- 10 * matrix(runif(n_observations * 2), ncol = 2)
 A <- fm_basis(mesh, loc = observations)
 
-# Sample from noisy data
-aniso <- list(rep(kappa, n), matrix(v, n, 2))
-x <- fm_aniso_basis_weights_sample(x = mesh, aniso = aniso, log_sigma = log_sigma_u)
-y <- A %*% x + exp(log_sigma_epsilon) * stats::rnorm(nrow(A))
-
 # Defining the log posterior
 log_posteriors <- lapply(log_priors, function(log_prior) {
   function(log_kappa, v, log_sigma_u, log_sigma_epsilon) {
@@ -81,14 +76,24 @@ log_posteriors <- lapply(log_priors, function(log_prior) {
 maxit <- 600
 tryCatch({
   # Simulates the "true parameters" from the pc_prior.
-  # true_params <- sim_theta_pc_quantile(
-  #   alpha = alpha, sigma_u0 = sigma_u0,
-  #   sigma_epsilon0 = sigma_epsilon0, a0 = a0, rho0 = rho0, m = 1
-  # )
-  true_params <- sim_theta_beta(
-    sigma_u0 = sigma_u0, sigma_epsilon0 = sigma_epsilon0,
-    a0 = a0, rho0 = rho0, L = L, shape = shape,
-    width_support_factor = width_beta)
+  true_params <- sim_theta_pc_quantile(
+    alpha = alpha, sigma_u0 = sigma_u0,
+    sigma_epsilon0 = sigma_epsilon0, a0 = a0, rho0 = rho0, m = 1
+  )
+
+  log_kappa <- true_params$log_kappa
+  kappa <- exp(log_kappa)
+  v <- true_params$v
+  log_sigma_u <- true_params$log_sigma_u
+  log_sigma_epsilon <- true_params$log_sigma_epsilon
+  # Sample from noisy data
+  aniso <- list(rep(kappa, n), matrix(v, n, 2))
+  x <- fm_aniso_basis_weights_sample(x = mesh, aniso = aniso, log_sigma = log_sigma_u)
+  y <- A %*% x + exp(log_sigma_epsilon) * stats::rnorm(nrow(A))
+  # true_params <- sim_theta_beta(
+  #   sigma_u0 = sigma_u0, sigma_epsilon0 = sigma_epsilon0,
+  #   a0 = a0, rho0 = rho0, L = L, shape = shape,
+  #   width_support_factor = width_beta)
 
   delta <- rnorm(5, 0, 1) # Used to randomize starting point of MAP
   # Calculating the MAP under each prior knowing simulated data
@@ -101,93 +106,6 @@ tryCatch({
 
   error <- function(e) {}
 })
-plotter <- function(theta_fixed = map_pc$par, log_priors = log_priors, log_posteriors = log_posteriors, l = 2, n_points = 10, together = TRUE, n_parameters_to_plot = 3) {
-  function_types <- list(prior = "prior", posterior = "posterior")
-  ########## UNNORMALIZED Gaussian_median APPROXIMATION TO THE POSTERIOR############
-
-  ### UNNORMALIZED LOG FUNCTION SO THEY ALL START AT 0###
-  unnormalize_prior_and_posterior <- function(log_prior) {
-    function(log_kappa, v1, v2, log_sigma_u, log_sigma_epsilon) {
-      log_prior(
-        log_kappa = log_kappa, v = c(v1, v2),
-        log_sigma_u = log_sigma_u, log_sigma_epsilon = log_sigma_epsilon
-      ) - log_prior(
-        log_kappa = theta_fixed[1], v = theta_fixed[2:3],
-        log_sigma_u = theta_fixed[4], log_sigma_epsilon = theta_fixed[5]
-      )
-    }
-  }
-
-  unnormalized_priors <- lapply(log_priors, unnormalize_prior_and_posterior)
-  unnormalized_posteriors <- lapply(log_posteriors, unnormalize_prior_and_posterior)
-  unnormalized_priors_and_posteriors <- list(prior = unnormalized_priors, posterior = unnormalized_posteriors)
-
-  # Restricting the functions to one parameter
-  restricting_function_to_one_parameter <- function(f, x0) {
-    f_list <- lapply(seq_along(x0), function(i) {
-      function(x) {
-        x0_copy <- x0
-        x0_copy[i] <- x
-        unname(do.call(f, as.list(x0_copy)))
-      }
-    })
-    names(f_list) <- names(x0)
-    f_list
-  }
-  restricted_priors_and_posteriors <- lapply(unnormalized_priors_and_posteriors, function(f) {
-    lapply(f, restricting_function_to_one_parameter, theta_fixed)
-  })
-
-
-  # Getting data for plotting
-  partitions <- lapply(seq_along(theta_fixed), function(i) {
-    seq(theta_fixed[i] - l, theta_fixed[i] + l, length.out = n_points)
-  })
-  names(partitions) <- names(theta_fixed)
-
-  plot_data <- do.call(rbind, lapply(names(restricted_priors_and_posteriors), function(function_type) {
-    do.call(rbind, lapply(names(restricted_priors_and_posteriors[[function_type]]), function(prior_type) {
-      do.call(rbind, lapply(names(restricted_priors_and_posteriors[[function_type]][[prior_type]]), function(parameter_name) {
-        # Calculate the function values
-        x_values <- partitions[[parameter_name]]
-        y_values <- sapply(x_values, restricted_priors_and_posteriors[[function_type]][[prior_type]][[parameter_name]])
-
-        data.frame(
-          x = x_values,
-          Value = y_values,
-          Parameter = parameter_name,
-          FunctionType = function_type,
-          PriorType = prior_type,
-          stringsAsFactors = FALSE
-        )
-      }))
-    }))
-  }))
-
-  plots <- list()
-  for (parameter in unique(plot_data$Parameter)) {
-    parameter_data <- subset(plot_data, Parameter == parameter)
-
-    p <- ggplot(parameter_data, aes(x = x, y = exp(Value), color = PriorType, linetype = FunctionType)) +
-      geom_line() +
-      geom_vline(xintercept = unlist(true_params)[parameter], color = "purple") + # Move xintercept outside of aes()
-      labs(title = paste("Unnormalized Priors and Posteriors for", parameter), x = parameter, y = "Log density") +
-      theme_minimal()
-
-    # Add the plot to the list
-    plots[[parameter]] <- p
-  }
-  if (together) {
-    require(gridExtra)
-    do.call(grid.arrange, c(plots, ncol = 3))
-  } else {
-    # Print the plots
-    plots[1:n_parameters_to_plot]
-  }
-}
-alpha <- 0.05
 
 # The plots are different when rho0 and a0 are large. eg (2,4) more for (4,10). But are still quite similar.
-
-
-plotter(theta_fixed = map_pc$par, log_priors = log_priors, log_posteriors = log_posteriors, l = 2, n_points = 50, together = FALSE, n_parameters_to_plot = 2)
+prior_posterior_plotter(theta_fixed = map_pc$par, log_priors = log_priors, log_posteriors = log_posteriors, l = 3, n_points = 200, n_parameters_to_plot = 2, path = "Simulation_images/prior_posterior_plots.pdf")

@@ -402,3 +402,87 @@ plt_weights_cdf <- function(results, prior_types, path = NULL, dpi = 100, width 
     }
     print(p)
 }
+
+prior_posterior_plotter <- function(theta_fixed = map_pc$par, log_priors = log_priors,
+                                    log_posteriors = log_posteriors, l = 2, n_points = 10, n_parameters_to_plot = 3, path = NULL) {
+    function_types <- list(prior = "prior", posterior = "posterior", path = NULL)
+    ########## UNNORMALIZED Gaussian_median APPROXIMATION TO THE POSTERIOR############
+
+    ### UNNORMALIZED LOG FUNCTION SO THEY ALL START AT 0###
+    unnormalize_prior_and_posterior <- function(log_prior) {
+        function(log_kappa, v1, v2, log_sigma_u, log_sigma_epsilon) {
+            log_prior(
+                log_kappa = log_kappa, v = c(v1, v2),
+                log_sigma_u = log_sigma_u, log_sigma_epsilon = log_sigma_epsilon
+            ) - log_prior(
+                log_kappa = theta_fixed[1], v = theta_fixed[2:3],
+                log_sigma_u = theta_fixed[4], log_sigma_epsilon = theta_fixed[5]
+            )
+        }
+    }
+
+    unnormalized_priors <- lapply(log_priors, unnormalize_prior_and_posterior)
+    unnormalized_posteriors <- lapply(log_posteriors, unnormalize_prior_and_posterior)
+    unnormalized_priors_and_posteriors <- list(prior = unnormalized_priors, posterior = unnormalized_posteriors)
+
+    # Restricting the functions to one parameter
+    restricting_function_to_one_parameter <- function(f, x0) {
+        f_list <- lapply(seq_along(x0)[1:n_parameters_to_plot], function(i) {
+            function(x) {
+                x0_copy <- x0
+                x0_copy[i] <- x
+                unname(do.call(f, as.list(x0_copy)))
+            }
+        })
+        names(f_list) <- names(x0[1:n_parameters_to_plot])
+        f_list
+    }
+    restricted_priors_and_posteriors <- lapply(unnormalized_priors_and_posteriors, function(f) {
+        lapply(f, restricting_function_to_one_parameter, theta_fixed)
+    })
+
+
+    # Getting data for plotting
+    partitions <- lapply(seq_along(theta_fixed)[1:n_parameters_to_plot], function(i) {
+        seq(theta_fixed[i] - l, theta_fixed[i] + l, length.out = n_points)
+    })
+    names(partitions) <- names(theta_fixed[1:n_parameters_to_plot])
+
+    plot_data <- do.call(rbind, lapply(names(restricted_priors_and_posteriors), function(function_type) {
+        do.call(rbind, lapply(names(restricted_priors_and_posteriors[[function_type]]), function(prior_type) {
+            do.call(rbind, lapply(names(restricted_priors_and_posteriors[[function_type]][[prior_type]]), function(parameter_name) {
+                # Calculate the function values
+                x_values <- partitions[[parameter_name]]
+                y_values <- sapply(x_values, restricted_priors_and_posteriors[[function_type]][[prior_type]][[parameter_name]])
+                # Normalize y values so max is 0
+                y_values <- y_values - max(y_values)
+
+                data.frame(
+                    x = x_values,
+                    Value = y_values,
+                    Parameter = parameter_name,
+                    FunctionType = function_type,
+                    PriorType = prior_type,
+                    stringsAsFactors = FALSE
+                )
+            }))
+        }))
+    }))
+
+
+    # Create a single ggplot object instead of a list of plots
+    p <- ggplot(plot_data, aes(x = x, y = exp(Value), color = PriorType, linetype = FunctionType)) +
+        geom_line() +
+        geom_vline(
+            data = data.frame(Parameter = names(theta_fixed[1:n_parameters_to_plot]), xintercept = unlist(theta_fixed[1:n_parameters_to_plot])),
+            aes(xintercept = xintercept), color = "blue"
+        ) +
+        facet_wrap(~Parameter, ncol = 2) +
+        labs(y = "Density")
+
+    # If you want to save the plot
+    if (!is.null(path)) {
+        ggsave(path, p, device = "pdf", dpi = 100, width = 10, height = 5)
+    }
+    p
+}
