@@ -10,12 +10,13 @@ library(future.apply)
 library(dplyr)
 library(tidyr)
 library(loo)
+library(xtable)
 document()
 
 # Set the parallel plan to use all local cores (currently not used as future package doesn't recognize functions in prior.R)
 plan(multisession)
 # Defining the random seed
-set.seed(123)
+set.seed(124)
 # Defines the upper bounds for the quantiles
 rho0 <- 1 # Controls the size of kappa
 a0 <- 2 # Controls the size of v
@@ -196,7 +197,7 @@ for (i in 1:number_of_loops) {
 not_null_indices <- sapply(results_not_pc, function(x) !is.null(x$pc$importance$log_unnormalized_weights))
 results_not_pc <- results_not_pc[not_null_indices]
 # Results obtained simulating parameters from PC priors and using a mesh size of 1, 15 observations, 200 iterations, 5000 weights, a credible level of 0.05 a width of uniform =inf and for beta a multiplier of 20.
-# saveRDS(results_not_pc, "results_not_pc_1_15_200_5000_005_wu_inf_wb_20.rds")
+saveRDS(results_not_pc, "results_not_pc2_1_15_200_5000_005_wu_inf_wb_20.rds")
 # results_not_pc <- readRDS("Simulation_results/results_not_pc_1_15_200_5000_005_wu_inf_wb_20.rds")
 parameter_names <- rownames(results_not_pc[[1]]$pc$credible_intervals$Gaussian_median)
 

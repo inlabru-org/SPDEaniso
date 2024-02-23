@@ -15,7 +15,7 @@ document()
 # Set the parallel plan to use all local cores (currently not used as future package doesn't recognize functions in prior.R)
 plan(multisession)
 # Defining the random seed
-set.seed(123)
+set.seed(124)
 
 # Defines the upper bounds for the quantiles
 rho0 <- 1 # Controls the size of kappa
@@ -199,8 +199,8 @@ for (i in 1:number_of_loops) {
 not_null_indices <- sapply(results_beta, function(x) !is.null(x$pc$importance$log_unnormalized_weights))
 results_beta <- results_beta[not_null_indices]
 # Results obtained simulating parameters from beta priors and using a mesh size of 1, 15 observations, 200 iterations, 5000 weights, a credible level of 0.05 a width of uniform =inf and for beta a multiplier of 2 (to prevent extreme observations).
-# saveRDS(results_beta, "results_beta_1_15_200_5000_005_wu_inf_wb_2.rds")
-# results_beta <- readRDS("Simulation_results/results_beta_1_15_200_5000_005_wu_inf_wb_2.rds")
+saveRDS(results_beta, "results_beta2_1_15_200_5000_005_wu_inf_wb_2.rds")
+results_beta <- readRDS("Simulation_results/results_beta_1_15_200_5000_005_wu_inf_wb_2.rds")
 parameter_names <- rownames(results_beta[[1]]$pc$credible_intervals$Gaussian_median)
 
 # DISTANCES true parameter to MAP
@@ -233,4 +233,3 @@ plt_complexity_and_get_mean_complexity(results = results_beta, prior_types = pri
 # K diagnostics and checking weights are similar
 plt_k_diagnostics(results = results_beta, prior_types = prior_types, path = "Simulation_images/k_diagnostics_beta.png")
 # plt_weights_cdf(results = results_beta, prior_types = prior_types, path = "Simulation_images/weights_beta.png")
-

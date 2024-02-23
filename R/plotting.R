@@ -294,6 +294,24 @@ plt_KS <- function(results, prior_types, approximation_types, parameter_names, p
     }
     print(p1)
     print(p2)
+    # We only get the ones using last approximation type
+    KS_results <- KS_results[KS_results$approximation == approximation_types[length(approximation_types)], ]
+    # Since we only have one approximation type, we can eliminate it from the names
+    KS_results$approximation <- NULL
+    aa <- KS_results %>%
+        mutate(result = paste0("statistic: ", round(statistic, 2), ", p_value: ", round(p_value, 2)))
+
+    # Convert the table from long format to wide format
+    wide_table <- aa %>%
+        pivot_wider(names_from = "parameter", values_from = "result")
+
+
+    # Convert the wide table to a LaTeX table
+    latex_table <- xtable(KS_results)
+
+    # Print the LaTeX table
+    print(latex_table, type = "latex", include.rownames = FALSE)
+    KS_results
 }
 
 #' @title Plot complexity and get mean complexity
